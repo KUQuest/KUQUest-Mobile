@@ -10,7 +10,6 @@ import {
   ChevronRight,
   FileEdit,
   Hourglass,
-  Info,
   Lock,
   MessageSquare,
   ShieldCheck,
@@ -349,14 +348,6 @@ export default function HirerQuestManageScreen({
   const zoneNote = isDeviceOutsideBangkokZone()
     ? ` · ${messages.manageBangkokTime}`
     : "";
-  const waitingNote =
-    nextStep || snapshot.state !== QuestStatus.QUEST_OPEN
-      ? null
-      : snapshot.mode === QuestMode.CANDIDATE
-        ? messages.manageCandidateAutoCancel
-        : isGroup
-          ? messages.groupFcfsUnderfillRule
-          : messages.noSelectionNeeded;
 
   return (
     <ScreenLayout className="flex-1 bg-ku-background">
@@ -470,19 +461,6 @@ export default function HirerQuestManageScreen({
           </View>
         ) : null}
 
-        {waitingNote ? (
-          <View
-            testID="hirer-manage-waiting-note"
-            className="flex-row items-start gap-ku-12 rounded-ku-card bg-ku-hirer-subtle p-ku-md"
-          >
-            <View className="mt-ku-2">
-              <Info color={colors.hirer} size={20} strokeWidth={2} />
-            </View>
-            <Text className="min-w-0 flex-1 text-ku-body-small text-ku-text-strong">
-              {waitingNote}
-            </Text>
-          </View>
-        ) : null}
         {snapshot.state === QuestStatus.QUEST_FAILED ? (
           <FailedQuestNotice quest={quest} />
         ) : null}
@@ -492,7 +470,6 @@ export default function HirerQuestManageScreen({
             format={messages.manageStartsIn}
           />
         ) : null}
-
         <View className="rounded-ku-card border border-ku-border bg-ku-surface px-ku-md">
           <View className="gap-ku-sm py-ku-md">
             <View className="flex-row flex-wrap items-end justify-between gap-ku-sm">
@@ -663,6 +640,7 @@ export default function HirerQuestManageScreen({
         closeLabel={groupQuestMessages[locale].close}
         onClose={() => setUnderfilledOpen(false)}
         testID="partial-group-start-consent-sheet"
+        fullScreen
       >
         <PartialGroupStartConsentContent
           underfilled={snapshot.underfilled}

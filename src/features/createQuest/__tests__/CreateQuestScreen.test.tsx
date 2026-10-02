@@ -578,23 +578,19 @@ describe("CreateQuestScreen", () => {
     });
   });
 
-  it("uses a checkbox for proof and explains the selected requirement below", async () => {
+  it("toggles the proof requirement through an accessible checkbox", async () => {
     const view = await render(<CreateQuestScreen />);
 
     const proofToggle = await waitFor(() =>
       view.getByTestId("create-quest-proof-toggle")
     );
     expect(proofToggle.props.accessibilityState).toEqual({ checked: true });
-    expect(
-      view.getByText("ผู้เข้าร่วมต้องส่งหลักฐานการเสร็จงานเมื่อทำเควสต์เสร็จ")
-    ).toBeTruthy();
 
     await fireEvent.press(proofToggle);
 
     expect(
       view.getByTestId("create-quest-proof-toggle").props.accessibilityState
     ).toEqual({ checked: false });
-    expect(view.getByText("ไม่จำเป็นต้องส่งหลักฐานการเสร็จงาน")).toBeTruthy();
 
     await fireEvent.press(view.getByTestId("create-quest-proof-toggle"));
     expect(
@@ -1587,25 +1583,6 @@ describe("CreateQuestScreen", () => {
       ).toBeTruthy()
     );
     expect(view.queryByText("server cancellation details")).toBeNull();
-  });
-
-  it("shows localized help content and dismisses it", async () => {
-    const view = await render(<CreateQuestScreen />);
-    await fireEvent.press(view.getByTestId("create-quest-help"));
-    expect(
-      within(view.getByTestId("sweet-alert")).getByText("สร้างเควสต์")
-    ).toBeTruthy();
-    expect(
-      within(view.getByTestId("sweet-alert")).getByText(
-        "ทำตามแต่ละขั้นตอนเพื่อกำหนดรายละเอียด เลือกจำนวนผู้เข้าร่วม เลือกวิธีรับผู้สมัคร และตรวจสอบข้อมูลก่อนบันทึก"
-      )
-    ).toBeTruthy();
-    await fireEvent.press(
-      within(view.getByTestId("sweet-alert")).getByRole("button", {
-        name: "ตกลง",
-      })
-    );
-    expect(view.queryByTestId("sweet-alert")).toBeNull();
   });
 
   it("starts a fresh blank form after the draft screen is unmounted", async () => {

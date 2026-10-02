@@ -83,7 +83,6 @@ function SelectionSection({
         </Text>
         <Text className={styles.countPill}>{selection.countLabel}</Text>
       </View>
-      <Text className={styles.sectionSubtitle}>{selection.subtitle}</Text>
       {selection.proposals.length === 0 ? (
         <Text className={styles.emptyText}>{selection.emptyLabel}</Text>
       ) : (

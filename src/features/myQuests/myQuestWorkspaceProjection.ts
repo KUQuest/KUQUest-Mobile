@@ -13,7 +13,6 @@ export interface MyQuestWorkspaceProjection {
   items: QuestSummary[];
   selectedTabLabel: string;
   emptyTitle: string;
-  emptyDescription: string;
 }
 
 export interface ProjectMyQuestWorkspaceInput {
@@ -58,6 +57,5 @@ export function projectMyQuestWorkspace({
       : [],
     selectedTabLabel: messages.tabs[selectedTab],
     emptyTitle: messages.emptyTitle[selectedTab],
-    emptyDescription: messages.emptyDescription,
   };
 }

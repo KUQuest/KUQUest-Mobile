@@ -9,8 +9,6 @@ const styles = {
   roleplayShortcutText: "font-ku-semibold text-ku-label text-ku-primary",
   boardIntroCopy: "flex-1 min-w-0 pr-ku-sm",
   boardTitle: "text-ku-text-strong font-ku-bold text-ku-title",
-  boardSubtitle:
-    "text-ku-text-secondary font-ku-regular text-ku-body-small mt-ku-xs",
   searchField:
     "items-center bg-ku-surface border-ku-border-accent rounded-[18px] border flex-row min-h-[56px] px-ku-md",
   searchInput:

@@ -20,7 +20,6 @@ export interface QuestReviewMessages {
   commentPlaceholder: string;
   submit: string;
   submitting: string;
-  successDescription: string;
   done: string;
   invalidRating: string;
   invalidComment: string;
@@ -51,7 +50,6 @@ export const questReviewMessages: Record<SupportedLocale, QuestReviewMessages> =
       commentPlaceholder: "What went well or could be improved?",
       submit: "Submit review",
       submitting: "Submitting…",
-      successDescription: "Your feedback was saved for this Quest.",
       done: "Done",
       invalidRating: "Choose a rating from 1 to 5 stars.",
       invalidComment: "Comments must be 1,000 characters or fewer.",
@@ -79,7 +77,6 @@ export const questReviewMessages: Record<SupportedLocale, QuestReviewMessages> =
       commentPlaceholder: "สิ่งที่ทำได้ดีหรือควรปรับปรุงคืออะไร",
       submit: "ส่งรีวิว",
       submitting: "กำลังส่ง…",
-      successDescription: "บันทึกความคิดเห็นของคุณสำหรับเควสต์นี้แล้ว",
       done: "เสร็จสิ้น",
       invalidRating: "กรุณาเลือกคะแนนตั้งแต่ 1 ถึง 5 ดาว",
       invalidComment: "ความคิดเห็นต้องมีความยาวไม่เกิน 1,000 ตัวอักษร",

@@ -85,20 +85,6 @@ jest.mock("../../api/questBoardQueries", () => ({
     isPending: false,
   }),
 }));
-jest.mock("@/features/questBoard/review/components/QuestReviewModal", () => {
-  const React = jest.requireActual("react");
-  const { Text, View } = jest.requireActual("react-native");
-  return {
-    QuestReviewModal: ({ questId }: { questId: string | null }) =>
-      questId
-        ? React.createElement(
-            View,
-            { testID: "quest-review-modal" },
-            React.createElement(Text, null, questId)
-          )
-        : null,
-  };
-});
 
 const mockedGetSnapshot =
   liveQuestService.getLiveSnapshot as jest.MockedFunction<
@@ -231,6 +217,7 @@ function makeSnapshot(overrides: SnapshotOverrides = {}): LiveQuestSnapshot {
     application: null,
     applications: [],
     team: null,
+    teamRole: null,
     teams: [],
     underfilled: null,
     editRequest: null,
@@ -414,44 +401,6 @@ describe("QuestWorkScreen", () => {
     expect(view.queryByText("Discard proof draft?")).toBeNull();
   });
 
-  it("shows Rate the Hirer to an eligible Worker and opens the review modal", async () => {
-    mockedGetSnapshot.mockResolvedValue(
-      makeSnapshot({
-        state: "QUEST_COMPLETED",
-        quest: { state: "QUEST_COMPLETED" },
-        capabilities: { canCreateReview: true },
-      })
-    );
-    const view = await renderWithQueryClient(
-      <QuestWorkScreen questId="quest-work-1" viewerId="worker-1" />
-    );
-    await fireEvent.press(
-      await view.findByRole("button", { name: "Rate the Hirer" })
-    );
-    expect(view.getByTestId("quest-review-modal")).toBeTruthy();
-    expect(view.getByText("quest-work-1")).toBeTruthy();
-  });
-
-  it.each([
-    ["the Hirer", { actor: "HIRER" as const }],
-    [
-      "a Worker without permission",
-      { capabilities: { canCreateReview: false } },
-    ],
-  ])("hides Rate the Hirer for %s", async (_label, overrides) => {
-    mockedGetSnapshot.mockResolvedValue(
-      makeSnapshot({
-        state: "QUEST_COMPLETED",
-        quest: { state: "QUEST_COMPLETED" },
-        ...overrides,
-      })
-    );
-    const view = await renderWithQueryClient(
-      <QuestWorkScreen questId="quest-work-1" viewerId="worker-1" />
-    );
-    expect(view.queryByRole("button", { name: "Rate the Hirer" })).toBeNull();
-  });
-
   it("gates Work Hub dispute action on server status and hides it after filing", async () => {
     type MineQueryState = {
       isPending: boolean;
@@ -492,13 +441,7 @@ describe("QuestWorkScreen", () => {
         <SweetAlertHost />
       </Fragment>
     );
-    await waitFor(() =>
-      expect(
-        view.getByText(
-          "This Quest is terminal. Work Chat remains available as a read-only archive."
-        )
-      ).toBeTruthy()
-    );
+    await view.findByRole("button", { name: "Open Work Chat" });
     expect(view.queryByRole("button", { name: "File Dispute" })).toBeNull();
 
     await act(async () =>
@@ -898,6 +841,24 @@ describe("QuestWorkScreen", () => {
     expect(mockReplace).toHaveBeenCalledWith("/my-quests");
   });
 
+  it("opens the Quest detail from the Work Hub, including a terminal archive", async () => {
+    mockedGetSnapshot.mockResolvedValue(
+      makeSnapshot({ state: "QUEST_COMPLETED" })
+    );
+    const view = await renderWithQueryClient(
+      <QuestWorkScreen questId="quest-work-1" viewerId="worker-1" />
+    );
+
+    await fireEvent.press(
+      await view.findByRole("button", { name: "View Quest details" })
+    );
+
+    expect(mockPush).toHaveBeenCalledWith({
+      pathname: "/quest/[id]",
+      params: { id: "quest-work-1" },
+    });
+  });
+
   it("renders terminal work as a read-only archive", async () => {
     mockedGetSnapshot.mockResolvedValue(
       makeSnapshot({
@@ -920,13 +881,104 @@ describe("QuestWorkScreen", () => {
       <QuestWorkScreen questId="quest-work-1" viewerId="worker-1" />
     );
 
-    expect(
-      await view.findByText(
-        "This Quest is terminal. Work Chat remains available as a read-only archive."
-      )
-    ).toBeTruthy();
-    expect(view.getByText("Open Work Chat")).toBeTruthy();
+    await view.findByRole("button", { name: "Open Work Chat" });
+    expect(view.queryByRole("button", { name: "Start Work" })).toBeNull();
     expect(view.queryByText("Proof submission")).toBeNull();
     expect(view.queryByText("Confirm completion")).toBeNull();
+  });
+
+  describe("GROUP + CANDIDATE Team screens", () => {
+    const groupCandidate = {
+      mode: "CANDIDATE",
+      participation: "GROUP",
+      quest: { mode: "CANDIDATE", participation: "GROUP" },
+    } as const;
+    const makeTeam = (leaderId: string) =>
+      ({
+        id: "team-1",
+        questId: "quest-work-1",
+        leaderId,
+        name: "BlueTeam",
+        headcount: 2,
+        state: "TEAM_SELECTED",
+        members: [
+          {
+            memberId: "worker-1",
+            member: { id: "worker-1", displayName: "Aphinya" },
+          },
+          {
+            memberId: "worker-2",
+            member: { id: "worker-2", displayName: "Nichakan" },
+          },
+        ],
+      }) as never;
+
+    it("shows the Team Leader their duty, the roster and Start Work", async () => {
+      mockedGetSnapshot.mockResolvedValue(
+        makeSnapshot({
+          ...groupCandidate,
+          team: makeTeam("worker-1"),
+          teamRole: "LEADER",
+          capabilities: { canStartWork: true },
+        })
+      );
+      const view = await renderWithQueryClient(
+        <QuestWorkScreen questId="quest-work-1" viewerId="worker-1" />
+      );
+
+      expect(await view.findByTestId("team-work-leader")).toBeTruthy();
+      expect(view.getByText("Team Leader")).toBeTruthy();
+      expect(
+        view.getByText(/Press Start Work for the whole team/)
+      ).toBeTruthy();
+      expect(view.getByText("Aphinya")).toBeTruthy();
+      expect(view.getByText("Nichakan")).toBeTruthy();
+      expect(view.getByText("Leader")).toBeTruthy();
+      expect(view.getByText("You")).toBeTruthy();
+      expect(view.getByRole("button", { name: "Start Work" })).toBeTruthy();
+    });
+
+    it("shows a Team Member the Leader's duty and no Start Work or proof controls", async () => {
+      mockedGetSnapshot.mockResolvedValue(
+        makeSnapshot({
+          ...groupCandidate,
+          state: "QUEST_IN_PROGRESS",
+          team: makeTeam("worker-2"),
+          teamRole: "MEMBER",
+          capabilities: { canStartWork: false, canSubmitProof: true },
+        })
+      );
+      const view = await renderWithQueryClient(
+        <QuestWorkScreen questId="quest-work-1" viewerId="worker-1" />
+      );
+
+      expect(await view.findByTestId("team-work-member")).toBeTruthy();
+      expect(view.getByText("Team Member")).toBeTruthy();
+      expect(
+        view.getByText(/Your Team Leader submits the team's work/)
+      ).toBeTruthy();
+      expect(view.queryByRole("button", { name: "Start Work" })).toBeNull();
+      expect(view.queryByLabelText("Work description (optional)")).toBeNull();
+      expect(
+        view.getByRole("button", { name: "View Quest details" })
+      ).toBeTruthy();
+    });
+
+    it("falls back to the shared Work Hub while the Team Leader is unknown", async () => {
+      mockedGetSnapshot.mockResolvedValue(
+        makeSnapshot({
+          ...groupCandidate,
+          teamRole: "UNKNOWN",
+          capabilities: { canStartWork: true },
+        })
+      );
+      const view = await renderWithQueryClient(
+        <QuestWorkScreen questId="quest-work-1" viewerId="worker-1" />
+      );
+
+      await view.findByRole("button", { name: "Start Work" });
+      expect(view.queryByTestId("team-work-leader")).toBeNull();
+      expect(view.queryByTestId("team-work-member")).toBeNull();
+    });
   });
 });

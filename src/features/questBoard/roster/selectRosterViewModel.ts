@@ -21,7 +21,6 @@ export type RosterSelection =
   | {
       mode: "candidate";
       title: string;
-      subtitle: string;
       countLabel: string;
       emptyLabel: string;
       proposals: RosterProposal[];

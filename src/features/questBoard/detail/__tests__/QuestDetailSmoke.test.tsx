@@ -621,7 +621,7 @@ describe("QuestDetailScreen smoke", () => {
     expect(facts?.groupFcfs).toBeUndefined();
   });
 
-  it("shows Group FCFS terms before Join", async () => {
+  it("keeps Group FCFS facts and Join visible without passive explanations", async () => {
     const fixture = questFixtureAdapter.listBoardQuests(
       "student-001",
       questFixtureAdapter.now
@@ -637,8 +637,8 @@ describe("QuestDetailScreen smoke", () => {
     const view = await render(
       <QuestDetailBody
         quest={quest}
-        locale="en"
-        messages={questBoardMessages.en}
+        locale="th"
+        messages={questBoardMessages.th}
         imageUris={[]}
         refreshing={false}
         onRefresh={jest.fn()}
@@ -659,11 +659,24 @@ describe("QuestDetailScreen smoke", () => {
         }}
       />
     );
-    expect(view.getByText("2 of 4 workers joined")).toBeTruthy();
     expect(
-      view.getByText(/Workers join one by one — first come, first served/)
+      view.getByText(questBoardMessages.th.groupFcfsJoinedProgress(2, 4))
     ).toBeTruthy();
-    expect(view.getByText(/If too few workers have joined/)).toBeTruthy();
+    expect(
+      view.queryByText(questBoardMessages.th.groupFcfsJoinRule, {
+        exact: false,
+      })
+    ).toBeNull();
+    expect(
+      view.queryByText(questBoardMessages.th.groupFcfsUnderfillRule, {
+        exact: false,
+      })
+    ).toBeNull();
+    expect(
+      view.queryByText(questBoardMessages.th.firstComeDescription)
+    ).toBeNull();
+    expect(view.getByText(quest.description)).toBeTruthy();
+    expect(view.getByText(quest.completionCriteria)).toBeTruthy();
     expect(view.getByTestId("quest-apply-button")).toBeTruthy();
   });
 

@@ -6,16 +6,17 @@ Terms follow `CONTEXT.md`. Times are ISO-8601 with offset; the server clock is t
 
 ## Summary
 
-| #   | Requirement                                                    | Type                    | Blocks mobile feature                                | Priority           |
-| --- | -------------------------------------------------------------- | ----------------------- | ---------------------------------------------------- | ------------------ |
-| B1  | `reviewDeadlineAt` on Proof Submission                         | new field               | Proof auto-approve countdown (Hirer + Worker)        | High               |
-| B2  | `GET /api/v2/quests/{questId}/cancel-preview`                  | new endpoint            | Real refund/payout amounts in the cancel guardrail   | High               |
-| B3  | `reviewReason` + `reviewedAt` on Proof Submission              | new fields              | Worker sees why proof was not approved               | High               |
-| B4  | `disputeDeadlineAt` + `disputeCase` summary on the v2 snapshot | new fields              | Dispute window countdown, Dispute status in Work Hub | Medium             |
-| B5  | `moneyHoldReleasesAt` on Quest settlement                      | new field               | Hirer/Worker see when the 7-day hold ends            | Medium             |
-| B6  | Realtime event types for the above                             | new `changeType` values | Live refresh without polling                         | Medium             |
-| B7  | Underfilled / start-time decision deadlines on iOS push        | infra                   | Time-boxed decisions reach backgrounded iOS users    | Low (product call) |
-| B8  | Confirm `assignments[]` visibility for Workers on GROUP Quests | confirmation            | Group FCFS "who has started" list                    | Confirm only       |
+| #   | Requirement                                                    | Type                        | Blocks mobile feature                                | Priority           |
+| --- | -------------------------------------------------------------- | --------------------------- | ---------------------------------------------------- | ------------------ |
+| B1  | `reviewDeadlineAt` on Proof Submission                         | new field                   | Proof auto-approve countdown (Hirer + Worker)        | High               |
+| B2  | `GET /api/v2/quests/{questId}/cancel-preview`                  | new endpoint                | Real refund/payout amounts in the cancel guardrail   | High               |
+| B3  | `reviewReason` + `reviewedAt` on Proof Submission              | new fields                  | Worker sees why proof was not approved               | High               |
+| B4  | `disputeDeadlineAt` + `disputeCase` summary on the v2 snapshot | new fields                  | Dispute window countdown, Dispute status in Work Hub | Medium             |
+| B5  | `moneyHoldReleasesAt` on Quest settlement                      | new field                   | Hirer/Worker see when the 7-day hold ends            | Medium             |
+| B6  | Realtime event types for the above                             | new `changeType` values     | Live refresh without polling                         | Medium             |
+| B7  | Underfilled / start-time decision deadlines on iOS push        | infra                       | Time-boxed decisions reach backgrounded iOS users    | Low (product call) |
+| B8  | Confirm `assignments[]` visibility for Workers on GROUP Quests | confirmation                | Group FCFS "who has started" list                    | Confirm only       |
+| B9  | Expose the Team Leader to Team Members after selection         | new field or readable route | Work Hub Team Leader / Team Member screens           | High               |
 
 ---
 
@@ -195,6 +196,26 @@ If (1) is false, mobile will show only the viewer's own status and the count ("N
 
 ---
 
+## B9. Team Leader visibility after selection (`GROUP + CANDIDATE`)
+
+**Why.** The rulebook makes the Team Leader the only required starter and proof submitter. Once the Hirer selects a Team the Quest leaves `QUEST_OPEN`, and `GET /api/v2/quests/{questId}/teams` answers `404 QUEST_NOT_FOUND` to the Worker. `GET /api/v2/quests/{questId}/participation`, `listQuestAssignmentsV2` and `/assignments/mine` carry no leader or team field, so a Team Member cannot be told apart from the Team Leader. The Work Hub therefore cannot show separate Team Leader and Team Member screens, and every teammate is offered Start Work, proof and confirm-completion controls; the server rejects non-leaders with `START_WORK_NOT_REQUIRED`.
+
+**Contract (pick one).**
+
+1. Keep `GET /api/v2/quests/{questId}/teams` readable by the selected Team's members while the Quest is `QUEST_ASSIGNED` or later, or
+2. Add to the `participation` block and to each Assignment of a `GROUP + CANDIDATE` Quest:
+
+```
+teamRole: "LEADER" | "MEMBER" | null   // null for every other Quest shape
+team: { id, name, leaderId, members: MemberSummary[] } | null
+```
+
+**Mobile once shipped.** `LiveQuestSnapshot.teamRole` already drives `TeamLeaderWorkScreen` and `TeamMemberWorkScreen`; option 1 needs no mobile change (the role is derived from `team.leaderId`), option 2 needs one mapping in `liveQuestService`. Until then `teamRole` is `UNKNOWN` after selection and the shared Work Hub is shown.
+
+**Edge cases.** The Team Leader leaves or is removed before selection (state who becomes leader). Hirer cancels after selection: field stays readable for the archive. A Worker on the same Quest outside the Team gets `null`.
+
+---
+
 ## Compatibility and rollout
 
 - All new fields optional in mobile Zod schemas until the backend is on staging; mobile treats `undefined` as "not provided" and hides the related UI.
@@ -209,3 +230,4 @@ If (1) is false, mobile will show only the viewer's own status and the count ("N
 4. B4: FAILED Quest returns `dispute.windowEndsAt` and `canFile`; after the window `canFile = false` and `POST /disputes` returns the documented 409 code.
 5. B6: each new `changeType` is emitted once per transition.
 6. B8: answers recorded in the OpenAPI description.
+7. B9: a selected Team Member receives the Team Leader's id (or `teamRole`) on a `QUEST_ASSIGNED` and `QUEST_IN_PROGRESS` Quest; a non-member still gets `404`.

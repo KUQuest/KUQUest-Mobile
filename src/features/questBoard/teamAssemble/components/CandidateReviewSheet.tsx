@@ -1015,9 +1015,11 @@ export function CandidateReviewSheet({
                     ? messages.teamProposal
                     : messages.individualProposal}
                 </Text>
-                <Text className={styles.reviewCopy} numberOfLines={1}>
-                  {questTitle ?? messages.candidateReviewSubtitle}
-                </Text>
+                {questTitle ? (
+                  <Text className={styles.reviewCopy} numberOfLines={1}>
+                    {questTitle}
+                  </Text>
+                ) : null}
               </View>
             </View>
             <Text className={styles.proposalSummaryCount}>
@@ -1126,7 +1128,6 @@ export function CandidateReviewSheet({
     <BottomSheet
       closeLabel={messages.close}
       onClose={onClose}
-      subtitle={messages.candidateReviewSubtitle}
       testID="candidate-review-sheet"
       title={messages.candidateReviewTitle}
       visible={visible}

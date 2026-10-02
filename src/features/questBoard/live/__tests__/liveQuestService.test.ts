@@ -705,7 +705,7 @@ describe("LiveQuestService", () => {
       createdAt: "2099-08-25T09:00:00+07:00",
     });
 
-    async function startCapability({
+    async function loadStartSnapshot({
       mode,
       participation,
       viewerAssignment = assignment("worker-1"),
@@ -770,12 +770,12 @@ describe("LiveQuestService", () => {
         nextCursor: null,
       } as never);
 
-      const snapshot = await liveQuestService.getLiveSnapshot(
-        "quest-start-1",
-        "worker-1"
-      );
-      return snapshot.capabilities.canStartWork;
+      return liveQuestService.getLiveSnapshot("quest-start-1", "worker-1");
     }
+
+    const startCapability = async (
+      input: Parameters<typeof loadStartSnapshot>[0]
+    ) => (await loadStartSnapshot(input)).capabilities.canStartWork;
 
     afterEach(() => {
       resetServerClock();
@@ -812,6 +812,33 @@ describe("LiveQuestService", () => {
           leaderId: "worker-2",
         })
       ).resolves.toBe(false);
+    });
+
+    it("offers Start Work to a GROUP CANDIDATE Worker when the Team is unreadable after selection", async () => {
+      // Candidate Teams answer 404 once the Quest leaves QUEST_OPEN, so the
+      // Team Leader is unknown and the server enforces Team Leader ONLY.
+      await expect(
+        startCapability({ mode: "CANDIDATE", participation: "GROUP" })
+      ).resolves.toBe(true);
+    });
+
+    it("names the Team Role only while the Team is readable", async () => {
+      const group = { mode: "CANDIDATE", participation: "GROUP" } as const;
+      await expect(
+        loadStartSnapshot({ ...group, leaderId: "worker-1" })
+      ).resolves.toMatchObject({ teamRole: "LEADER" });
+      await expect(
+        loadStartSnapshot({ ...group, leaderId: "worker-2" })
+      ).resolves.toMatchObject({ teamRole: "MEMBER" });
+      await expect(loadStartSnapshot(group)).resolves.toMatchObject({
+        teamRole: "UNKNOWN",
+      });
+      await expect(
+        loadStartSnapshot({
+          mode: "FIRST_COME_FIRST_SERVED",
+          participation: "GROUP",
+        })
+      ).resolves.toMatchObject({ teamRole: null });
     });
 
     it("stops offering Start Work once the Assignment recorded it", async () => {

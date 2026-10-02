@@ -179,9 +179,6 @@ export function WorkerHomeContent({
                   >
                     {messages.workTitle}
                   </Text>
-                  <Text className={styles.screenSubtitle}>
-                    {messages.subtitle}
-                  </Text>
                 </View>
                 <WorkspaceQuickSwitch />
               </View>
@@ -299,9 +296,6 @@ export function WorkerHomeContent({
                   </Text>
                 ) : null}
               </View>
-              <Text className={styles.sectionSubtitle}>
-                {messages.feedSectionSubtitle}
-              </Text>
             </View>
             {boardError ? (
               <View className={styles.feedError} testID="worker-home-error">

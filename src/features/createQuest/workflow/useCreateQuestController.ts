@@ -16,7 +16,6 @@ import { getCreateQuestLayoutMetrics } from "@/theme/layout";
 
 import {
   getCreateQuestChoiceOptions,
-  getCreateQuestCombinationHint,
   getCreateQuestReviewView,
   getCreateQuestTagOptions,
 } from "../presentation/createQuestPresentation";
@@ -398,14 +397,6 @@ export function useCreateQuestController({
     });
   };
 
-  const showHelp = () =>
-    showSweetAlert({
-      title: messages.helpTitle,
-      message: messages.helpDescription,
-      variant: SweetAlertVariant.Info,
-      buttonLabel: messages.helpAction,
-    });
-
   const goBack = () => {
     setPendingInvalidField(null);
     if (step === 1) {
@@ -462,18 +453,11 @@ export function useCreateQuestController({
       tagOptions,
     ]
   );
-  const combinationHint = useMemo(
-    () => getCreateQuestCombinationHint(draft, messages),
-    [draft, messages]
-  );
   const useStackedChoices = width < 340 || fontScale >= 1.3;
   const useWideSummary = layout.isExpanded || width >= 430;
   const useStackedActions = width < 340 || fontScale >= 1.15;
 
   const frameTitle = isServerEditMode(mode) ? messages.editTitle : undefined;
-  const frameSubtitle = isServerEditMode(mode)
-    ? messages.editHeaderSubtitle
-    : undefined;
   const [firstBlocker, ...otherBlockers] = review.blockers;
   const publishBlockedHint = firstBlocker
     ? otherBlockers.length > 0
@@ -486,10 +470,8 @@ export function useCreateQuestController({
       messages,
       step,
       onBackPress: goBack,
-      onHelpPress: showHelp,
       onStepPress: goToStep,
       title: frameTitle,
-      subtitle: frameSubtitle,
     },
     content: {
       draftHydrated,
@@ -505,7 +487,6 @@ export function useCreateQuestController({
     },
     formProps: {
       candidateOptions,
-      combinationHint,
       draft,
       errors,
       isCheckingPublish: publishState.isCheckingPublish,

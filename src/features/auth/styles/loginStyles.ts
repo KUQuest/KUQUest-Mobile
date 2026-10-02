@@ -22,13 +22,20 @@ const styles = {
     "self-start min-h-[48px] justify-center bg-ku-danger-dark px-ku-md rounded-ku-pill",
   retryButtonText: "font-ku-bold text-ku-on-primary text-ku-meta",
   hostWrapper: "w-full self-stretch",
-  stagingTestSection: "w-full gap-ku-xs",
-  stagingTestHeading: "font-ku-medium text-ku-label text-ku-text-muted",
-  stagingTestRow: "flex-row flex-wrap gap-ku-xs",
+  stagingTestSection:
+    "w-full overflow-hidden rounded-ku-card border border-dashed border-ku-border",
+  stagingTestToggle:
+    "min-h-[48px] flex-row items-center gap-ku-sm px-ku-md py-ku-sm",
+  stagingTestHeading:
+    "flex-1 font-ku-medium text-ku-label text-ku-text-secondary",
+  stagingTestRow: "flex-row flex-wrap gap-ku-xs px-ku-sm pb-ku-sm",
   stagingTestButton:
-    "w-full min-h-[48px] items-center justify-center rounded-ku-pill border border-ku-border px-ku-sm py-ku-sm",
+    "min-h-[56px] w-[48.5%] flex-row items-center gap-ku-sm rounded-ku-card bg-ku-surface px-ku-sm py-ku-xs active:opacity-80",
+  stagingTestAvatar:
+    "h-[32px] w-[32px] items-center justify-center rounded-ku-pill bg-ku-primary-subtle",
+  stagingTestAvatarText: "font-ku-bold text-ku-label text-ku-primary-dark",
   stagingTestButtonText:
-    "font-ku-medium text-ku-body-small text-ku-text-secondary",
+    "flex-1 font-ku-medium text-ku-body-small text-ku-text-strong",
   footerSection: "gap-ku-sm mt-ku-xl pt-ku-md border-t border-ku-divider",
   footerLinks: "flex-row flex-wrap gap-x-ku-md gap-y-ku-xs",
   footerLinkText: "font-ku-medium text-ku-meta text-ku-text-muted",

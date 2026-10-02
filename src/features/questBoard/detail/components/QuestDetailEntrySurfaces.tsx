@@ -97,9 +97,7 @@ export function LiveEntrySurface({
       ? snapshot.nextAction === QuestNextAction.DECIDE_UNDERFILLED
         ? groupMessages.proceedConsequence
         : groupMessages.acceptingWaitsForEveryone
-      : isHirer
-        ? groupMessages.candidateReviewSubtitle
-        : groupMessages.noTeamDescription;
+      : "";
   const cancellationDate =
     cancelled && snapshot.underfilled?.cancelledAt
       ? formatTimestampDate(snapshot.underfilled.cancelledAt, locale)
@@ -140,7 +138,9 @@ export function LiveEntrySurface({
         <UsersRound color={colors.primary} size={25} strokeWidth={2.2} />
       )}
       <Text className={styles.statusTitle}>{title}</Text>
-      <Text className={styles.statusDescription}>{description}</Text>
+      {description ? (
+        <Text className={styles.statusDescription}>{description}</Text>
+      ) : null}
       {cancelled && cancellationDate && cancellationTime ? (
         <Text className={styles.statusDescription}>
           {groupMessages.cancelledAt(cancellationDate, cancellationTime)}
@@ -241,11 +241,6 @@ export function GroupQuestEntrySurfaces({
         : teamStatus === QuestTeamStatus.TEAM_SUBMITTED
           ? messages.submittedTitle
           : messages.teamTitle;
-  const teamDescription = !team
-    ? messages.noTeamDescription
-    : teamStatus === QuestTeamStatus.TEAM_FORMING
-      ? messages.teamSubtitle
-      : messages.lockedDescription;
   const teamActionLabel =
     !team || teamStatus === QuestTeamStatus.TEAM_FORMING
       ? messages.reviewRoster
@@ -295,7 +290,11 @@ export function GroupQuestEntrySurfaces({
             strokeWidth={2.2}
           />
           <Text className={styles.statusTitle}>{teamTitle}</Text>
-          <Text className={styles.statusDescription}>{teamDescription}</Text>
+          {team && teamStatus !== QuestTeamStatus.TEAM_FORMING ? (
+            <Text className={styles.statusDescription}>
+              {messages.lockedDescription}
+            </Text>
+          ) : null}
           <Text className={styles.statusDescription}>
             {messages.rosterCount(team?.members.length ?? 0, quest.headcount)}
           </Text>
@@ -321,9 +320,6 @@ export function GroupQuestEntrySurfaces({
           <CircleUserRound color={colors.primary} size={25} strokeWidth={2.2} />
           <Text className={styles.statusTitle}>
             {messages.candidateReviewTitle}
-          </Text>
-          <Text className={styles.statusDescription}>
-            {messages.candidateReviewSubtitle}
           </Text>
           <Text className={styles.statusDescription}>
             {messages.proposalCount(reviewableProposalCount)}

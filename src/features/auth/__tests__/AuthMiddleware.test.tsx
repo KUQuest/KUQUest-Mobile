@@ -54,6 +54,10 @@ function SessionStatus() {
   const session = useSessionQuery();
   return <Text testID="session-user">{session.data?.user.id}</Text>;
 }
+function SessionErrorFlag() {
+  const session = useSessionQuery();
+  return <Text testID="session-error">{session.isError ? "error" : "ok"}</Text>;
+}
 function unauthorizedClient(): ApiClient {
   return new ApiClient({
     baseUrl: "https://api.example.test",
@@ -188,6 +192,36 @@ describe("AuthMiddleware", () => {
     );
 
     await waitFor(() => expect(mockReplace).toHaveBeenCalledWith("/"));
+  });
+
+  test("keeps the cached session when a background session refetch fails", async () => {
+    mockSegments = ["(tabs)"];
+    mockGetSession.mockResolvedValueOnce({ user: { id: "student-1" } });
+    const queryClient = new QueryClient({
+      defaultOptions: { queries: { retry: false } },
+    });
+    await renderWithAppTheme(
+      <QueryClientProvider client={queryClient}>
+        <AuthMiddleware>
+          <ProtectedContent />
+        </AuthMiddleware>
+        <SessionErrorFlag />
+      </QueryClientProvider>
+    );
+    await waitFor(() =>
+      expect(queryClient.getQueryData(sessionKeys.detail())).toBeTruthy()
+    );
+
+    mockGetSession.mockRejectedValueOnce(new Error("Too many requests"));
+    await act(async () => {
+      await queryClient.refetchQueries({ queryKey: sessionKeys.detail() });
+    });
+
+    await waitFor(() =>
+      expect(screen.getByTestId("session-error").props.children).toBe("error")
+    );
+    expect(mockReplace).not.toHaveBeenCalled();
+    expect(screen.getByTestId("protected-content")).toBeTruthy();
   });
 
   test("two concurrent 401s sign out, clear the cache and replace with sessionExpired once", async () => {

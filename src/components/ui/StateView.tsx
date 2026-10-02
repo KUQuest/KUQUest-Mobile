@@ -9,13 +9,14 @@ import { cn } from "@/tw/cn";
 
 interface StateContentProps {
   title: string;
-  description: string;
+  description?: string;
   actionLabel?: string;
   onAction?: () => void;
 }
 
 export type StateViewProps =
-  | (StateContentProps & { variant: "empty" | "error" })
+  | (StateContentProps & { variant: "empty" })
+  | (StateContentProps & { variant: "error"; description: string })
   | {
       variant: "loading";
       loadingLabel: string;
@@ -68,7 +69,9 @@ export function StateView(props: StateViewProps) {
         />
       </View>
       <Text className={styles.stateTitle}>{props.title}</Text>
-      <Text className={styles.stateDescription}>{props.description}</Text>
+      {props.description ? (
+        <Text className={styles.stateDescription}>{props.description}</Text>
+      ) : null}
       {props.actionLabel && props.onAction ? (
         <Pressable
           accessibilityRole="button"

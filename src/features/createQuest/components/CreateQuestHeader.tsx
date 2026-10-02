@@ -1,5 +1,5 @@
 import React from "react";
-import { ArrowLeft, Check, CircleHelp } from "lucide-react-native";
+import { ArrowLeft, Check } from "lucide-react-native";
 
 import { Pressable, Text, View } from "@/tw";
 import { cn } from "@/tw/cn";
@@ -12,18 +12,14 @@ export function CreateQuestHeader({
   messages,
   step,
   onBackPress,
-  onHelpPress,
   onStepPress,
   title,
-  subtitle,
 }: {
   messages: typeof createQuestMessages.en;
   step: Step;
   onBackPress: () => void;
-  onHelpPress: () => void;
   onStepPress?: (step: Step) => void;
   title?: string;
-  subtitle?: string;
 }) {
   const { colors } = useAppTheme();
   const stepLabels = [
@@ -48,19 +44,7 @@ export function CreateQuestHeader({
           <Text accessibilityRole="header" className={styles.heroTitle}>
             {title ?? messages.title}
           </Text>
-          <Text className={styles.heroSubtitle}>
-            {subtitle ?? messages.headerSubtitle}
-          </Text>
         </View>
-        <Pressable
-          accessibilityLabel={messages.helpLabel}
-          accessibilityRole="button"
-          className={styles.heroButton}
-          onPress={onHelpPress}
-          testID="create-quest-help"
-        >
-          <CircleHelp color={colors.onPrimary} size={30} strokeWidth={2.2} />
-        </Pressable>
       </View>
 
       <View

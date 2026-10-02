@@ -362,6 +362,8 @@ Use the `on-*` token for text and icons on role-colored controls. Keep `addition
 
 ## Screen-Specific Design Rules
 
+Quest surfaces omit passive educational paragraphs, generic subtitles, and redundant helper text. Keep Member-authored descriptions and Conditions, field labels, validation and recovery, current status, counts, money, and deadlines visible. Consent, cancellation, proof-finality, and funding consequences remain visible where Members make those decisions.
+
 ### 1. Quest Board
 
 - Clean neutral canvas with an editorial masthead ("KUQuest Notices").
@@ -383,7 +385,10 @@ Use the `on-*` token for text and icons on role-colored controls. Keep `addition
 
 ### 4. Profile & Reputation
 
-- Editorial magazine-style profile header with clean statistics (completed quests, rating, badges).
+- Neutral profile identity card: left-aligned avatar and name, with Occupation directly below the name. Own Profile uses a 72-unit avatar; Public Profile retains its responsive avatar size.
+- Faculty and Department use separate wrapping rows below a quiet divider. Quest category chips align left; the full-width Edit Profile action uses the current workspace's primary fill and `ku-on-primary` foreground.
+- Identity switches to a vertical layout below 360 logical units or at font scale 1.3 and above. Text remains scalable; Edit Profile keeps a 48-unit minimum height.
+- Clean statistics show completed Quests, rating, and Reviews.
 - Tabbed layout for Experience, Portfolio Work, Certificates, and Reviews.
 - Authentic campus trust indicators without exposing private IDs.
 

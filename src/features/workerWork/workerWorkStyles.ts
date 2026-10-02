@@ -4,7 +4,6 @@ export const workerWorkStyles = {
   content: "w-full max-w-[720px] self-center px-ku-md pt-ku-md",
   header: "px-ku-xs pb-ku-md",
   title: "font-ku-bold text-ku-title text-ku-text-strong",
-  subtitle: "mt-ku-2 font-ku-regular text-ku-body-small text-ku-text-secondary",
   tabList:
     "mb-ku-md flex-row gap-ku-xs rounded-ku-pill bg-ku-surface-muted p-ku-xs",
   tab: "min-h-[48px] flex-1 flex-row items-center justify-center gap-ku-6 rounded-ku-pill px-ku-sm",
@@ -34,8 +33,6 @@ export const workerWorkStyles = {
   stateIcon:
     "mb-ku-10 h-[48px] w-[48px] items-center justify-center rounded-ku-pill bg-ku-surface-accent",
   stateTitle: "text-center font-ku-semibold text-ku-body text-ku-text-strong",
-  stateDescription:
-    "mt-ku-xs text-center font-ku-regular text-ku-body-small text-ku-text-secondary",
   stateAction:
     "mt-ku-md min-h-[48px] items-center justify-center rounded-ku-pill bg-ku-worker px-ku-lg active:bg-ku-worker-dark",
   stateActionText: "font-ku-semibold text-ku-body-small text-ku-on-worker",

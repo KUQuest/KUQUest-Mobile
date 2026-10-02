@@ -49,7 +49,6 @@ export interface QuestWorkActionsCardProps {
   startWorkRecordedAt?: string;
   startWorkSending: boolean;
   onStartWork: () => void | Promise<void>;
-  isTerminal: boolean;
   canOpenChat: boolean;
   onRespondToEdit: (
     decision: QuestEditResponseDecision
@@ -78,7 +77,6 @@ export default function QuestWorkActionsCard({
   onConfirmCompletion,
   onFileDispute,
   onOpenChat,
-  isTerminal,
 }: QuestWorkActionsCardProps) {
   const { colors: palette } = useAppTheme();
   const { locale } = useLocale();
@@ -106,7 +104,7 @@ export default function QuestWorkActionsCard({
           : messages.waitingForQuestStart,
       ]
     : canPressStartWork
-      ? [messages.startWorkDescription]
+      ? []
       : startWorkOpensAt
         ? [`${messages.startWorkOpensAt} ${startWorkOpensAt}`]
         : isGroup && snapshot.mode === QuestMode.CANDIDATE
@@ -168,61 +166,56 @@ export default function QuestWorkActionsCard({
         </View>
       ) : null}
 
-      {isTerminal ? (
+      {isFailedWorker && !disputeQuery.isPending ? (
         <View className={styles.mutedCard}>
-          <Text className={styles.bodyText}>{messages.archiveDescription}</Text>
           <FailedQuestNotice quest={snapshot.quest} />
-          {isFailedWorker ? (
-            disputeQuery.isError ? (
-              <View className="gap-ku-xs">
-                <Text className={styles.bodyText}>
-                  {disputeCopy.statusError}
-                </Text>
-                <Pressable
-                  accessibilityRole="button"
-                  accessibilityLabel={disputeCopy.retryStatus}
-                  accessibilityState={{ disabled: disputeQuery.isFetching }}
-                  disabled={disputeQuery.isFetching}
-                  className={styles.warningButton}
-                  onPress={() => void disputeQuery.refetch()}
-                >
-                  <Text className={styles.warningButtonText}>
-                    {disputeCopy.retryStatus}
-                  </Text>
-                </Pressable>
-              </View>
-            ) : disputeQuery.isSuccess && disputeQuery.data.case ? (
-              <Text accessibilityRole="text" className={styles.bodyText}>
-                {disputeCopy.filedStatus}
-              </Text>
-            ) : disputeQuery.isSuccess &&
-              disputeQuery.data.case === null &&
-              onFileDispute &&
-              !(
-                "dispute" in snapshot.quest &&
-                snapshot.quest.dispute?.canFile === false
-              ) ? (
+          {disputeQuery.isError ? (
+            <View className="gap-ku-xs">
+              <Text className={styles.bodyText}>{disputeCopy.statusError}</Text>
               <Pressable
                 accessibilityRole="button"
-                accessibilityLabel={messages.fileDispute}
-                accessibilityState={{
-                  disabled: filingDispute,
-                  busy: filingDispute,
-                }}
-                disabled={filingDispute}
+                accessibilityLabel={disputeCopy.retryStatus}
+                accessibilityState={{ disabled: disputeQuery.isFetching }}
+                disabled={disputeQuery.isFetching}
                 className={styles.warningButton}
-                onPress={onFileDispute}
+                onPress={() => void disputeQuery.refetch()}
               >
-                {filingDispute ? (
-                  <ActivityIndicator color={palette.warningDark} />
-                ) : (
-                  <AlertTriangle color={palette.warningDark} size={18} />
-                )}
                 <Text className={styles.warningButtonText}>
-                  {messages.fileDispute}
+                  {disputeCopy.retryStatus}
                 </Text>
               </Pressable>
-            ) : null
+            </View>
+          ) : disputeQuery.isSuccess && disputeQuery.data.case ? (
+            <Text accessibilityRole="text" className={styles.bodyText}>
+              {disputeCopy.filedStatus}
+            </Text>
+          ) : disputeQuery.isSuccess &&
+            disputeQuery.data.case === null &&
+            onFileDispute &&
+            !(
+              "dispute" in snapshot.quest &&
+              snapshot.quest.dispute?.canFile === false
+            ) ? (
+            <Pressable
+              accessibilityRole="button"
+              accessibilityLabel={messages.fileDispute}
+              accessibilityState={{
+                disabled: filingDispute,
+                busy: filingDispute,
+              }}
+              disabled={filingDispute}
+              className={styles.warningButton}
+              onPress={onFileDispute}
+            >
+              {filingDispute ? (
+                <ActivityIndicator color={palette.warningDark} />
+              ) : (
+                <AlertTriangle color={palette.warningDark} size={18} />
+              )}
+              <Text className={styles.warningButtonText}>
+                {messages.fileDispute}
+              </Text>
+            </Pressable>
           ) : null}
         </View>
       ) : null}
@@ -267,9 +260,6 @@ export default function QuestWorkActionsCard({
             <FileEdit color={palette.warningDark} size={20} />
             <View className={styles.calloutCopy}>
               <Text className={styles.calloutTitle}>{messages.editTitle}</Text>
-              <Text className={styles.bodyText}>
-                {messages.editDescription}
-              </Text>
             </View>
           </View>
           <View className={styles.proposedList}>
@@ -339,9 +329,6 @@ export default function QuestWorkActionsCard({
               <Text className={styles.calloutTitle}>
                 {messages.confirmationCta}
               </Text>
-              <Text className={styles.bodyText}>
-                {messages.confirmationPlaceholder}
-              </Text>
             </View>
           </View>
           <Pressable
@@ -382,9 +369,11 @@ export default function QuestWorkActionsCard({
           </View>
           <View className={styles.calloutCopy}>
             <Text className={styles.calloutTitle}>{messages.workChat}</Text>
-            <Text className={styles.chatHint} numberOfLines={2}>
-              {unreadCount > 0 ? unreadLabel : messages.workChatHint}
-            </Text>
+            {unreadCount > 0 ? (
+              <Text className={styles.chatHint} numberOfLines={2}>
+                {unreadLabel}
+              </Text>
+            ) : null}
           </View>
           {unreadCount > 0 ? (
             <Text className={styles.unreadBadge}>{unreadCount}</Text>

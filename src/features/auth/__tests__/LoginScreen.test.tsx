@@ -126,6 +126,9 @@ describe("LoginScreen", () => {
     const authAdapter = createAdapter();
     await renderWithQueryClient(<LoginScreen authAdapter={authAdapter} />);
 
+    expect(screen.queryByTestId("staging-test-signin-account-1")).toBeNull();
+    await fireEvent.press(screen.getByTestId("staging-test-toggle"));
+
     for (let index = 1; index <= 10; index += 1) {
       expect(
         screen.getByTestId(`staging-test-signin-account-${index}`)
@@ -145,6 +148,7 @@ describe("LoginScreen", () => {
       <LoginScreen authAdapter={authAdapter} onNavigate={onNavigate} />
     );
 
+    await fireEvent.press(screen.getByTestId("staging-test-toggle"));
     await fireEvent.press(screen.getByTestId("staging-test-signin-account-1"));
 
     await waitFor(() => {
@@ -163,6 +167,7 @@ describe("LoginScreen", () => {
     );
     await renderWithQueryClient(<LoginScreen authAdapter={authAdapter} />);
 
+    await fireEvent.press(screen.getByTestId("staging-test-toggle"));
     await fireEvent.press(screen.getByTestId("staging-test-signin-account-1"));
 
     await waitFor(() => {

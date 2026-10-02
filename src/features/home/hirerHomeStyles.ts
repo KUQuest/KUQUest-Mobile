@@ -72,7 +72,6 @@ export const hirerHomeStyles = {
   mastheadCopy: "gap-ku-xs px-ku-xs",
   mastheadEyebrow: "font-ku-semibold text-ku-label text-ku-hirer-dark",
   mastheadTitle: "font-ku-bold text-ku-headline text-ku-text-strong",
-  mastheadSubtitle: "font-ku-regular text-ku-body-small text-ku-text-secondary",
   statsRow:
     "flex-row overflow-hidden rounded-ku-card border border-ku-border bg-ku-surface",
   statTile: "min-h-[72px] flex-1 justify-center px-ku-12 py-ku-sm",

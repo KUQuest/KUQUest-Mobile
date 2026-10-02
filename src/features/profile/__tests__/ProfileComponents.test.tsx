@@ -27,6 +27,7 @@ describe("Student Profile presentation", () => {
   });
 
   it("keeps a long Student name readable and the edit action available", async () => {
+    const onEditPress = jest.fn();
     const view = await renderWithAppTheme(
       <ProfileHeader
         data={{
@@ -37,14 +38,17 @@ describe("Student Profile presentation", () => {
           profileImage: "",
         }}
         editProfileLabel="Edit your profile"
-        onEditPress={() => undefined}
+        onEditPress={onEditPress}
       />
     );
 
     expect(
       view.getByText("Siraphat THAPPHA with a longer display name")
     ).toBeTruthy();
-    expect(view.getByText("Edit your profile")).toBeTruthy();
+    await fireEvent.press(
+      view.getByRole("button", { name: "Edit your profile" })
+    );
+    expect(onEditPress).toHaveBeenCalledTimes(1);
     expect(view.getByText("คณะอุตสาหกรรมเกษตร")).toBeTruthy();
     expect(view.getByText("นวัตกรรมและเทคโนโลยีอุตสาหกรรมเกษตร")).toBeTruthy();
     expect(view.getByText("Teacher")).toBeTruthy();

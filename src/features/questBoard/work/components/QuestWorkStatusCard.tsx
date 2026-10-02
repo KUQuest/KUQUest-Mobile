@@ -4,6 +4,7 @@ import {
   Briefcase,
   CalendarClock,
   CheckCircle2,
+  ChevronRight,
   Clock3,
   MapPin,
   User,
@@ -11,7 +12,7 @@ import {
   Zap,
 } from "lucide-react-native";
 
-import { Text, View } from "@/tw";
+import { Pressable, Text, View } from "@/tw";
 import type { TagItem } from "@/api/QuestApi";
 import { cn } from "@/tw/cn";
 import { formatSatang, SATANG_PER_BAHT } from "@/domain/satang";
@@ -36,6 +37,7 @@ export interface QuestWorkStatusCardProps {
   isTerminal: boolean;
   messages: QuestWorkMessages;
   tagCatalog: readonly TagItem[];
+  onOpenQuestDetail: () => void;
 }
 
 function DetailRow({
@@ -74,6 +76,7 @@ export default function QuestWorkStatusCard({
   isTerminal,
   messages,
   tagCatalog,
+  onOpenQuestDetail,
 }: QuestWorkStatusCardProps) {
   const { colors: palette } = useAppTheme();
   const { locale } = useLocale();
@@ -230,6 +233,17 @@ export default function QuestWorkStatusCard({
           </View>
         ) : null}
       </View>
+      <Pressable
+        accessibilityRole="button"
+        accessibilityLabel={messages.viewQuestDetails}
+        className={styles.detailLink}
+        onPress={onOpenQuestDetail}
+      >
+        <Text className={styles.detailLinkText}>
+          {messages.viewQuestDetails}
+        </Text>
+        <ChevronRight color={palette.textSecondary} size={20} />
+      </Pressable>
     </View>
   );
 }
@@ -276,4 +290,8 @@ const styles = {
   workerStartStatus: "gap-ku-sm border-t border-ku-divider px-ku-md py-ku-sm",
   workerStartTitle: "font-ku-semibold text-ku-body-small text-ku-text-strong",
   workerStartWarning: "font-ku-medium text-ku-label text-ku-text-secondary",
+  detailLink:
+    "min-h-[48px] flex-row items-center gap-ku-12 border-t border-ku-divider px-ku-md py-ku-sm active:bg-ku-surface-raised",
+  detailLinkText:
+    "flex-1 font-ku-semibold text-ku-body-small text-ku-primary-dark",
 } as const;

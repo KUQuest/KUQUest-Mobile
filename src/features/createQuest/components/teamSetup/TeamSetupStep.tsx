@@ -28,7 +28,6 @@ export function TeamSetupStep({
   locale,
   participationOptions,
   candidateOptions,
-  combinationHint,
   useStackedChoices,
   logisticsExpanded,
   logisticsSummary,
@@ -47,7 +46,6 @@ export function TeamSetupStep({
   locale: SupportedLocale;
   participationOptions: ChoiceOption[];
   candidateOptions: ChoiceOption[];
-  combinationHint: string;
   useStackedChoices: boolean;
   logisticsExpanded: boolean;
   logisticsSummary: string;
@@ -72,7 +70,6 @@ export function TeamSetupStep({
           compact
           icon={UsersRound}
           title={`1. ${messages.chooseWorkFormat}`}
-          description={messages.chooseWorkFormatDescription}
         />
         <ChoiceGroup
           label={messages.participation}
@@ -90,7 +87,6 @@ export function TeamSetupStep({
             compact
             icon={UserRoundCheck}
             title={`2. ${messages.chooseAcceptanceMethod}`}
-            description={messages.chooseAcceptanceMethodDescription}
           />
           <ChoiceGroup
             label={messages.candidateMode}
@@ -108,7 +104,6 @@ export function TeamSetupStep({
           messages={messages}
           participation={draft.participation}
           candidateMode={draft.candidateMode}
-          combinationHint={combinationHint}
         />
       </View>
 
@@ -117,7 +112,6 @@ export function TeamSetupStep({
           compact
           icon={Coins}
           title={`3. ${messages.capacityAndReward}`}
-          description={messages.participantsRewardDescription}
         />
         {draft.participation === QuestParticipation.SINGLE ? (
           <View className={styles.fieldGroup}>
@@ -130,9 +124,6 @@ export function TeamSetupStep({
             >
               <Text className={styles.readOnlyValue}>1</Text>
             </View>
-            <Text className={styles.singleHeadcountHint}>
-              {messages.singleHeadcountHint}
-            </Text>
           </View>
         ) : (
           <Input

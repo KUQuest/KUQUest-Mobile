@@ -19,7 +19,6 @@ export type ChoiceVariant = "format" | "acceptance";
 export type ChoiceOption = {
   value: string;
   label: string;
-  description: string;
   icon: LucideIcon;
 };
 

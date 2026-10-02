@@ -145,6 +145,7 @@ function createSnapshot(
     application: null,
     applications: [],
     team: null,
+    teamRole: null,
     teams: [],
     underfilled: null,
     editRequest: null,
@@ -587,24 +588,6 @@ describe("HirerQuestManageRoute condition edit", () => {
     expect(view.getByLabelText("0 of 1 Worker")).toBeTruthy();
     expect(view.getByText("1 application")).toBeTruthy();
     expect(view.getByText("Review candidates · 1 application")).toBeTruthy();
-  });
-
-  it("explains auto-cancel while an OPEN Candidate Quest has no proposals", async () => {
-    const base = createSnapshot();
-    (liveQuestService.getLiveSnapshot as jest.Mock).mockResolvedValue(
-      createSnapshot({
-        state: QuestStatus.QUEST_OPEN,
-        quest: { ...base.quest, state: QuestStatus.QUEST_OPEN },
-      })
-    );
-
-    const view = await render(<HirerQuestManageRoute />);
-
-    expect(
-      await view.findByText(
-        "Select a Worker before the start time, otherwise this Quest is cancelled automatically."
-      )
-    ).toBeTruthy();
   });
 
   it("shows how many Workers started, except where only a Team Leader starts", async () => {
