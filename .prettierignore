@@ -18,6 +18,9 @@ coverage/
 android/
 ios/
 
+# Vendored third-party code (qrcode-generator 1.5.2, MIT)
+download-page/vendor/
+
 # Upstream API contracts
 api-1.yaml
 docs/api/api.yaml

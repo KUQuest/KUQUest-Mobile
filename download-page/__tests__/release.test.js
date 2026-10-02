@@ -1,4 +1,4 @@
-import { formatSize, pickApk, shortSha } from "../release";
+import { formatSize, parseNotes, pickApk, shortSha } from "../release";
 
 const BASE = "https://github.com/KUQuest/KUQUest-Mobile/releases/download";
 const SHA = "a".repeat(64);
@@ -89,5 +89,34 @@ describe("shortSha", () => {
 describe("formatSize", () => {
   it("formats bytes as megabytes", () => {
     expect(formatSize(65_536_000)).toBe("62.5 MB");
+  });
+});
+
+describe("parseNotes", () => {
+  const RUN = "https://github.com/KUQuest/KUQUest-Mobile/actions/runs/123456";
+
+  it("reads the commit subject and build-log link from workflow notes", () => {
+    const notes = `Message: feat(x): add y (#12)\r\nCommit: abc\r\nRun: ${RUN}\r\n`;
+
+    expect(parseNotes(notes)).toEqual({
+      message: "feat(x): add y (#12)",
+      runUrl: RUN,
+    });
+  });
+
+  it("ignores free text, empty messages and foreign run links", () => {
+    expect(
+      parseNotes("Latest develop build (abc). Replaced on every push.")
+    ).toEqual({
+      message: null,
+      runUrl: null,
+    });
+    expect(
+      parseNotes("Message: \nRun: https://evil.example/actions/runs/1")
+    ).toEqual({
+      message: null,
+      runUrl: null,
+    });
+    expect(parseNotes(null)).toEqual({ message: null, runUrl: null });
   });
 });

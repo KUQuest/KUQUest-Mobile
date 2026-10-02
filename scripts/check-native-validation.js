@@ -131,7 +131,7 @@ function readMetroHealth(port) {
 
 function readMetroBundleHealth(port) {
   const appId = encodeURIComponent(
-    process.env.EXPO_APP_ID ?? "org.kubits.kuquest.debug"
+    process.env.EXPO_APP_ID ?? "org.kubits.kuquest.staging"
   );
   const bundlePath =
     `/.expo/.virtual-metro-entry.bundle?platform=android&dev=true&lazy=true&minify=false&app=${appId}` +

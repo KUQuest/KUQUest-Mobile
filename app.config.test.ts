@@ -36,13 +36,13 @@ describe("app config variants", () => {
     }
   });
 
-  test("uses the coinstallable debug identity by default", () => {
+  test("defaults to the staging identity and app.json versionCode for local runs", () => {
     const config = configure();
 
-    expect(config.name).toBe("KUQuest Debug");
-    expect(config.scheme).toBe("kuquestmobile-debug");
-    expect(config.android?.package).toBe("org.kubits.kuquest.debug");
-    expect(config.ios?.bundleIdentifier).toBe("org.kubits.kuquest.debug");
+    expect(config.name).toBe("KUQuest Staging");
+    expect(config.scheme).toBe("kuquestmobile-staging");
+    expect(config.android?.package).toBe("org.kubits.kuquest.staging");
+    expect(config.ios?.bundleIdentifier).toBe("org.kubits.kuquest.staging");
     expect(config.android?.versionCode).toBe(1);
     expect(config.android?.softwareKeyboardLayoutMode).toBe("resize");
   });
@@ -67,8 +67,11 @@ describe("app config variants", () => {
   });
 
   test("rejects invalid variants and missing CI version codes", () => {
+    expect(() => configure("debug")).toThrow(
+      "APP_VARIANT must be staging or uat"
+    );
     expect(() => configure("production")).toThrow(
-      "APP_VARIANT must be debug, staging, or uat"
+      "APP_VARIANT must be staging or uat"
     );
     expect(() => configure("staging", "0")).toThrow(
       "ANDROID_VERSION_CODE must be an integer"
@@ -105,7 +108,7 @@ describe("app config variants", () => {
 
   test("does not register verified links for non-HTTPS API origins", () => {
     process.env.EXPO_PUBLIC_API_URL = "http://localhost:5000";
-    const config = configure("debug");
+    const config = configure("staging", "1");
 
     expect(config.android?.intentFilters).toEqual([]);
     expect(config.ios?.associatedDomains).toBeUndefined();

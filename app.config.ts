@@ -1,6 +1,6 @@
 import type { ConfigContext, ExpoConfig } from "expo/config";
 
-type AppVariant = "debug" | "staging" | "uat";
+type AppVariant = "staging" | "uat";
 
 const APP_VARIANTS: Record<
   AppVariant,
@@ -10,11 +10,6 @@ const APP_VARIANTS: Record<
     scheme: string;
   }
 > = {
-  debug: {
-    identifier: "org.kubits.kuquest.debug",
-    name: "KUQuest Debug",
-    scheme: "kuquestmobile-debug",
-  },
   staging: {
     identifier: "org.kubits.kuquest.staging",
     name: "KUQuest Staging",
@@ -28,20 +23,21 @@ const APP_VARIANTS: Record<
 };
 
 function resolveAppVariant(value = process.env.APP_VARIANT): AppVariant {
-  const variant = value ?? "debug";
-  if (variant !== "debug" && variant !== "staging" && variant !== "uat") {
+  const variant = value ?? "staging";
+  if (variant !== "staging" && variant !== "uat") {
     throw new Error(
-      `APP_VARIANT must be debug, staging, or uat; received "${variant}"`
+      `APP_VARIANT must be staging or uat; received "${variant}"`
     );
   }
   return variant;
 }
 
+// CI and the dev-client scripts set APP_VARIANT together with a build number.
+// Without APP_VARIANT (plain `expo start`) the versionCode stays app.json's.
 function resolveAndroidVersionCode(
-  variant: AppVariant,
   configuredVersionCode: number | undefined
 ): number {
-  if (variant === "debug") {
+  if (process.env.APP_VARIANT === undefined) {
     if (
       !Number.isInteger(configuredVersionCode) ||
       (configuredVersionCode ?? 0) < 1
@@ -58,7 +54,7 @@ function resolveAndroidVersionCode(
     versionCode > 2_100_000_000
   ) {
     throw new Error(
-      `ANDROID_VERSION_CODE must be an integer from 1 through 2100000000 for ${variant}`
+      `ANDROID_VERSION_CODE must be an integer from 1 through 2100000000 for ${process.env.APP_VARIANT}`
     );
   }
   return versionCode;
@@ -82,12 +78,13 @@ export default function configureApp({ config }: ConfigContext): ExpoConfig {
   const variantConfig = APP_VARIANTS[variant];
   const appLinkHost = resolveHttpsAppLinkHost();
   const iosUrlScheme = process.env.EXPO_PUBLIC_GOOGLE_IOS_URL_SCHEME;
-  const isDevelopmentBuild = variant === "debug";
-  const developmentBuildProperties = [
+  // Android debug builds re-enable cleartext (Metro over http) from the template's
+  // src/debug manifest, so release builds stay HTTPS-only for every variant.
+  const buildProperties = [
     "expo-build-properties",
     {
       android: {
-        usesCleartextTraffic: isDevelopmentBuild,
+        usesCleartextTraffic: false,
         buildArchs: ["arm64-v8a", "x86_64"],
       },
     },
@@ -108,10 +105,7 @@ export default function configureApp({ config }: ConfigContext): ExpoConfig {
         ? { googleServicesFile: process.env.GOOGLE_SERVICES_JSON }
         : {}),
       package: variantConfig.identifier,
-      versionCode: resolveAndroidVersionCode(
-        variant,
-        baseConfig.android?.versionCode
-      ),
+      versionCode: resolveAndroidVersionCode(baseConfig.android?.versionCode),
       intentFilters: [
         ...(baseConfig.android?.intentFilters ?? []),
         ...(appLinkHost
@@ -143,19 +137,11 @@ export default function configureApp({ config }: ConfigContext): ExpoConfig {
             ]),
           ]
         : baseConfig.ios?.associatedDomains,
-      infoPlist: {
-        ...baseConfig.ios?.infoPlist,
-        NSAppTransportSecurity: {
-          ...(baseConfig.ios?.infoPlist?.NSAppTransportSecurity as
-            object | undefined),
-          NSAllowsArbitraryLoads: isDevelopmentBuild,
-        },
-      },
     },
     plugins: [
       ...(baseConfig.plugins ?? []),
       "./plugins/withAndroidReleaseSigning",
-      developmentBuildProperties,
+      buildProperties,
       ["expo-image-picker", { microphonePermission: false }],
       ...(iosUrlScheme
         ? [
