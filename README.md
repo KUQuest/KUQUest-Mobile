@@ -106,17 +106,44 @@ After Metro starts, run `bun android` to build and install the development clien
 
 ### Android Google Sign-In
 
-Android staging sign-in requires Google Cloud **Android** OAuth clients for package `org.kubits.kuquest.staging`: one with the SHA-1 of the staging signing key (CI APK) and one with the SHA-1 of the debug key used by the development client (`run.md`). `EXPO_PUBLIC_GOOGLE_CLIENT_ID` must remain the **Web** OAuth client ID and must include the `.apps.googleusercontent.com` suffix.
+Android sign-in requires one Google Cloud **Android** OAuth client per package ID and signing key: `org.kubits.kuquest.staging` twice (the CI staging keystore, and the local debug key used by the development client, see `run.md`) and `org.kubits.kuquest.uat` once (the UAT keystore). `EXPO_PUBLIC_GOOGLE_CLIENT_ID` must remain the **Web** OAuth client ID and must include the `.apps.googleusercontent.com` suffix.
 
-For staging APK signing setup:
+Each GitHub Environment holds its own signing key. Generate it, register its SHA-1 with Google, then upload the secrets (`--help` lists the options):
 
 ```bash
-node scripts/bootstrap-android-signing.js generate \
-  --environment staging \
-  --keystore /secure/kuquest-staging.jks
+node scripts/bootstrap-android-signing.js generate --environment staging --keystore /secure/kuquest-staging.jks
+node scripts/bootstrap-android-signing.js generate --environment uat --keystore /secure/kuquest-uat.jks
+node scripts/bootstrap-android-signing.js upload --environment uat --keystore /secure/kuquest-uat.jks
 ```
 
 After changing OAuth configuration or signing keys, rebuild and reinstall the native app. Existing APKs do not receive native OAuth configuration changes from JavaScript updates.
+
+### Build variants and environments
+
+The two variants mirror the backend environments and install side by side, because each has its own package ID.
+
+| Variant   | Package ID                   | API                                  | Built by                                                                                                                                    |
+| --------- | ---------------------------- | ------------------------------------ | ------------------------------------------------------------------------------------------------------------------------------------------- |
+| `staging` | `org.kubits.kuquest.staging` | `https://kuquest-dev-api.kubits.org` | `bun android` / `bun ios` (development client, debug key); `android-staging.yml` on every push to `develop` (release APK, staging keystore) |
+| `uat`     | `org.kubits.kuquest.uat`     | `https://uat.api.kubits.org`         | `android-uat.yml` on every push to `main` (release APK, UAT keystore)                                                                       |
+
+- CI builds run on a self-hosted runner (labels `self-hosted, linux, x64, android`) on the build server, provisioned by `scripts/provision-android-runner.sh`. `android-apk-build.yml` is the shared build; it reads variables and secrets from the GitHub Environment its caller names (`staging`, `uat`), and its `Validate build configuration` step lists the required names and fails fast when one is missing. The `uat` Environment accepts deployments from `main` only.
+- Each publish job replaces a rolling prerelease (`staging-latest`, `uat-latest`) with the new APK and its `.sha256`.
+- `staging` and `uat` take `versionCode` from the workflow run number; a local `expo start` without `APP_VARIANT` keeps the `app.json` value.
+
+#### Promoting `develop` to `main`
+
+`main` is not a descendant of `develop` and only squash merges are enabled, so a plain `develop` to `main` pull request conflicts. From a clean checkout (`git read-tree -u --reset` overwrites tracked files), open the promotion from a branch based on `main` whose tree equals `develop`:
+
+```bash
+git fetch origin
+git switch -c release/promote-develop origin/main
+git read-tree -u --reset origin/develop
+git commit -m "chore(release): promote develop to main"
+git push -u origin release/promote-develop   # then open a pull request into main
+```
+
+Merging it pushes to `main`, which starts the UAT build.
 
 ### Android download page
 
