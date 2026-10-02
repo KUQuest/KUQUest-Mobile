@@ -38,6 +38,7 @@ jobs:
   build:
     name: Build ${{ inputs.variant }} APK
     runs-on: [self-hosted, linux, x64, android]
+    timeout-minutes: 60
     environment:
       name: ${{ inputs.environment_name }}
     outputs:

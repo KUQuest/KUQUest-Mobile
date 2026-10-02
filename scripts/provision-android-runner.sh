@@ -20,7 +20,7 @@ check_only=false
 
 usage() {
   cat <<'USAGE'
-Provision the Ubuntu 24.04 x86_64 host for KUQuest Android builds.
+Provision the Ubuntu 22.04 or 24.04 x86_64 host for KUQuest Android builds.
 
 Usage:
   sudo ./scripts/provision-android-runner.sh [options]
@@ -75,8 +75,8 @@ done
 [[ $(uname -m) == x86_64 ]] || fail_config 'runner architecture must be x86_64'
 # shellcheck disable=SC1091
 source /etc/os-release
-[[ ${ID:-} == ubuntu && ${VERSION_ID:-} == 24.04 ]] ||
-  fail_config 'runner operating system must be Ubuntu 24.04'
+[[ ${ID:-} == ubuntu && ( ${VERSION_ID:-} == 22.04 || ${VERSION_ID:-} == 24.04 ) ]] ||
+  fail_config 'runner operating system must be Ubuntu 22.04 or 24.04'
 
 cpu_count=$(nproc)
 memory_kib=$(awk '/^MemTotal:/ { print $2 }' /proc/meminfo)
