@@ -9,7 +9,7 @@
     "userInterfaceStyle": "automatic",
     "ios": {
       "icon": "./assets/expo.icon",
-      "bundleIdentifier": "com.kuquest.mobile"
+      "bundleIdentifier": "org.kubits.kuquest"
     },
     "android": {
       "adaptiveIcon": {
@@ -19,7 +19,7 @@
         "monochromeImage": "./assets/images/android-icon-monochrome.png"
       },
       "predictiveBackGestureEnabled": false,
-      "package": "com.kuquest.mobile",
+      "package": "org.kubits.kuquest",
       "versionCode": 1
     },
     "web": {

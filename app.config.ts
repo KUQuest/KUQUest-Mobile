@@ -11,17 +11,17 @@ const APP_VARIANTS: Record<
   }
 > = {
   debug: {
-    identifier: "com.kuquest.mobile.debug",
+    identifier: "org.kubits.kuquest.debug",
     name: "KUQuest Debug",
     scheme: "kuquestmobile-debug",
   },
   staging: {
-    identifier: "com.kuquest.mobile.staging",
+    identifier: "org.kubits.kuquest.staging",
     name: "KUQuest Staging",
     scheme: "kuquestmobile-staging",
   },
   uat: {
-    identifier: "com.kuquest.mobile.uat",
+    identifier: "org.kubits.kuquest.uat",
     name: "KUQuest UAT",
     scheme: "kuquestmobile-uat",
   },

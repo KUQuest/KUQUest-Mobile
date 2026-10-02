@@ -106,7 +106,7 @@ After Metro starts, run `bun android` to build and install the debug development
 
 ### Android Google Sign-In
 
-Android staging sign-in requires a Google Cloud **Android** OAuth client for package `com.kuquest.mobile.staging` and the SHA-1 fingerprint of the staging signing key. `EXPO_PUBLIC_GOOGLE_CLIENT_ID` must remain the **Web** OAuth client ID and must include the `.apps.googleusercontent.com` suffix.
+Android staging sign-in requires a Google Cloud **Android** OAuth client for package `org.kubits.kuquest.staging` and the SHA-1 fingerprint of the staging signing key. `EXPO_PUBLIC_GOOGLE_CLIENT_ID` must remain the **Web** OAuth client ID and must include the `.apps.googleusercontent.com` suffix.
 
 For staging APK signing setup:
 
@@ -120,7 +120,7 @@ After changing OAuth configuration or signing keys, rebuild and reinstall the na
 
 ### Android download page
 
-`download-page/` is a static page (no build step) that lists the rolling `uat-latest` and `staging-latest` prereleases from GitHub Releases. The mobile environments mirror the backend: every `develop` push rebuilds the staging APK (`com.kuquest.mobile.staging`, staging API) and replaces `staging-latest`; every `main` push rebuilds the UAT APK (`com.kuquest.mobile.uat`, UAT API) and replaces `uat-latest`. Each APK is built from its own GitHub Environment (`staging`, `uat`) with its own variables and signing key. The page only reads the GitHub API; APKs download straight from GitHub.
+`download-page/` is a static page (no build step) that lists the rolling `uat-latest` and `staging-latest` prereleases from GitHub Releases. The mobile environments mirror the backend: every `develop` push rebuilds the staging APK (`org.kubits.kuquest.staging`, staging API) and replaces `staging-latest`; every `main` push rebuilds the UAT APK (`org.kubits.kuquest.uat`, UAT API) and replaces `uat-latest`. Each APK is built from its own GitHub Environment (`staging`, `uat`) with its own variables and signing key. The page only reads the GitHub API; APKs download straight from GitHub.
 
 It is hosted by nginx on the build server (`192.168.1.101`, LAN only). Deploy or update it from a checkout:
 

@@ -11,12 +11,12 @@ const ENVIRONMENT_CONFIG = {
   staging: {
     alias: "kuquest-staging",
     distinguishedName: "CN=KUQuest Android Staging, OU=Mobile, O=KUQuest, C=TH",
-    packageName: "com.kuquest.mobile.staging",
+    packageName: "org.kubits.kuquest.staging",
   },
   uat: {
     alias: "kuquest-uat",
     distinguishedName: "CN=KUQuest Android UAT, OU=Mobile, O=KUQuest, C=TH",
-    packageName: "com.kuquest.mobile.uat",
+    packageName: "org.kubits.kuquest.uat",
   },
 };
 

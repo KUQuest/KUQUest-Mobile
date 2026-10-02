@@ -41,8 +41,8 @@ describe("app config variants", () => {
 
     expect(config.name).toBe("KUQuest Debug");
     expect(config.scheme).toBe("kuquestmobile-debug");
-    expect(config.android?.package).toBe("com.kuquest.mobile.debug");
-    expect(config.ios?.bundleIdentifier).toBe("com.kuquest.mobile.debug");
+    expect(config.android?.package).toBe("org.kubits.kuquest.debug");
+    expect(config.ios?.bundleIdentifier).toBe("org.kubits.kuquest.debug");
     expect(config.android?.versionCode).toBe(1);
     expect(config.android?.softwareKeyboardLayoutMode).toBe("resize");
   });
@@ -52,7 +52,7 @@ describe("app config variants", () => {
 
     expect(config.name).toBe("KUQuest Staging");
     expect(config.scheme).toBe("kuquestmobile-staging");
-    expect(config.android?.package).toBe("com.kuquest.mobile.staging");
+    expect(config.android?.package).toBe("org.kubits.kuquest.staging");
     expect(config.android?.versionCode).toBe(247);
   });
 
@@ -61,8 +61,8 @@ describe("app config variants", () => {
 
     expect(config.name).toBe("KUQuest UAT");
     expect(config.scheme).toBe("kuquestmobile-uat");
-    expect(config.android?.package).toBe("com.kuquest.mobile.uat");
-    expect(config.ios?.bundleIdentifier).toBe("com.kuquest.mobile.uat");
+    expect(config.android?.package).toBe("org.kubits.kuquest.uat");
+    expect(config.ios?.bundleIdentifier).toBe("org.kubits.kuquest.uat");
     expect(config.android?.versionCode).toBe(311);
   });
 
