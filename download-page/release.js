@@ -1,7 +1,10 @@
 const REPO = "KUQuest/KUQUest-Mobile";
-export const API = `https://api.github.com/repos/${REPO}`;
 export const RELEASES_URL = `https://github.com/${REPO}/releases`;
 const DOWNLOAD_PREFIX = `${RELEASES_URL}/download/`;
+const RUN_URL = new RegExp(
+  `^Run: (https://github\\.com/${REPO}/actions/runs/\\d+)\\s*$`,
+  "m"
+);
 
 /**
  * The APK of a GitHub release, or null. Only GitHub release-download URLs are
@@ -30,4 +33,17 @@ export function formatSize(bytes) {
 /** Seven-character commit id when the release targets a full commit SHA. */
 export function shortSha(ref) {
   return /^[0-9a-f]{40}$/.test(ref ?? "") ? ref.slice(0, 7) : null;
+}
+
+/**
+ * Commit subject and build-log URL that the publish workflows write into the
+ * release notes ("Message: …", "Run: …"). Anything else is ignored, so older
+ * or hand-edited notes never show up as a commit message.
+ */
+export function parseNotes(body) {
+  const text = body ?? "";
+  return {
+    message: /^Message: (.+)$/m.exec(text)?.[1].trim() || null,
+    runUrl: RUN_URL.exec(text)?.[1] ?? null,
+  };
 }

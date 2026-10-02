@@ -120,14 +120,19 @@ After changing OAuth configuration or signing keys, rebuild and reinstall the na
 
 ### Android download page
 
-`download-page/` is a static page (no build step) that lists the rolling `uat-latest` and `staging-latest` prereleases from GitHub Releases. The mobile environments mirror the backend: every `develop` push rebuilds the staging APK (`org.kubits.kuquest.staging`, staging API) and replaces `staging-latest`; every `main` push rebuilds the UAT APK (`org.kubits.kuquest.uat`, UAT API) and replaces `uat-latest`. Each APK is built from its own GitHub Environment (`staging`, `uat`) with its own variables and signing key. The page only reads the GitHub API; APKs download straight from GitHub.
+`download-page/` is a static page (no build step) that lists the rolling `uat-latest` and `staging-latest` prereleases from GitHub Releases. The mobile environments mirror the backend: every `develop` push rebuilds the staging APK (`org.kubits.kuquest.staging`, staging API) and replaces `staging-latest`; every `main` push rebuilds the UAT APK (`org.kubits.kuquest.uat`, UAT API) and replaces `uat-latest`. Each APK is built from its own GitHub Environment (`staging`, `uat`) with its own variables and signing key. APKs download straight from GitHub.
 
-It is hosted by nginx on the build server (`192.168.1.101`, LAN only). Deploy or update it from a checkout:
+Each card shows version, build, package ID, commit, the commit subject and a link to the build log (both written into the release notes by the publish job), size, date, SHA-256, a download button and a QR code for the APK link. The page re-checks every 5 minutes while it is open. The QR encoder is vendored in `download-page/vendor/` (qrcode-generator 1.5.2, MIT).
+
+It is hosted by nginx on the build server (`192.168.1.101`, LAN only). nginx serves the files and proxies `/api/uat-latest` and `/api/staging-latest` to the GitHub release API with a one-minute cache, so visitors share one GitHub request per minute instead of the 60 per hour per IP limit. Deploy or update it from a checkout:
 
 ```bash
+ssh root@192.168.1.101 'mkdir -p /var/www/kuquest-download/vendor /var/cache/nginx /etc/nginx/snippets'
 scp download-page/{index.html,app.js,release.js,style.css,favicon.svg} root@192.168.1.101:/var/www/kuquest-download/
+scp download-page/vendor/qrcode.js root@192.168.1.101:/var/www/kuquest-download/vendor/
+scp download-page/kuquest-release-proxy.conf root@192.168.1.101:/etc/nginx/snippets/
 scp download-page/nginx.conf root@192.168.1.101:/etc/nginx/sites-available/kuquest-download
-ssh root@192.168.1.101 'ln -sf /etc/nginx/sites-available/kuquest-download /etc/nginx/sites-enabled/ && rm -f /etc/nginx/sites-enabled/default && nginx -t && systemctl reload nginx'
+ssh root@192.168.1.101 'chmod -R a+rX /var/www/kuquest-download && ln -sf /etc/nginx/sites-available/kuquest-download /etc/nginx/sites-enabled/ && rm -f /etc/nginx/sites-enabled/default && nginx -t && systemctl reload nginx'
 ```
 
 ### Verify the staging backend
