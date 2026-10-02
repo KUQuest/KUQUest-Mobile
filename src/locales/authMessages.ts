@@ -1,0 +1,84 @@
+import { AuthErrorCode } from "../features/auth/types";
+import { SupportedLocale } from "./locale";
+
+export interface AuthMessages {
+  signInWithGoogle: string;
+  sessionLoadTitle: string;
+  sessionLoadDescription: string;
+  subtitle: string;
+  noticeTextPrefix: string;
+  noticeEmailDomain: string;
+  noticeTextSuffix: string;
+  termsOfService: string;
+  privacyPolicy: string;
+  contactUs: string;
+  retryButton: string;
+  loadingAuth: string;
+  stagingTestHeading: string;
+  stagingTestSignInFailed: string;
+  errors: Record<AuthErrorCode, string>;
+}
+
+export const authMessages: Record<SupportedLocale, AuthMessages> = {
+  en: {
+    signInWithGoogle: "Continue with Google",
+    sessionLoadTitle: "Unable to load your session",
+    sessionLoadDescription: "Check your connection and try again.",
+    subtitle: "ACADEMIC VENTURE NETWORK",
+    noticeTextPrefix: "Please log in with your",
+    noticeEmailDomain: "@ku.th",
+    noticeTextSuffix: "student email to access the platform.",
+    termsOfService: "Terms of Service",
+    privacyPolicy: "Privacy Policy",
+    contactUs: "Contact Us",
+    retryButton: "Try again",
+    loadingAuth: "Authenticating...",
+    stagingTestHeading: "Debug: sign in as a demo Member",
+    stagingTestSignInFailed:
+      "Failed to sign in with the staging test account. Please try again.",
+    errors: {
+      INVALID_EMAIL_DOMAIN:
+        "Access restricted to @ku.th student email addresses only.",
+      OAUTH_CANCELLED: "Google Sign-In was cancelled.",
+      PLAY_SERVICES_UNAVAILABLE:
+        "Google Play Services is unavailable on this device.",
+      OAUTH_FAILED: "Failed to log in with Google. Please try again.",
+      API_ERROR: "Unable to connect to authentication server. Please retry.",
+      SESSION_EXPIRED: "Your session has expired. Please log in again.",
+    },
+  },
+  th: {
+    signInWithGoogle: "ดำเนินการต่อด้วย Google",
+    sessionLoadTitle: "ไม่สามารถโหลดเซสชันของคุณได้",
+    sessionLoadDescription: "โปรดตรวจสอบการเชื่อมต่อแล้วลองใหม่อีกครั้ง",
+    subtitle: "",
+    noticeTextPrefix: "กรุณาเข้าสู่ระบบด้วยอีเมลนิสิต",
+    noticeEmailDomain: "@ku.th",
+    noticeTextSuffix: "เพื่อเข้าใช้งานระบบ",
+    termsOfService: "ข้อตกลงการใช้งาน",
+    privacyPolicy: "นโยบายความเป็นส่วนตัว",
+    contactUs: "ติดต่อเรา",
+    retryButton: "ลองอีกครั้ง",
+    loadingAuth: "กำลังตรวจสอบสิทธิ์...",
+    stagingTestHeading: "ดีบัก: เข้าสู่ระบบด้วยสมาชิกสาธิต",
+    stagingTestSignInFailed:
+      "เข้าสู่ระบบด้วยบัญชีทดสอบ Staging ไม่สำเร็จ กรุณาลองใหม่อีกครั้ง",
+    errors: {
+      INVALID_EMAIL_DOMAIN:
+        "จำกัดสิทธิ์เฉพาะอีเมลนิสิตที่ลงท้ายด้วย @ku.th เท่านั้น",
+      OAUTH_CANCELLED: "การเข้าสู่ระบบด้วย Google ถูกยกเลิก",
+      PLAY_SERVICES_UNAVAILABLE:
+        "อุปกรณ์นี้ไม่พร้อมใช้งาน Google Play Services",
+      OAUTH_FAILED: "เข้าสู่ระบบด้วย Google ไม่สำเร็จ กรุณาลองใหม่อีกครั้ง",
+      API_ERROR: "ไม่สามารถเชื่อมต่อระบบยืนยันตัวตนได้ กรุณาลองใหม่อีกครั้ง",
+      SESSION_EXPIRED: "เซสชันของคุณหมดอายุแล้ว กรุณาเข้าสู่ระบบอีกครั้ง",
+    },
+  },
+};
+
+export function getAuthErrorText(
+  code: AuthErrorCode,
+  locale: SupportedLocale = "th"
+): string {
+  return authMessages[locale].errors[code] || code;
+}

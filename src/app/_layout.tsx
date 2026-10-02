@@ -1,18 +1,50 @@
-import { DarkTheme, DefaultTheme, ThemeProvider } from 'expo-router';
-import * as SplashScreen from 'expo-splash-screen';
-import { useColorScheme } from 'react-native';
+import "../global.css";
 
-import { AnimatedSplashOverlay } from '@/components/animated-icon';
-import AppTabs from '@/components/app-tabs';
+import { Stack } from "expo-router";
+import * as SplashScreen from "expo-splash-screen";
+import { useEffect } from "react";
+import { useFonts } from "expo-font";
+import { SafeAreaProvider } from "react-native-safe-area-context";
+import { useLocaleStore } from "@/features/preferences/localeStore";
+import { QueryProvider } from "@/providers/QueryProvider";
+import AuthMiddleware from "@/features/auth/AuthMiddleware";
+import { useRoleWorkspaceStore } from "@/features/workspace/roleWorkspaceStore";
+import { AppThemeProvider } from "@/features/workspace/AppThemeProvider";
+import { SweetAlertHost } from "@/components/ui/SweetAlert";
+import { NotificationCoordinator } from "@/features/notifications/NotificationBannerHost";
+import { PushNotificationHost } from "@/features/notifications/push/PushNotificationHost";
 
 SplashScreen.preventAutoHideAsync();
 
-export default function TabLayout() {
-  const colorScheme = useColorScheme();
+export default function RootLayout() {
+  const [fontsLoaded, fontError] = useFonts({
+    KuriousMedium: require("../../assets/fonts/Kurious-Medium.otf"),
+    KuriousSemiBold: require("../../assets/fonts/Kurious-SemiBold.otf"),
+  });
+  useEffect(() => {
+    void useLocaleStore.getState().hydrateLocale();
+    void useRoleWorkspaceStore.getState().hydrateWorkspace();
+  }, []);
+  useEffect(() => {
+    if (fontsLoaded || fontError) {
+      void SplashScreen.hideAsync();
+    }
+  }, [fontError, fontsLoaded]);
+  if (!fontsLoaded && !fontError) {
+    return null;
+  }
   return (
-    <ThemeProvider value={colorScheme === 'dark' ? DarkTheme : DefaultTheme}>
-      <AnimatedSplashOverlay />
-      <AppTabs />
-    </ThemeProvider>
+    <SafeAreaProvider>
+      <AppThemeProvider>
+        <QueryProvider>
+          <AuthMiddleware>
+            <Stack screenOptions={{ headerShown: false }} />
+          </AuthMiddleware>
+          <NotificationCoordinator />
+          <PushNotificationHost />
+          <SweetAlertHost />
+        </QueryProvider>
+      </AppThemeProvider>
+    </SafeAreaProvider>
   );
 }

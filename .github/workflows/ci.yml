@@ -3,8 +3,8 @@ name: Mobile CI
 on:
   pull_request:
     branches: [main, develop]
-  push:
-    branches: [main, develop]
+  # Reused by Android Staging and Android UAT so a push validates and builds in one run.
+  workflow_call:
 
 jobs:
   validate:
@@ -19,6 +19,9 @@ jobs:
 
       - name: Install dependencies
         run: bun install --frozen-lockfile
+
+      - name: Format
+        run: bun run format:check
 
       - name: Lint
         run: bun run lint

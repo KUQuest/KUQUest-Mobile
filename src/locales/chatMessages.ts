@@ -1,0 +1,209 @@
+import type { SupportedLocale } from "./locale";
+
+export interface ChatMessages {
+  title: string;
+  subtitle: string;
+  clearSearch: string;
+  searchConversations: string;
+  recentConversations: string;
+  candidateInquiries: string;
+  conversationCount: (count: number) => string;
+  loading: string;
+  loadError: string;
+  retry: string;
+  noConversations: string;
+  noSearchResults: string;
+  questOwner: string;
+  questMember: string;
+  questTeam: string;
+  viewQuest: string;
+  reportMessage: string;
+  search: string;
+  searchMessages: string;
+  searchFiles: string;
+  messages: string;
+  files: string;
+  closeSearch: string;
+  searchInConversation: string;
+  searchResultCount: (count: number, type: "messages" | "files") => string;
+  noMessageResults: string;
+  noFileResults: string;
+  today: string;
+  typeMessage: string;
+  typeOwnerMessage: string;
+  send: string;
+  addAttachment: string;
+  takePhoto: string;
+  choosePhoto: string;
+  chooseFile: string;
+  cancel: string;
+  close: string;
+  mockAttachmentDescription: string;
+  removeAttachment: (name: string) => string;
+  conversationNotFound: string;
+  backToChat: string;
+  openFile: string;
+  moreOptions: string;
+  attachment: string;
+  unreadCount: (count: number) => string;
+  conversationReadOnly: string;
+  conversationReadOnlyTerminal: string;
+  conversationNotWritable: string;
+  candidateInquiriesLoadError: string;
+  questContextUnavailable: string;
+  hirerInquiryRole: string;
+  prospectiveWorkerInquiryRole: string;
+  candidateInquiry: string;
+  workChat: string;
+  attachmentSizeError: string;
+  attachmentTypeError: string;
+  messageLengthError: string;
+  sendRateLimited: string;
+  candidateInquiryClosed: string;
+  attachmentRateLimited: string;
+  attachmentRateLimitedWait: (seconds: number) => string;
+  retryAttachment: string;
+  reloadImage: string;
+}
+
+export const chatMessages: Record<SupportedLocale, ChatMessages> = {
+  en: {
+    title: "Chat",
+    subtitle: "Coordinate with people from your Quests.",
+    searchConversations: "Search conversations",
+    clearSearch: "Clear search",
+    recentConversations: "Recent conversations",
+    candidateInquiries: "Candidate inquiries",
+    conversationCount: (count) => `${count} conversations`,
+    loading: "Loading conversations",
+    loadError: "We could not load your conversations.",
+    retry: "Try again",
+    noConversations: "Your Quest conversations will appear here.",
+    noSearchResults: "No conversations match your search.",
+    questOwner: "Quest owner",
+    questMember: "Quest member",
+    questTeam: "Quest team",
+    viewQuest: "View Quest details",
+    reportMessage: "Report message",
+    search: "Search",
+    searchMessages: "Messages",
+    searchFiles: "Files",
+    messages: "messages",
+    files: "files",
+    closeSearch: "Close search",
+    searchInConversation: "Search this Quest chat",
+    searchResultCount: (count, type) => `${count} ${type}`,
+    noMessageResults: "No messages match your search.",
+    noFileResults: "No files match your search.",
+    today: "Today",
+    typeMessage: "Message the Quest team…",
+    typeOwnerMessage: "Message the Quest owner…",
+    send: "Send message",
+    addAttachment: "Add attachment",
+    takePhoto: "Take photo",
+    choosePhoto: "Choose photo",
+    chooseFile: "Choose file",
+    cancel: "Cancel",
+    close: "Close",
+    removeAttachment: (name) => `Remove attachment ${name}`,
+    mockAttachmentDescription:
+      "Attachment actions are ready for the API connection.",
+    conversationNotFound: "This Quest conversation could not be found.",
+    backToChat: "Back to Chat",
+    openFile: "Open file",
+    moreOptions: "More conversation options",
+    attachment: "Attachment",
+    unreadCount: (count) => `${count} unread messages`,
+    conversationReadOnly: "This conversation is read-only.",
+    conversationReadOnlyTerminal:
+      "This Quest is complete or cancelled. You can still read the conversation, but new messages are disabled.",
+    conversationNotWritable:
+      "The server has disabled writing for this conversation.",
+    candidateInquiriesLoadError: "Candidate inquiries could not be loaded.",
+    questContextUnavailable: "Quest context is unavailable for navigation.",
+    hirerInquiryRole: "Hirer · Inquiry",
+    prospectiveWorkerInquiryRole: "Prospective Worker · Inquiry",
+    candidateInquiry: "Candidate Inquiry",
+    workChat: "Work Chat",
+    attachmentSizeError: "Attachments must be 10 MB or smaller.",
+    attachmentTypeError: "Only images, PDF, and video files are supported.",
+    messageLengthError: "Messages must be 1,000 characters or fewer.",
+    candidateInquiryClosed:
+      "This Quest is no longer accepting applications; the inquiry is closed.",
+    sendRateLimited: "You are sending messages too quickly. Try again shortly.",
+    attachmentRateLimited:
+      "Too many uploads right now. Wait a moment, then retry.",
+    attachmentRateLimitedWait: (seconds) =>
+      `Too many uploads right now. Try again in ${seconds} seconds.`,
+    retryAttachment: "Retry upload",
+    reloadImage: "Image did not load. Tap to reload.",
+  },
+  th: {
+    title: "แชต",
+    subtitle: "ประสานงานกับคนในเควสต์ของคุณ",
+    searchConversations: "ค้นหาบทสนทนา",
+    clearSearch: "ล้างการค้นหา",
+    recentConversations: "บทสนทนาล่าสุด",
+    candidateInquiries: "การสอบถามก่อนเริ่มงาน",
+    conversationCount: (count) => `${count} บทสนทนา`,
+    loading: "กำลังโหลดบทสนทนา",
+    loadError: "ไม่สามารถโหลดบทสนทนาของคุณได้",
+    retry: "ลองอีกครั้ง",
+    noConversations: "บทสนทนาที่เกี่ยวข้องกับเควสต์จะแสดงที่นี่",
+    noSearchResults: "ไม่พบบทสนทนาที่ตรงกับการค้นหา",
+    questOwner: "เจ้าของเควสต์",
+    questMember: "สมาชิกเควสต์",
+    questTeam: "ทีมเควสต์",
+    viewQuest: "ดูรายละเอียดเควสต์",
+    reportMessage: "รายงานข้อความ",
+    search: "ค้นหา",
+    searchMessages: "ข้อความ",
+    searchFiles: "ไฟล์",
+    messages: "ข้อความ",
+    files: "ไฟล์",
+    closeSearch: "ปิดการค้นหา",
+    searchInConversation: "ค้นหาในแชตเควสต์นี้",
+    searchResultCount: (count, type) =>
+      `${count} ${type === "messages" ? "ข้อความ" : "ไฟล์"}`,
+    noMessageResults: "ไม่พบข้อความที่ตรงกับการค้นหา",
+    noFileResults: "ไม่พบไฟล์ที่ตรงกับการค้นหา",
+    today: "วันนี้",
+    typeMessage: "ส่งข้อความถึงทีมเควสต์…",
+    typeOwnerMessage: "ส่งข้อความถึงผู้ว่าจ้าง…",
+    send: "ส่งข้อความ",
+    addAttachment: "เพิ่มไฟล์แนบ",
+    takePhoto: "ถ่ายรูป",
+    choosePhoto: "เลือกรูปภาพ",
+    chooseFile: "เลือกไฟล์",
+    cancel: "ยกเลิก",
+    close: "ปิด",
+    removeAttachment: (name) => `ลบไฟล์แนบ ${name}`,
+    mockAttachmentDescription: "เมนูไฟล์แนบพร้อมเชื่อมต่อกับ API ในขั้นถัดไป",
+    conversationNotFound: "ไม่พบบทสนทนาของเควสต์นี้",
+    backToChat: "กลับไปหน้าแชต",
+    openFile: "เปิดไฟล์",
+    moreOptions: "ตัวเลือกเพิ่มเติมของบทสนทนา",
+    attachment: "ไฟล์แนบ",
+    unreadCount: (count) => `มี ${count} ข้อความที่ยังไม่ได้อ่าน`,
+    conversationReadOnly: "บทสนทนานี้อ่านได้อย่างเดียว",
+    conversationReadOnlyTerminal:
+      "เควสต์นี้เสร็จสิ้นหรือยกเลิกแล้ว คุณยังอ่านประวัติได้แต่ส่งข้อความใหม่ไม่ได้",
+    conversationNotWritable: "เซิร์ฟเวอร์ปิดการส่งข้อความในบทสนทนานี้",
+    candidateInquiriesLoadError: "ไม่สามารถโหลด Inquiry ได้",
+    questContextUnavailable: "ไม่พบบริบทเควสต์สำหรับการนำทาง",
+    hirerInquiryRole: "ผู้ว่าจ้าง · Inquiry",
+    prospectiveWorkerInquiryRole: "ผู้สนใจทำงาน · Inquiry",
+    candidateInquiry: "Candidate Inquiry",
+    workChat: "Work Chat",
+    attachmentSizeError: "ไฟล์แนบต้องมีขนาดไม่เกิน 10 MB",
+    attachmentTypeError: "รองรับเฉพาะรูปภาพ PDF และวิดีโอ",
+    messageLengthError: "ข้อความต้องมีความยาวไม่เกิน 1,000 ตัวอักษร",
+    candidateInquiryClosed: "เควสต์นี้ไม่รับสมัครแล้ว การสอบถามจึงปิดลง",
+    sendRateLimited: "ส่งข้อความถี่เกินไป ลองอีกครั้งในอีกสักครู่",
+    attachmentRateLimited: "อัปโหลดถี่เกินไป โปรดรอสักครู่แล้วลองอีกครั้ง",
+    attachmentRateLimitedWait: (seconds) =>
+      `อัปโหลดถี่เกินไป โปรดลองอีกครั้งใน ${seconds} วินาที`,
+    retryAttachment: "ลองอัปโหลดอีกครั้ง",
+    reloadImage: "โหลดรูปภาพไม่สำเร็จ แตะเพื่อลองใหม่",
+  },
+};

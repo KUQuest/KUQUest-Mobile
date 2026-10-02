@@ -1,0 +1,195 @@
+import { useMutation, useQueryClient } from "@tanstack/react-query";
+
+import { ApiError } from "@/api/ApiClient";
+import { createQuestIdempotencyKey } from "@/api/QuestApi";
+import type { UploadAsset } from "@/api/fileUpload";
+import type { QuestV2ProofSubmission } from "@/api/questV2Contracts";
+import { liveQuestService } from "@/features/questBoard/live/liveQuestService";
+import { invalidateWorkerQuestReads } from "@/features/questBoard/api/questBoardQueries";
+import type { ProofSendPlan } from "../proofDraftPlan";
+import { QuestProofFileStatus } from "@/features/questBoard/domain/types";
+
+type WorkerMutationInput = {
+  questId: string;
+  viewerId: string;
+};
+
+const PROOF_FILE_REJECTED_CODES = new Set([
+  "PROOF_FILE_TYPE_NOT_SUPPORTED",
+  "PROOF_FILE_DIMENSIONS_TOO_LARGE",
+]);
+
+/**
+ * A draft that still holds a failed file cannot be submitted.
+ * `rejected` means the server refused a file's content, not a transient
+ * upload failure. `draft` is the server draft when one exists.
+ */
+export class ProofFileUploadError extends Error {
+  constructor(
+    readonly failedCount: number,
+    readonly rejected = false,
+    readonly draft: QuestV2ProofSubmission | null = null
+  ) {
+    super(`${failedCount} proof file(s) failed to upload`);
+    this.name = "ProofFileUploadError";
+  }
+}
+
+function toUploadAsset({ uri, name, type }: UploadAsset): UploadAsset {
+  return { uri, name, type };
+}
+
+function asRejectedUpload(fileCount: number) {
+  return (error: unknown): never => {
+    throw error instanceof ApiError && PROOF_FILE_REJECTED_CODES.has(error.code)
+      ? new ProofFileUploadError(fileCount, true)
+      : error;
+  };
+}
+
+type UploadableProofSendPlan<TFile extends { key: string }> = Exclude<
+  ProofSendPlan<TFile>,
+  { kind: "existing" }
+>;
+
+async function uploadProofDraft(
+  questId: string,
+  plan: UploadableProofSendPlan<UploadAsset & { key: string }>,
+  description: string | undefined
+): Promise<QuestV2ProofSubmission> {
+  if (plan.kind === "append") {
+    return liveQuestService.updateProofDraft(
+      questId,
+      plan.draftId,
+      {
+        assets: plan.files.map(toUploadAsset),
+        description,
+      },
+      createQuestIdempotencyKey()
+    );
+  }
+  // Create first: API has no atomic replacement; failed create must not delete old draft.
+  if (plan.kind === "create") {
+    const replacementDraft = await liveQuestService
+      .createProofDraft(
+        questId,
+        { assets: plan.files.map(toUploadAsset), description },
+        createQuestIdempotencyKey()
+      )
+      .catch(asRejectedUpload(plan.files.length));
+    if (!plan.replaceDraftId) return replacementDraft;
+    try {
+      await liveQuestService.deleteProofDraft(
+        questId,
+        plan.replaceDraftId,
+        createQuestIdempotencyKey()
+      );
+    } catch (error) {
+      await liveQuestService
+        .deleteProofDraft(
+          questId,
+          replacementDraft.id,
+          createQuestIdempotencyKey()
+        )
+        .catch(() => undefined);
+      throw error;
+    }
+    return replacementDraft;
+  }
+  let draft: QuestV2ProofSubmission | null = null;
+  for (const { position, file } of plan.retries) {
+    draft = await liveQuestService
+      .updateProofDraft(
+        questId,
+        plan.draftId,
+        {
+          assets: [toUploadAsset(file)],
+          retryPosition: position,
+          description,
+        },
+        createQuestIdempotencyKey()
+      )
+      .catch(asRejectedUpload(1));
+  }
+  if (!draft) throw new Error("Proof retry requires at least one file");
+  return draft;
+}
+
+export function useSubmitProofMutation() {
+  const queryClient = useQueryClient();
+  return useMutation({
+    mutationFn: async ({
+      questId,
+      plan,
+      description,
+    }: WorkerMutationInput & {
+      plan: ProofSendPlan<UploadAsset & { key: string }>;
+      description?: string;
+    }) => {
+      if (plan.kind === "existing") {
+        return liveQuestService.submitProofDraft(
+          questId,
+          plan.draftId,
+          createQuestIdempotencyKey()
+        );
+      }
+      const proofDraft = await uploadProofDraft(questId, plan, description);
+      const failedFiles = proofDraft.files.filter(
+        (file) => file.uploadStatus === QuestProofFileStatus.PROOF_FILE_FAILED
+      );
+      if (failedFiles.length > 0) {
+        throw new ProofFileUploadError(
+          failedFiles.length,
+          failedFiles.some(
+            (file) =>
+              file.failureCode !== null &&
+              PROOF_FILE_REJECTED_CODES.has(file.failureCode)
+          ),
+          proofDraft
+        );
+      }
+      const readyFileCount = proofDraft.files.filter(
+        (file) =>
+          file.uploadStatus === QuestProofFileStatus.PROOF_FILE_READY &&
+          file.fileId !== null
+      ).length;
+      if (readyFileCount === 0) {
+        throw new Error("At least one proof file must be ready before sending");
+      }
+      return liveQuestService.submitProofDraft(
+        questId,
+        proofDraft.id,
+        createQuestIdempotencyKey()
+      );
+    },
+    onSettled: (_data, _error, variables) =>
+      invalidateWorkerQuestReads(
+        queryClient,
+        variables.questId,
+        variables.viewerId
+      ),
+  });
+}
+
+export function useRemoveProofFileMutation() {
+  const queryClient = useQueryClient();
+  return useMutation({
+    mutationFn: async ({
+      questId,
+      draftId,
+      fileIds,
+    }: WorkerMutationInput & { draftId: string; fileIds: string[] }) =>
+      liveQuestService.updateProofDraft(
+        questId,
+        draftId,
+        { fileIds },
+        createQuestIdempotencyKey()
+      ),
+    onSettled: (_data, _error, variables) =>
+      invalidateWorkerQuestReads(
+        queryClient,
+        variables.questId,
+        variables.viewerId
+      ),
+  });
+}

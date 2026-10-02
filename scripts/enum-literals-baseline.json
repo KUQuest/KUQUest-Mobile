@@ -1,0 +1,65 @@
+{
+  "total": 227,
+  "top": [
+    {
+      "file": "src/features/questBoard/live/liveQuestService.ts",
+      "count": 65
+    },
+    {
+      "file": "src/features/questBoard/fixtures/questReducer.ts",
+      "count": 40
+    },
+    {
+      "file": "src/features/questBoard/fixtures/questFixtures.ts",
+      "count": 25
+    },
+    {
+      "file": "src/domain/questLifecycle.ts",
+      "count": 16
+    },
+    {
+      "file": "src/features/questBoard/fixtures/adapters/questFixtureAdapter.ts",
+      "count": 9
+    },
+    {
+      "file": "src/features/questBoard/fixtures/questSeeds.ts",
+      "count": 9
+    },
+    {
+      "file": "src/api/QuestApi.ts",
+      "count": 7
+    },
+    {
+      "file": "src/features/questBoard/fixtures/questValidation.ts",
+      "count": 7
+    },
+    {
+      "file": "src/testing/workerSnapshotFixtures.ts",
+      "count": 6
+    },
+    {
+      "file": "src/features/questBoard/live/questEvents.ts",
+      "count": 5
+    },
+    {
+      "file": "src/features/createQuest/domain/createQuestModel.ts",
+      "count": 4
+    },
+    {
+      "file": "src/features/questBoard/api/questBoardQueries.ts",
+      "count": 4
+    },
+    {
+      "file": "src/features/questBoard/workflow/questWorkflow.ts",
+      "count": 4
+    },
+    {
+      "file": "src/features/roleplay/RoleplayScreen.tsx",
+      "count": 4
+    },
+    {
+      "file": "src/features/questBoard/detail/questDetailActions.ts",
+      "count": 3
+    }
+  ]
+}

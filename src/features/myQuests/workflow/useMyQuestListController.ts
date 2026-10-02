@@ -1,0 +1,205 @@
+import { useCallback, useMemo, useState } from "react";
+import { useRouter } from "expo-router";
+import { useSafeAreaInsets } from "react-native-safe-area-context";
+
+import {
+  showConfirmModal,
+  showErrorAlert,
+  showSweetAlert,
+  SweetAlertVariant,
+} from "@/components/ui/SweetAlert";
+import { createQuestIdempotencyKey } from "@/api/QuestApi";
+import { QuestStatus } from "@/domain/questLifecycle";
+import { formatSatang } from "@/domain/satang";
+import { useLocale } from "@/features/preferences/localeStore";
+import { useCancelQuestMutation } from "@/features/questBoard/api/questBoardQueries";
+import { useQuestTagsQuery } from "@/features/questBoard/api/questTagsQueries";
+import { useFileDispute } from "@/features/questBoard/dispute/useFileDispute";
+import { myQuestMessages } from "@/locales/myQuestMessages";
+import { useAppTheme } from "@/features/workspace/AppThemeProvider";
+import { spacing } from "@/theme/spacing";
+import {
+  useMyHirerProofReviewableIdsQuery,
+  useMyHirerQuestsQuery,
+} from "../api/myQuestsQueries";
+import {
+  projectMyQuestWorkspace,
+  type MyQuestTab,
+} from "../myQuestWorkspaceProjection";
+import type { QuestCardAction, QuestSummary } from "../myQuestTypes";
+
+const ACTION_PATHNAMES = {
+  edit: "/quest/[id]/edit",
+  manage: "/quest/[id]/manage",
+  proofReview: "/quest/[id]/proof-review",
+} as const satisfies Record<
+  Exclude<QuestCardAction, "dispute" | "review">,
+  string
+>;
+
+export interface MyQuestListScreenProps {
+  initialTab?: string;
+}
+
+export function useMyQuestListController({
+  initialTab,
+}: MyQuestListScreenProps = {}) {
+  const router = useRouter();
+  const { locale } = useLocale();
+  const messages = myQuestMessages[locale];
+  const { colors: palette } = useAppTheme();
+  const insets = useSafeAreaInsets();
+  const [requestedTab, setRequestedTab] = useState<string | undefined>(
+    initialTab
+  );
+  const hirerQuery = useMyHirerQuestsQuery();
+  const hirerQuests = hirerQuery.data ?? null;
+  const failedQuestIds = useMemo(
+    () =>
+      (hirerQuests ?? [])
+        .filter(
+          (quest) =>
+            quest.state === QuestStatus.QUEST_FAILED && quest.proofRequired
+        )
+        .map((quest) => quest.id),
+    [hirerQuests]
+  );
+  const proofReviewableIdsQuery = useMyHirerProofReviewableIdsQuery(
+    failedQuestIds,
+    requestedTab === "completed"
+  );
+  const proofReviewableQuestIds = useMemo(() => {
+    if (proofReviewableIdsQuery.isError) return new Set<string>();
+    return new Set(proofReviewableIdsQuery.data ?? []);
+  }, [proofReviewableIdsQuery.data, proofReviewableIdsQuery.isError]);
+  const tagQuery = useQuestTagsQuery(Boolean(hirerQuests?.length));
+  const tagCatalog = useMemo(() => tagQuery.data ?? [], [tagQuery.data]);
+  const projection = useMemo(
+    () =>
+      projectMyQuestWorkspace({
+        requestedTab,
+        locale,
+        hirerQuests,
+        tagCatalog,
+        proofReviewableQuestIds,
+      }),
+    [hirerQuests, locale, proofReviewableQuestIds, requestedTab, tagCatalog]
+  );
+
+  const {
+    mutateAsync: cancelQuestAsync,
+    isPending: cancelPending,
+    variables: cancelVariables,
+  } = useCancelQuestMutation();
+
+  const { confirmFileDispute } = useFileDispute();
+  const [reviewQuestId, setReviewQuestId] = useState<string | null>(null);
+  const runQuestAction = useCallback(
+    (quest: QuestSummary, action: QuestCardAction) => {
+      if (action === "dispute") {
+        confirmFileDispute(quest.id);
+        return;
+      }
+      if (action === "review") {
+        setReviewQuestId(quest.id);
+        return;
+      }
+      router.push({
+        pathname: ACTION_PATHNAMES[action],
+        params: { id: quest.id },
+      });
+    },
+    [confirmFileDispute, router]
+  );
+  const openQuest = useCallback(
+    (quest: QuestSummary) => {
+      // A draft has no published detail yet; opening it continues editing.
+      if (quest.primaryAction === "edit") {
+        runQuestAction(quest, "edit");
+        return;
+      }
+      router.push({
+        pathname: "/quest/[id]",
+        params: { id: quest.id, mode: "post" },
+      });
+    },
+    [router, runQuestAction]
+  );
+  // ADR 0003 Tier 1: Draft and Open cancellation carries no penalty, so a
+  // standard confirmation is the required friction.
+  const cancelQuest = useCallback(
+    (quest: QuestSummary) => {
+      if (!quest.cancelFromCard) return;
+      showConfirmModal({
+        title: messages.cancelConfirmTitle,
+        message:
+          quest.cancelFromCard === "draft"
+            ? messages.cancelDraftDescription
+            : messages.cancelOpenDescription,
+        confirmLabel: messages.cancelQuest,
+        cancelLabel: messages.keepQuest,
+        onConfirm: () => {
+          cancelQuestAsync({
+            questId: quest.id,
+            idempotencyKey: createQuestIdempotencyKey(),
+          })
+            .then((outcome) =>
+              showSweetAlert({
+                title: messages.cancelSuccessTitle,
+                message:
+                  outcome.refundedSatang > 0
+                    ? messages.cancelRefunded(
+                        formatSatang(outcome.refundedSatang, locale)
+                      )
+                    : "",
+                variant: SweetAlertVariant.Success,
+              })
+            )
+            .catch((caught: unknown) =>
+              showErrorAlert(messages.cancelErrorTitle, caught)
+            );
+        },
+      });
+    },
+    [cancelQuestAsync, locale, messages]
+  );
+  const onRefresh = useCallback(() => {
+    void hirerQuery.refetch().catch(() => undefined);
+  }, [hirerQuery]);
+
+  return {
+    frame: {
+      headerProps: {
+        messages,
+        palette,
+        tabs: projection.tabs,
+        selectedTab: projection.selectedTab,
+        tabLabels: projection.tabLabels,
+        onBackPress: () => router.back(),
+        onTabPress: (tab: MyQuestTab) => setRequestedTab(tab),
+      },
+    },
+    content: {
+      listProps: {
+        messages,
+        palette,
+        projection,
+        isLoading: hirerQuery.isPending,
+        isError: hirerQuery.isError,
+        refreshing: hirerQuery.isRefetching,
+        bottomPadding: insets.bottom + spacing.xl,
+        onRefresh,
+        onOpenQuest: openQuest,
+        onQuestAction: runQuestAction,
+        onCancelQuest: cancelQuest,
+        cancellingQuestId: cancelPending
+          ? (cancelVariables?.questId ?? null)
+          : null,
+      },
+      reviewModalProps: {
+        questId: reviewQuestId,
+        onClose: () => setReviewQuestId(null),
+      },
+    },
+  };
+}

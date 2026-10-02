@@ -1,9 +1,323 @@
-:root {
-  --font-display:
-    Spline Sans, Inter, ui-sans-serif, system-ui, sans-serif, Apple Color Emoji, Segoe UI Emoji,
-    Segoe UI Symbol, Noto Color Emoji;
-  --font-mono:
-    ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, Liberation Mono, Courier New, monospace;
-  --font-rounded: 'SF Pro Rounded', 'Hiragino Maru Gothic ProN', Meiryo, 'MS PGothic', sans-serif;
-  --font-serif: Georgia, 'Times New Roman', serif;
+@import "tailwindcss/theme.css" layer(theme);
+@import "tailwindcss/preflight.css" layer(base);
+@import "tailwindcss/utilities.css";
+
+@layer theme {
+  @theme {
+    /* Brand */
+    --color-ku-primary: #5f7655;
+    --color-ku-primary-dark: #465b3e;
+    --color-ku-primary-deep: #34462f;
+    --color-ku-primary-subtle: #edf2ea;
+    --color-ku-primary-border: #b6c4af;
+    --color-ku-on-primary: #ffffff;
+
+    --color-ku-support: #755570;
+    --color-ku-support-dark: #5d4058;
+    --color-ku-support-deep: #463143;
+    --color-ku-support-subtle: #f3ecf2;
+    --color-ku-support-border: #b79aaf;
+    --color-ku-on-support: #ffffff;
+
+    /* Role colors */
+    --color-ku-hirer: #5f7655;
+    --color-ku-hirer-dark: #465b3e;
+    --color-ku-hirer-deep: #34462f;
+    --color-ku-hirer-subtle: #edf2ea;
+    --color-ku-hirer-border: #b6c4af;
+    --color-ku-on-hirer: #ffffff;
+
+    --color-ku-worker: #96533f;
+    --color-ku-worker-dark: #713d30;
+    --color-ku-worker-deep: #4f2a22;
+    --color-ku-worker-subtle: #f8ece8;
+    --color-ku-worker-border: #c9a79a;
+    --color-ku-on-worker: #ffffff;
+
+    --color-ku-additional: #7c4ba8;
+    --color-ku-additional-dark: #623784;
+    --color-ku-additional-deep: #412357;
+    --color-ku-additional-subtle: #f1ebf8;
+    --color-ku-additional-border: #c2aed7;
+    --color-ku-on-additional: #ffffff;
+
+    /* Neutral */
+    --color-ku-background: #f7f9f8;
+    --color-ku-surface: #ffffff;
+    --color-ku-surface-raised: #f0f3f1;
+    --color-ku-surface-high: #e7ece8;
+    --color-ku-surface-muted: #f0f3f1;
+    --color-ku-surface-subtle: #f0f3f1;
+    --color-ku-surface-accent: #edf2ea;
+    --color-ku-surface-terracotta: #faeee7;
+    --color-ku-surface-success: #e2eee7;
+    --color-ku-surface-danger: #f2e6e6;
+    --color-ku-surface-image: #deeae9;
+    --color-ku-surface-placeholder: #dde3df;
+    --color-ku-surface-nav-translucent: rgb(255 255 255 / 0.92);
+    --color-ku-border-nav: rgb(24 32 27 / 0.14);
+    --color-ku-nav-icon-muted: #89928c;
+
+    --color-ku-text-strong: #18201b;
+    --color-ku-text: #273029;
+    --color-ku-text-secondary: #5f6962;
+    --color-ku-text-muted: #737d76;
+    --color-ku-text-subtle: #737d76;
+    --color-ku-text-faint: #737d76;
+
+    --color-ku-border: #d5ddd7;
+    --color-ku-border-subtle: #d5ddd7;
+    --color-ku-border-muted: #d5ddd7;
+    --color-ku-border-accent: #b6c4af;
+    --color-ku-border-danger: #e6bdbe;
+    --color-ku-border-success: #b3d4c2;
+    --color-ku-divider: #dde3df;
+
+    /* Supporting accents */
+    --color-ku-cream: #f6efe6;
+    --color-ku-gold: #c8953d;
+    --color-ku-terracotta: #9c634d;
+    --color-ku-terracotta-dark: #7a3d2b;
+    --color-ku-rose: #c88c9b;
+
+    /* Semantic */
+    --color-ku-success: #21864f;
+    --color-ku-success-bright: #21864f;
+    --color-ku-success-light: #b3d4c2;
+    --color-ku-warning: #b7791f;
+    --color-ku-warning-dark: #845716;
+    --color-ku-surface-warning: #f1ece2;
+    --color-ku-border-warning: #e3d0b3;
+    --color-ku-danger: #c13d43;
+    --color-ku-danger-dark: #8b2c30;
+    --color-ku-danger-light: #e6bdbe;
+    --color-ku-danger-icon: #c13d43;
+    --color-ku-info: #356ca5;
+    --color-ku-disabled: #c8ceca;
+    --color-ku-black: #18201b;
+    --color-ku-white: #ffffff;
+    --color-ku-overlay: rgb(24 32 27 / 0.4);
+    --color-ku-card: #ffffff;
+
+    /*
+     * Numeric aliases centralize existing component measurements that do not
+     * belong to the five-step semantic scale.
+     */
+    --spacing-ku-0: 0px;
+    --spacing-ku-1: 1px;
+    --spacing-ku-2: 2px;
+    --spacing-ku-3: 3px;
+    --spacing-ku-4: 4px;
+    --spacing-ku-5: 5px;
+    --spacing-ku-6: 6px;
+    --spacing-ku-7: 7px;
+    --spacing-ku-8: 8px;
+    --spacing-ku-9: 9px;
+    --spacing-ku-10: 10px;
+    --spacing-ku-11: 11px;
+    --spacing-ku-12: 12px;
+    --spacing-ku-13: 13px;
+    --spacing-ku-14: 14px;
+    --spacing-ku-16: 16px;
+    --spacing-ku-18: 18px;
+    --spacing-ku-20: 20px;
+    --spacing-ku-22: 22px;
+    --spacing-ku-24: 24px;
+    --spacing-ku-28: 28px;
+    --spacing-ku-30: 30px;
+    --spacing-ku-31: 31px;
+    --spacing-ku-32: 32px;
+    --spacing-ku-34: 34px;
+    --spacing-ku-36: 36px;
+    --spacing-ku-40: 40px;
+    --spacing-ku-42: 42px;
+    --spacing-ku-44: 44px;
+    --spacing-ku-48: 48px;
+    --spacing-ku-52: 52px;
+    --spacing-ku-56: 56px;
+    --spacing-ku-60: 60px;
+    --spacing-ku-64: 64px;
+    --spacing-ku-68: 68px;
+    --spacing-ku-72: 72px;
+    --spacing-ku-76: 76px;
+    --spacing-ku-78: 78px;
+    --spacing-ku-88: 88px;
+    --spacing-ku-120: 120px;
+    --spacing-ku-132: 132px;
+    --spacing-ku-180: 180px;
+
+    --spacing-ku-xs: 4px;
+    --spacing-ku-sm: 8px;
+    --spacing-ku-md: 16px;
+    --spacing-ku-lg: 24px;
+    --spacing-ku-xl: 32px;
+
+    --font-ku-regular: "KuriousMedium";
+    --font-ku-medium: "KuriousMedium";
+    --font-ku-semibold: "KuriousSemiBold";
+    --font-ku-bold: "KuriousSemiBold";
+    --text-ku-display: 44px;
+    --text-ku-display--line-height: 1.181818;
+    --text-ku-display-small: 32px;
+    --text-ku-display-small--line-height: 1.25;
+    --text-ku-headline: 30px;
+    --text-ku-headline--line-height: 1.266667;
+    --text-ku-title-large: 28px;
+    --text-ku-title-large--line-height: 1.285714;
+    --text-ku-title: 24px;
+    --text-ku-title--line-height: 1.208333;
+    --text-ku-title-small: 22px;
+    --text-ku-title-small--line-height: 1.272727;
+    --text-ku-section: 20px;
+    --text-ku-section--line-height: 1.3;
+    --text-ku-emphasis-large: 19px;
+    --text-ku-emphasis-large--line-height: 1.263158;
+    --text-ku-subtitle: 18px;
+    --text-ku-subtitle--line-height: 1.333333;
+    --text-ku-emphasis: 17px;
+    --text-ku-emphasis--line-height: 1.352941;
+    --text-ku-body: 16px;
+    --text-ku-body--line-height: 1.5;
+    --text-ku-control: 15px;
+    --text-ku-control--line-height: 1.466667;
+    --text-ku-body-small: 14px;
+    --text-ku-body-small--line-height: 1.5;
+    --text-ku-meta: 13px;
+    --text-ku-meta--line-height: 1.461538;
+    --text-ku-label: 12px;
+    --text-ku-label--line-height: 1.5;
+    --text-ku-caption: 11px;
+    --text-ku-caption--line-height: 1.454545;
+    --text-ku-nav: 10px;
+    --text-ku-nav--line-height: 1.2;
+    --text-ku-heading: 24px;
+    --text-ku-heading--line-height: 1.208333;
+    --radius-ku-field: 8px;
+    --radius-ku-image: 10px;
+    --radius-ku-image-large: 12px;
+    --radius-ku-control: 14px;
+    --radius-ku-card: 16px;
+    --radius-ku-search: 18px;
+    --radius-ku-sheet: 24px;
+    --radius-ku-navigation: 28px;
+    --radius-ku-pill: 9999px;
+  }
+}
+
+@media (prefers-color-scheme: dark) {
+  :root {
+    /* Brand */
+    --color-ku-primary: #a9c79e;
+    --color-ku-primary-dark: #7fa273;
+    --color-ku-primary-deep: #5f7655;
+    --color-ku-primary-subtle: #243128;
+    --color-ku-primary-border: #526b58;
+    --color-ku-on-primary: #142019;
+
+    --color-ku-support: #d8b4d0;
+    --color-ku-support-dark: #be91b5;
+    --color-ku-support-deep: #966b8f;
+    --color-ku-support-subtle: #342832;
+    --color-ku-support-border: #72556d;
+    --color-ku-on-support: #21171f;
+
+    /* Role colors */
+    --color-ku-hirer: #a9c79e;
+    --color-ku-hirer-dark: #7fa273;
+    --color-ku-hirer-deep: #5f7655;
+    --color-ku-hirer-subtle: #243128;
+    --color-ku-hirer-border: #526b58;
+    --color-ku-on-hirer: #142019;
+
+    --color-ku-worker: #e1a08c;
+    --color-ku-worker-dark: #c77b65;
+    --color-ku-worker-deep: #a75d4b;
+    --color-ku-worker-subtle: #3b2924;
+    --color-ku-worker-border: #805044;
+    --color-ku-on-worker: #241a17;
+
+    --color-ku-additional: #c7a3ea;
+    --color-ku-additional-dark: #a77acf;
+    --color-ku-additional-deep: #8759b0;
+    --color-ku-additional-subtle: #302541;
+    --color-ku-additional-border: #735896;
+    --color-ku-on-additional: #241b2b;
+
+    /* Neutral */
+    --color-ku-background: #101713;
+    --color-ku-surface: #172019;
+    --color-ku-surface-raised: #1e2a22;
+    --color-ku-surface-high: #27342b;
+    --color-ku-surface-muted: #1e2a22;
+    --color-ku-surface-subtle: #1e2a22;
+    --color-ku-surface-accent: #243128;
+    --color-ku-surface-terracotta: #35251f;
+    --color-ku-surface-success: #172e21;
+    --color-ku-surface-danger: #33211f;
+    --color-ku-surface-image: #142b27;
+    --color-ku-surface-placeholder: #303b34;
+    --color-ku-surface-nav-translucent: rgb(22 28 24 / 0.94);
+    --color-ku-border-nav: rgb(243 246 244 / 0.16);
+    --color-ku-nav-icon-muted: #7d8881;
+
+    --color-ku-text-strong: #f2f5f2;
+    --color-ku-text: #e3e9e4;
+    --color-ku-text-secondary: #b4bdb6;
+    --color-ku-text-muted: #919c94;
+    --color-ku-text-subtle: #919c94;
+    --color-ku-text-faint: #919c94;
+
+    --color-ku-border: #3a4940;
+    --color-ku-border-subtle: #3a4940;
+    --color-ku-border-muted: #3a4940;
+    --color-ku-border-accent: #526b58;
+    --color-ku-border-danger: #5b2f2f;
+    --color-ku-border-success: #204c32;
+    --color-ku-divider: #334039;
+
+    /* Supporting accents */
+    --color-ku-cream: #302b24;
+    --color-ku-gold: #e3bb70;
+    --color-ku-terracotta: #da9a80;
+    --color-ku-terracotta-dark: #f2c0aa;
+    --color-ku-rose: #dba7b4;
+
+    /* Semantic */
+    --color-ku-success: #62c88b;
+    --color-ku-success-bright: #62c88b;
+    --color-ku-success-light: #204c32;
+    --color-ku-warning: #e4b45a;
+    --color-ku-warning-dark: #edc67e;
+    --color-ku-surface-warning: #312c18;
+    --color-ku-border-warning: #57461f;
+    --color-ku-danger: #ef777b;
+    --color-ku-danger-dark: #f4999c;
+    --color-ku-danger-light: #5b2f2f;
+    --color-ku-danger-icon: #ef6469;
+    --color-ku-info: #75a8da;
+    --color-ku-disabled: #58615b;
+    --color-ku-black: #0f1411;
+    --color-ku-white: #f7fffe;
+    --color-ku-overlay: rgb(0 0 0 / 0.64);
+    --color-ku-card: #172019;
+  }
+}
+
+/* Platform-specific font families */
+@media android {
+  :root {
+    --font-mono: monospace;
+    --font-rounded: normal;
+    --font-serif: serif;
+    --font-sans: normal;
+  }
+}
+
+@media ios {
+  :root {
+    --font-mono: ui-monospace;
+    --font-serif: ui-serif;
+    --font-sans: system-ui;
+    --font-rounded: ui-rounded;
+  }
 }

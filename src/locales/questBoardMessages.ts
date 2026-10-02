@@ -1,0 +1,1200 @@
+import type { SupportedLocale } from "./locale";
+
+export interface QuestBoardMessages {
+  title: string;
+  subtitle: string;
+  fundingTitle: string;
+  fundingHeld: string;
+  fundingStatusLabel: string;
+  fundingUnavailable: string;
+  fundingUnavailableDescription: string;
+  fundingReservationDescription: string;
+  fundingExpand: string;
+  fundingCollapse: string;
+  fundingTopUp: string;
+  fundingTransfer: string;
+  fundingActionsUnavailable: string;
+  topUpCreateError: string;
+  topUpPaymentPending: string;
+  settlement: string;
+  settlementDescription: string;
+  refunds: string;
+  refundsDescription: string;
+  searchPlaceholder: string;
+  clearSearch: string;
+  clearSearchAndFilters: string;
+  filter: string;
+  sort: string;
+  filtersTitle: string;
+  sortTitle: string;
+  applyFilters: string;
+  clearAll: string;
+  selectedFilters: (count: number) => string;
+  close: string;
+  cancel: string;
+  activeFiltersLabel: string;
+  removeFilter: (label: string) => string;
+  tags: string;
+  searchTags: string;
+  clearTagSearch: string;
+  noMatchingTags: string;
+  removeSelectedTag: (tag: string) => string;
+  givenPrice: string;
+  reward: string;
+  rewardMin: string;
+  rewardMax: string;
+  rewardInvalid: string;
+  rewardSummary: (minimum: number | null, maximum: number | null) => string;
+  noLimit: string;
+  deadline: string;
+  startTime: string;
+  morning: string;
+  afternoon: string;
+  evening: string;
+  schedule: string;
+  scheduleLocation: string;
+  startWork: string;
+  finishBy: string;
+  timeNotSpecified: string;
+  endTime: string;
+  location: string;
+  spotsSummary: (remaining: number, total: number) => string;
+  participantsSummary: (accepted: number, total: number) => string;
+  manageQuestTitle: string;
+  submittedTeamCount: (count: number) => string;
+  manageCandidateAutoCancel: string;
+  manageStartedCount: (started: number, total: number) => string;
+  manageFundsHeld: string;
+  manageStartsIn: (days: number, hours: number, minutes: number) => string;
+  manageBangkokTime: string;
+  endingSoon: string;
+  imageCount: (count: number) => string;
+  questImageLabel: (index: number) => string;
+  imageUnavailable: string;
+  closeImageViewer: string;
+  perPerson: string;
+  noQuests: string;
+  noMatches: string;
+  clearFilters: string;
+  errorTitle: string;
+  errorDescription: string;
+  manageSnapshotError: string;
+  retry: string;
+  retrySuccess: string;
+  loading: string;
+  resultsLabel: string;
+  stateFull: string;
+  stateClosed: string;
+  online: string;
+  onCampus: string;
+  today: string;
+  within3Days: string;
+  within7Days: string;
+  newest: string;
+  deadlineSoonest: string;
+  rewardHighest: string;
+  back: string;
+  details: string;
+  viewDetails: string;
+  creator: string;
+  messageOwner: string;
+  messageOwnerShort: string;
+  messageOwnerLoading: string;
+  messageOwnerError: string;
+  requirements: string;
+  description: string;
+  completionCriteria: string;
+  proofRequired: string;
+  required: string;
+  optional: string;
+  notNeeded: string;
+  candidateMode: string;
+  candidate: string;
+  selectRosterTitle: string;
+  confirmSelectCandidateTitle: string;
+  confirmSelectCandidateMessage: string;
+  confirmSelectTeamTitle: string;
+  confirmSelectTeamMessage: string;
+  confirmRejectCandidateTitle: string;
+  confirmRejectTeamTitle: string;
+  confirmRejectMessage: string;
+  noSelectionNeeded: string;
+  rosterWorkersTitle: string;
+  rosterWorkerCount: (count: number, headcount: number) => string;
+  rosterNoWorkers: string;
+  rosterProposalsTitle: string;
+  rosterOpenProfile: (name: string) => string;
+  actionFailedTitle: string;
+  actionFailedDescription: string;
+  firstCome: string;
+  reviewCandidates: string;
+  nextStep: string;
+  applyForReview: string;
+  participation: string;
+  participants: string;
+  participantProfile: (name: string) => string;
+  singlePerson: string;
+  team: string;
+  applyNow: string;
+  joinNow: string;
+  editPost: string;
+  leaveQuest: string;
+  leaveQuestDescription: string;
+  withdrawApplication: string;
+  withdrawApplicationDescription: string;
+  leftQuest: string;
+  leftQuestDescription: string;
+  historyQuest: string;
+  historyQuestDescription: string;
+  postOwnerView: string;
+  postOwnerViewDescription: string;
+  confirmApplicationTitle: string;
+  confirmParticipationTitle: string;
+  confirmApplicationDescription: string;
+  confirmParticipationDescription: string;
+  confirmApplication: string;
+  confirmParticipation: string;
+  notYet: string;
+  applicationAccepted: string;
+  participationConfirmed: string;
+  applicationPending: string;
+  applicationAcceptedDescription: string;
+  applicationPendingDescription: string;
+  openWorkHub: string;
+  firstComeDescription: string;
+  groupFcfsHeadcount: string;
+  groupFcfsRequestedWorkers: (headcount: number) => string;
+  groupFcfsJoinRule: string;
+  groupFcfsUnderfillRule: string;
+  groupFcfsJoinedProgress: (joined: number, headcount: number) => string;
+  groupFcfsWorkersNeeded: (count: number) => string;
+  groupFcfsAllSpotsFilled: string;
+  groupFcfsFullForOthers: string;
+  groupFcfsYouAreIn: string;
+  groupFcfsConfirmedSpot: string;
+  groupFcfsAllFilledJoined: string;
+  groupFcfsLastSpotTaken: string;
+  groupFcfsUnderfillDecisionPending: string;
+  groupFcfsConsentRequired: string;
+  groupFcfsConsentAction: string;
+  groupFcfsConsentComplete: string;
+  groupFcfsCancelledNextStep: string;
+  joinAlreadyConfirmed: string;
+  reviewCandidatesDescription: string;
+  proofRequiredDescription: string;
+  proofOptionalDescription: string;
+  proofNotNeededDescription: string;
+  questFull: string;
+  joinQuestNotOpen: string;
+  joinQuestRosterFrozen: string;
+  joinQuestHirerCannotJoin: string;
+  joinQuestMemberRestricted: string;
+  joinQuestModeNotAllowed: string;
+  joinQuestParticipationNotAllowed: string;
+  applicationsClosed: string;
+  unavailableApplication: string;
+  questNotFound: string;
+  questNotFoundDescription: string;
+  statusLabel: (status: string) => string;
+  consentBannerTitle: string;
+  consentBannerDescription: (approved: number, required: number) => string;
+  consentCountdown: string;
+  approveEdit: string;
+  rejectEdit: string;
+  teamBannerTitle: string;
+  teamLeader: string;
+  teamMemberCount: (members: number, required: number) => string;
+  createTeam: string;
+  inviteWorker: string;
+  submitTeam: string;
+  acceptInvitation: string;
+  declineInvitation: string;
+  revokeInvitation: string;
+  applicationBannerTitle: string;
+  applicationCount: (count: number) => string;
+  selectCandidate: string;
+  proofBannerTitle: string;
+  proofPending: string;
+  proofRejected: string;
+  reworkRemaining: (remaining: number, limit: number) => string;
+  submitProof: string;
+  proofSubmissionTitle: string;
+  proofSubmissionDescription: string;
+  proofDescriptionLabel: string;
+  proofDescriptionPlaceholder: string;
+  proofLockDescription: string;
+  proofContentRequired: string;
+  proofFilesUploadFailed: string;
+  addProofImages: string;
+  proofAttachmentCount: (count: number, maximum: number) => string;
+  proofImageLabel: (index: number) => string;
+  removeProofImage: (index: number) => string;
+  proofFilePosition: (position: number) => string;
+  proofImagePickerError: string;
+  proofSubmissionSent: string;
+  confirmCompletionDescription: string;
+
+  confirmCompletion: string;
+  submitRework: string;
+  approveProof: string;
+  rejectProof: string;
+  proofReviewTitle: string;
+  proofReviewDescription: string;
+  proofReviewSubmittedAt: string;
+  proofAutoApprovesIn: (hours: number, minutes: number) => string;
+  proofAutoApprovedNote: string;
+  proofNotApprovedReason: string;
+  proofReviewDueAt: string;
+  proofReviewDescriptionLabel: string;
+  proofReviewNoDescription: string;
+  proofReviewEvidenceLabel: string;
+  proofReviewNoEvidence: string;
+  proofReviewFileLabel: (
+    position: number,
+    contentType: string | null,
+    size: string
+  ) => string;
+  proofReviewFileStatus: (status: string) => string;
+  proofReviewPreview: string;
+  proofReviewPreviewUnavailable: string;
+  proofReviewPreviewError: string;
+  proofReviewDownload: string;
+  proofReviewDownloading: string;
+  proofReviewDownloadErrorTitle: string;
+  proofReviewDownloadError: string;
+  proofReviewSharingUnavailable: string;
+  proofReviewDoNotApprove: string;
+  proofReviewApprove: string;
+  proofReviewReasonLabel: string;
+  proofReviewReasonPlaceholder: string;
+  proofReviewReasonRequired: string;
+  proofReviewReasonTooLong: string;
+  proofReviewConfirmNotApproved: string;
+  proofReviewNothingPending: string;
+  proofReviewSingleHint: string;
+  proofReviewGroupHint: string;
+  proofReviewTeamHint: string;
+  proofReviewPendingCount: (count: number) => string;
+  /** `null` means the submitter has not sent a Proof Submission yet. */
+  proofReviewStatus: (status: string | null) => string;
+  proofReviewWorkerFallback: string;
+  proofReviewTeamSubmittedBy: (leaderName: string) => string;
+  proofReviewOpen: string;
+  proofReviewOpenLabel: (submitterName: string) => string;
+  disputeBannerTitle: string;
+  disputeDescription: string;
+  resolveDispute: string;
+  completeQuest: string;
+  cancelQuest: string;
+  publishQuest: string;
+  escrowRewardPool: string;
+  escrowPlatformFee: string;
+  escrowTotal: string;
+  terminalBannerTitle: string;
+  terminalDescription: string;
+  conditionEditTitle: string;
+  conditionEditSubtitle: string;
+  conditionEditWarning: string;
+  proposeConditionChanges: string;
+  conditionItemPlaceholder: string;
+  conditionItemLabel: (index: number) => string;
+  addConditionItem: string;
+  moveConditionItemUp: (index: number) => string;
+  moveConditionItemDown: (index: number) => string;
+  removeConditionItem: (index: number) => string;
+  conditionItemRequired: string;
+  conditionDiffTitle: string;
+  conditionDiffAdded: string;
+  conditionDiffRemoved: string;
+  conditionDiffReordered: string;
+  conditionNoChanges: string;
+  submitConditionEdit: string;
+  submittingConditionEdit: string;
+  conditionEditSubmitError: string;
+  conditionEditPendingTitle: string;
+  conditionEditPendingDescription: string;
+  conditionEditCountdownLabel: string;
+  conditionEditVotingProgress: (accepted: number, total: number) => string;
+  reviewQuest: string;
+  fileDispute: string;
+}
+
+export const questBoardMessages: Record<SupportedLocale, QuestBoardMessages> = {
+  en: {
+    title: "Quest Board",
+    subtitle: "Find a Quest that fits your skills and time.",
+    fundingTitle: "My funding",
+    fundingHeld: "RESERVED PER WORKER PLACE",
+    fundingStatusLabel: "Wallet status",
+    fundingUnavailable: "Wallet balance unavailable",
+    fundingUnavailableDescription:
+      "We could not load your wallet balance. Refresh and try again.",
+    fundingReservationDescription:
+      "Quest Funding reserves the reward for each requested Worker place.",
+    fundingExpand: "Show funding details",
+    fundingCollapse: "Hide funding details",
+    fundingTopUp: "Top up",
+    fundingTransfer: "Transfer",
+    fundingActionsUnavailable:
+      "Transfers between Members are not supported. Use a funded Quest instead.",
+    topUpCreateError: "Unable to create the PromptPay QR. Please try again.",
+    topUpPaymentPending: "Awaiting payment confirmation…",
+    settlement: "Settlement",
+    settlementDescription: "Settlement pays rewards for the Actual Headcount.",
+    refunds: "Refunds",
+    refundsDescription: "Unused reserved Worker places are refunded.",
+    searchPlaceholder: "Search for a Quest",
+    clearSearch: "Clear Quest search",
+    clearSearchAndFilters: "Clear search and filters",
+    filter: "Filter by",
+    sort: "Sort by",
+    filtersTitle: "Filter Quests",
+    sortTitle: "Sort Quests",
+    applyFilters: "Apply filters",
+    clearAll: "Clear all",
+    selectedFilters: (count) =>
+      count === 0
+        ? "No filters selected"
+        : `${count} filter${count === 1 ? "" : "s"} selected`,
+    close: "Close",
+    cancel: "Cancel",
+    activeFiltersLabel: "Active Quest Board filters",
+    removeFilter: (label) => `Remove ${label} filter`,
+    tags: "Tags",
+    searchTags: "Search tags",
+    clearTagSearch: "Clear tag search",
+    noMatchingTags: "No matching tags",
+    removeSelectedTag: (tag) => `Remove ${tag}`,
+    givenPrice: "Hirer’s price",
+    reward: "Reward",
+    rewardMin: "Min price",
+    rewardMax: "Max price",
+    rewardInvalid:
+      "Enter valid non-negative whole-baht bounds with minimum no greater than maximum.",
+    rewardSummary: (minimum, maximum) =>
+      minimum !== null && maximum !== null
+        ? `฿${minimum}–฿${maximum}`
+        : minimum !== null
+          ? `From ฿${minimum}`
+          : `Up to ฿${maximum}`,
+    noLimit: "No limit",
+    deadline: "Deadline",
+    startTime: "Start time",
+    morning: "Morning",
+    afternoon: "Afternoon",
+    evening: "Evening",
+    schedule: "Schedule",
+    scheduleLocation: "Schedule & location",
+    startWork: "Start work",
+    finishBy: "Finish by",
+    timeNotSpecified: "Time not specified",
+    endTime: "End time",
+    location: "Where",
+    spotsSummary: (remaining, total) => `${remaining} of ${total} spots left`,
+    participantsSummary: (accepted, total) =>
+      `Participants ${accepted}/${total}`,
+    manageQuestTitle: "Manage Quest",
+    submittedTeamCount: (count) =>
+      `${count} submitted team${count === 1 ? "" : "s"}`,
+    manageCandidateAutoCancel:
+      "Select a Worker before the start time, otherwise this Quest is cancelled automatically.",
+    manageStartedCount: (started, total) =>
+      `${started} of ${total} started work`,
+    manageFundsHeld: "Held in escrow",
+    manageStartsIn: (days, hours, minutes) =>
+      `Starts in ${[days && `${days}d`, hours && `${hours}h`, `${minutes}m`]
+        .filter(Boolean)
+        .join(" ")}`,
+    manageBangkokTime: "Bangkok time",
+    endingSoon: "Ending soon",
+    imageCount: (count) => `${count} photo${count === 1 ? "" : "s"}`,
+    questImageLabel: (index) => `Quest image ${index}`,
+    imageUnavailable: "Quest image unavailable",
+    closeImageViewer: "Close image viewer",
+    perPerson: "/ person",
+    noQuests: "No quests available yet.",
+    noMatches: "No quests found",
+    clearFilters: "Clear filters",
+    errorTitle: "Quest Board unavailable",
+    errorDescription: "We could not load available Quests. Try again.",
+    manageSnapshotError: "We could not load this Quest. Try again.",
+    retry: "Try again",
+    retrySuccess: "Quest Board refreshed",
+    loading: "Loading Quests",
+    resultsLabel: "Quest Board results",
+    stateFull: "Quest full",
+    stateClosed: "Applications closed",
+    online: "Online",
+    onCampus: "On campus",
+    today: "Today",
+    within3Days: "Within 3 days",
+    within7Days: "Within 7 days",
+    newest: "Newest",
+    deadlineSoonest: "Deadline soonest",
+    rewardHighest: "Price highest",
+    back: "Go back",
+    details: "Quest details",
+    viewDetails: "View details",
+    creator: "Posted by",
+    messageOwner: "Message Quest owner",
+    messageOwnerShort: "Message owner",
+    messageOwnerLoading: "Opening chat…",
+    messageOwnerError:
+      "We could not open a chat with the Quest owner. Try again.",
+    requirements: "Requirements",
+    description: "Description",
+    completionCriteria: "Completion criteria",
+    proofRequired: "Proof of completion",
+    required: "Required",
+    optional: "Optional",
+    notNeeded: "Not needed",
+    candidateMode: "Candidate mode",
+    candidate: "Candidate",
+    selectRosterTitle: "Quest roster",
+    confirmSelectCandidateTitle: "Select this candidate?",
+    confirmSelectCandidateMessage:
+      "This assigns the Quest to them and automatically rejects every other applicant. This can't be undone.",
+    confirmSelectTeamTitle: "Select this team?",
+    confirmSelectTeamMessage:
+      "This assigns the Quest to every team member and automatically rejects every other team. This can't be undone.",
+    confirmRejectCandidateTitle: "Reject this candidate?",
+    confirmRejectTeamTitle: "Reject this team?",
+    confirmRejectMessage: "They will no longer be considered for this Quest.",
+    noSelectionNeeded: "This Quest fills automatically — no selection needed.",
+    rosterWorkersTitle: "Workers",
+    rosterWorkerCount: (count, headcount) =>
+      `${count} of ${headcount} ${headcount === 1 ? "Worker" : "Workers"}`,
+    rosterNoWorkers: "No Workers have joined yet.",
+    rosterProposalsTitle: "Candidate proposals",
+    rosterOpenProfile: (name) => `Open ${name}'s profile`,
+    actionFailedTitle: "Action failed",
+    actionFailedDescription: "The action could not be completed. Try again.",
+    firstCome: "First-come, first-served",
+    reviewCandidates: "Review candidates",
+    nextStep: "Next step",
+    applyForReview: "Apply for review",
+    participation: "Participation",
+    participants: "Participants",
+    participantProfile: (name) => `View profile of ${name}`,
+    singlePerson: "Single person",
+    team: "Team",
+    applyNow: "Apply now",
+    joinNow: "Join Quest",
+    editPost: "Edit post",
+    leaveQuest: "Leave Quest",
+    leaveQuestDescription:
+      "You will leave this Quest and lose your confirmed place.",
+    withdrawApplication: "Withdraw application",
+    withdrawApplicationDescription:
+      "Your application will be withdrawn and you will no longer be considered.",
+    leftQuest: "You left this Quest",
+    leftQuestDescription:
+      "This Quest has been removed from your active joined Quests.",
+    historyQuest: "Quest history",
+    historyQuestDescription:
+      "This Quest is in your history and no longer has an active action.",
+    postOwnerView: "Your Quest post",
+    postOwnerViewDescription:
+      "Manage this Quest from here. You can edit the post or review applicants from My Quests.",
+    confirmApplicationTitle: "Confirm your application",
+    confirmParticipationTitle: "Confirm your participation",
+    confirmApplicationDescription:
+      "You are applying for this Quest. Review the reward and deadline before continuing.",
+    confirmParticipationDescription:
+      "You are joining this Quest. Review the reward and schedule before continuing.",
+    confirmApplication: "Confirm application",
+    confirmParticipation: "Confirm participation",
+    notYet: "Not yet",
+    applicationAccepted: "Application accepted",
+    participationConfirmed: "Participation confirmed",
+    applicationPending: "Application pending",
+    applicationAcceptedDescription:
+      "Your place is confirmed. Keep the Quest details handy.",
+    applicationPendingDescription:
+      "The Quest owner will review your application.",
+    openWorkHub: "Open Work Hub",
+    groupFcfsHeadcount: "Workers needed",
+    groupFcfsRequestedWorkers: (headcount) =>
+      `${headcount} ${headcount === 1 ? "worker" : "workers"}`,
+    groupFcfsJoinRule: "Workers join one by one — first come, first served.",
+    groupFcfsUnderfillRule:
+      "If too few workers have joined by the start time, the Hirer decides whether to proceed or cancel. If proceeding, every joined Worker must accept the revised pay and due time within 10 minutes; any decline or no response cancels the Quest.",
+    groupFcfsJoinedProgress: (joined, headcount) =>
+      `${joined} of ${headcount} workers joined`,
+    groupFcfsWorkersNeeded: (count) =>
+      `${count} more ${count === 1 ? "worker" : "workers"} needed`,
+    groupFcfsAllSpotsFilled: "All spots filled",
+    groupFcfsFullForOthers: "Full — no more workers can join.",
+    groupFcfsYouAreIn: "You're in",
+    groupFcfsConfirmedSpot: "You're in — your spot is confirmed.",
+    groupFcfsAllFilledJoined: "All spots filled — you're in.",
+    groupFcfsLastSpotTaken: "Someone just took the last spot.",
+    groupFcfsUnderfillDecisionPending:
+      "Not enough workers joined. Waiting for the Hirer's decision.",
+    groupFcfsConsentRequired:
+      "The Hirer chose to proceed. Review the revised pay and due time, then respond before the server deadline.",
+    groupFcfsConsentAction: "Review and respond",
+    groupFcfsConsentComplete:
+      "Everyone accepted the revised terms. The Quest is assigned; open Work Hub for next steps.",
+    groupFcfsCancelledNextStep: "No action is needed. Browse other Quests.",
+    joinAlreadyConfirmed: "You're already in — your spot is confirmed.",
+    firstComeDescription: "Anyone can join while a spot is available.",
+    reviewCandidatesDescription:
+      "The Quest owner reviews applications before choosing participants.",
+    proofRequiredDescription:
+      "You will submit proof of completion when the Quest is done.",
+    proofOptionalDescription:
+      "You may submit proof of completion when the Quest is done.",
+    proofNotNeededDescription: "No proof of completion is needed.",
+    questFull: "Quest full",
+    joinQuestNotOpen: "This quest is no longer open for joining.",
+    joinQuestRosterFrozen:
+      "The worker roster is frozen because work has started.",
+    joinQuestHirerCannotJoin: "Quest owners cannot join their own quest.",
+    joinQuestMemberRestricted:
+      "Your account is temporarily restricted from joining quests.",
+    joinQuestModeNotAllowed: "This quest does not allow direct joining.",
+    joinQuestParticipationNotAllowed: "You are not allowed to join this quest.",
+    applicationsClosed: "Applications closed",
+    unavailableApplication: "This Quest is no longer accepting applications.",
+    questNotFound: "Quest not found",
+    questNotFoundDescription:
+      "This Quest does not exist or is no longer available.",
+    statusLabel: (status) =>
+      ({
+        QUEST_DRAFT: "Draft",
+        QUEST_OPEN: "Open",
+        QUEST_AWAITING_CONSENT: "Awaiting Worker consent",
+        QUEST_AWAITING_PARTIAL_GROUP_START_CONSENT: "Awaiting start consent",
+        QUEST_AWAITING_EDIT_CONSENT: "Awaiting edit consent",
+        QUEST_ASSIGNED: "Assigned",
+        QUEST_IN_PROGRESS: "In progress",
+        QUEST_SUBMITTED: "Proof submitted",
+        QUEST_APPROVED: "Approved",
+        QUEST_REWORK: "Rework requested",
+        QUEST_COMPLETED: "Completed",
+        QUEST_FAILED: "Failed",
+        QUEST_CANCELLED: "Cancelled",
+        QUEST_DISPUTED: "Disputed",
+        QUEST_HIDDEN: "Hidden",
+        TEAM_FORMING: "Forming",
+        TEAM_SUBMITTED: "Submitted",
+        TEAM_SELECTED: "Selected",
+        TEAM_REJECTED: "Rejected",
+        INVITATION_PENDING: "Invitation pending",
+        INVITATION_ACCEPTED: "Invitation accepted",
+        INVITATION_DECLINED: "Invitation declined",
+        INVITATION_EXPIRED: "Invitation expired",
+        INVITATION_REVOKED: "Invitation revoked",
+        APPLICATION_APPLIED: "Applied",
+        APPLICATION_SELECTED: "Selected",
+        APPLICATION_REJECTED: "Rejected",
+        APPLICATION_WITHDRAWN: "Withdrawn",
+        ASSIGNMENT_ACTIVE: "Active",
+        ASSIGNMENT_COMPLETED: "Completed",
+        ASSIGNMENT_INCOMPLETE: "Incomplete",
+        ASSIGNMENT_CANCELLED: "Cancelled",
+        PROOF_PENDING: "Proof pending",
+        PROOF_APPROVED: "Proof approved",
+        PROOF_REJECTED: "Proof rejected",
+        PROOF_AUTO_APPROVED: "Proof auto-approved",
+        EDIT_REQUEST_PENDING: "Consent pending",
+        EDIT_REQUEST_APPROVED: "Edit approved",
+        EDIT_REQUEST_REJECTED: "Edit rejected",
+        EDIT_RESPONSE_APPROVED: "Approved",
+        EDIT_RESPONSE_REJECTED: "Rejected",
+      })[status] ?? status,
+    consentBannerTitle: "Worker consent required",
+    consentBannerDescription: (approved, required) =>
+      `${approved} of ${required} Workers approved the proposed edit.`,
+    consentCountdown: "Consent time remaining",
+    approveEdit: "Approve edit",
+    rejectEdit: "Reject edit",
+    teamBannerTitle: "Candidate Team",
+    teamLeader: "Team Leader",
+    teamMemberCount: (members, required) => `${members}/${required} members`,
+    createTeam: "Form a Team",
+    inviteWorker: "Invite Worker",
+    submitTeam: "Submit Team",
+    acceptInvitation: "Accept invitation",
+    declineInvitation: "Decline invitation",
+    revokeInvitation: "Revoke invitation",
+    applicationBannerTitle: "Candidate applications",
+    applicationCount: (count) =>
+      `${count} application${count === 1 ? "" : "s"}`,
+    selectCandidate: "Select Candidate",
+    proofBannerTitle: "Proof and review",
+    proofPending: "Proof is waiting for Hirer review.",
+    proofRejected: "Proof needs rework.",
+    reworkRemaining: (remaining, limit) =>
+      `${remaining} of ${limit} rework attempts remaining`,
+    submitProof: "Submit proof",
+    proofSubmissionTitle: "Submit proof of completion",
+    proofSubmissionDescription:
+      "Add a short description or up to five proof files. Sending locks this proof for Hirer review.",
+    proofDescriptionLabel: "Description",
+    proofDescriptionPlaceholder: "Describe what you completed…",
+    proofLockDescription:
+      "At least a description or one proof file is required.",
+    proofContentRequired:
+      "Add a description or at least one proof file before sending.",
+    proofFilesUploadFailed:
+      "Some proof files failed to upload. Replace failed files and retry.",
+    addProofImages: "Add files",
+    proofAttachmentCount: (count, maximum) => `${count} of ${maximum} files`,
+    proofImageLabel: (index) => `Proof file ${index}`,
+    removeProofImage: (index) => `Remove proof file ${index}`,
+    proofFilePosition: (position) => `Proof file ${position}`,
+    proofImagePickerError: "Files could not be added. Try again.",
+    proofSubmissionSent: "Proof submitted for Hirer review.",
+    confirmCompletionDescription:
+      "Confirm that you completed this Quest. This action cannot be undone.",
+
+    confirmCompletion: "Confirm completion",
+    submitRework: "Submit rework",
+    approveProof: "Approve proof",
+    rejectProof: "Request rework",
+    proofReviewTitle: "Review submitted work",
+    proofReviewDescription:
+      "Inspect the submitted notes and evidence before making a final decision.",
+    proofReviewSubmittedAt: "Submitted",
+    proofAutoApprovesIn: (hours, minutes) =>
+      `Auto-approves in ${hours > 0 ? `${hours}h ` : ""}${minutes}m`,
+    proofAutoApprovedNote: "Approved automatically after 24 hours.",
+    proofNotApprovedReason: "Hirer's reason",
+    proofReviewDueAt: "Quest due at",
+    proofReviewDescriptionLabel: "Worker notes",
+    proofReviewNoDescription: "No notes were included.",
+    proofReviewEvidenceLabel: "Attached evidence",
+    proofReviewNoEvidence: "No evidence files were attached.",
+    proofReviewFileLabel: (position, contentType, size) =>
+      `File ${position}${contentType ? ` · ${contentType}` : ""}${size ? ` · ${size}` : ""}`,
+    proofReviewPreview: "Preview",
+    proofReviewPreviewUnavailable:
+      "A preview link is not available for this private file.",
+    proofReviewPreviewError: "This evidence could not be opened.",
+    proofReviewDownload: "Download",
+    proofReviewDownloading: "Downloading…",
+    proofReviewDownloadErrorTitle: "Download failed",
+    proofReviewDownloadError:
+      "This proof file could not be downloaded. Try again.",
+    proofReviewSharingUnavailable:
+      "File sharing is not available on this device.",
+    proofReviewDoNotApprove: "Do not approve",
+    proofReviewApprove: "Approve work",
+    proofReviewReasonLabel: "Reason for non-approval",
+    proofReviewReasonPlaceholder:
+      "Explain why the submitted work does not satisfy the Quest conditions.",
+    proofReviewReasonRequired: "Enter a reason before confirming non-approval.",
+    proofReviewReasonTooLong:
+      "The non-approval reason must be 1,000 characters or fewer.",
+    proofReviewFileStatus: (status) =>
+      ({
+        PROOF_FILE_READY: "Ready",
+        PROOF_FILE_FAILED: "Failed",
+        PROOF_FILE_PENDING: "Uploading",
+      })[status] ?? status,
+    proofReviewConfirmNotApproved: "Confirm non-approval",
+    proofReviewNothingPending:
+      "This Quest has no submitted work waiting for your review.",
+    proofReviewSingleHint:
+      "One Worker submits work for this Quest. Not approving it fails the Quest.",
+    proofReviewGroupHint:
+      "Each Worker submits their own work, and you review each submission separately. Not approving any submission fails the Quest; Workers you already approved keep their Reward.",
+    proofReviewTeamHint:
+      "The Team Leader submits one piece of work for the whole Team. Your decision applies to every teammate.",
+    proofReviewPendingCount: (count) =>
+      count === 0
+        ? "No submissions waiting for review"
+        : count === 1
+          ? "1 submission waiting for review"
+          : `${count} submissions waiting for review`,
+    proofReviewStatus: (status) =>
+      status === null
+        ? "Not submitted yet"
+        : ((
+            {
+              PROOF_PENDING: "Waiting for review",
+              PROOF_APPROVED: "Approved",
+              PROOF_NOT_APPROVED: "Not approved",
+            } as Record<string, string>
+          )[status] ?? status),
+    proofReviewWorkerFallback: "Worker",
+    proofReviewTeamSubmittedBy: (leaderName) => `Sent by ${leaderName}`,
+    proofReviewOpen: "Review",
+    proofReviewOpenLabel: (submitterName) =>
+      `Review submission from ${submitterName}`,
+    disputeBannerTitle: "Quest dispute",
+    disputeDescription:
+      "This Quest is waiting for an authorized dispute resolution.",
+    resolveDispute: "Resolve dispute",
+    completeQuest: "Complete Quest",
+    cancelQuest: "Cancel Quest",
+    publishQuest: "Publish Quest",
+    escrowRewardPool: "Reward pool",
+    escrowPlatformFee: "Platform Fee",
+    escrowTotal: "Total Escrow required",
+    terminalBannerTitle: "Quest closed",
+    terminalDescription:
+      "This Quest is terminal. It cannot be reopened or accepted again.",
+    conditionEditTitle: "Propose condition changes",
+    conditionEditSubtitle:
+      "Review the current conditions, then edit, add, remove, or reorder them below.",
+    conditionEditWarning:
+      "Every Active Worker must respond within 10 minutes. If anyone declines or time runs out, the Quest keeps its current conditions.",
+    proposeConditionChanges: "Propose condition changes",
+    conditionItemPlaceholder: "Describe a condition",
+    conditionItemLabel: (index) => `Condition ${index}`,
+    addConditionItem: "Add condition",
+    moveConditionItemUp: (index) => `Move condition ${index} up`,
+    moveConditionItemDown: (index) => `Move condition ${index} down`,
+    removeConditionItem: (index) => `Remove condition ${index}`,
+    conditionItemRequired: "Condition text cannot be empty.",
+    conditionDiffTitle: "Changes",
+    conditionDiffAdded: "Added",
+    conditionDiffRemoved: "Removed",
+    conditionDiffReordered: "Order changed",
+    conditionNoChanges: "No changes yet.",
+    submitConditionEdit: "Send to Workers",
+    submittingConditionEdit: "Sending…",
+    conditionEditSubmitError: "Unable to submit the condition edit. Try again.",
+    conditionEditPendingTitle: "Condition changes pending",
+    conditionEditPendingDescription:
+      "Active Workers are reviewing your proposed conditions. Current conditions stay in effect until everyone responds or time runs out.",
+    conditionEditCountdownLabel: "Time remaining",
+    conditionEditVotingProgress: (accepted, total) =>
+      `${accepted} of ${total} Workers responded`,
+    reviewQuest: "Write review",
+    fileDispute: "File dispute",
+  },
+  th: {
+    title: "กระดานเควสต์",
+    subtitle: "ค้นหาเควสต์ที่เหมาะกับทักษะและเวลาของคุณ",
+    fundingTitle: "เงินของฉัน",
+    fundingHeld: "กันเงินไว้สำหรับที่ของ Worker",
+    fundingStatusLabel: "สถานะกระเป๋าเงิน",
+    fundingUnavailable: "ไม่สามารถโหลดข้อมูลยอดเงินได้",
+    fundingUnavailableDescription:
+      "ไม่สามารถโหลดข้อมูลยอดเงินของคุณได้ โปรดลองรีเฟรชแล้วลองใหม่อีกครั้ง",
+    fundingReservationDescription:
+      "การกันเงินสำหรับเควสต์จะสำรองค่าตอบแทนตามจำนวน Worker ที่ต้องการ",
+    fundingExpand: "แสดงรายละเอียดการกันเงิน",
+    fundingCollapse: "ซ่อนรายละเอียดการกันเงิน",
+    fundingTopUp: "เติมเงิน",
+    fundingTransfer: "โอนเงิน",
+    fundingActionsUnavailable:
+      "ไม่รองรับการโอนเงินระหว่าง Member โปรดใช้เควสต์ที่มีการกันเงินแทน",
+    topUpCreateError: "ไม่สามารถสร้าง QR พร้อมเพย์ได้ โปรดลองอีกครั้ง",
+    topUpPaymentPending: "กำลังรอการยืนยันการชำระเงิน…",
+    settlement: "การชำระเงิน",
+    settlementDescription:
+      "การชำระเงินจ่ายค่าตอบแทนตามจำนวน Worker จริง (Actual Headcount)",
+    refunds: "การคืนเงิน",
+    refundsDescription: "คืนเงินสำหรับที่ของ Worker ที่กันไว้แต่ไม่ได้ใช้",
+    searchPlaceholder: "ค้นหาเควสต์",
+    clearSearch: "ล้างการค้นหาเควสต์",
+    clearSearchAndFilters: "ล้างการค้นหาและตัวกรอง",
+    filter: "กรองโดย",
+    sort: "เรียงโดย",
+    filtersTitle: "กรองเควสต์",
+    sortTitle: "เรียงเควสต์",
+    applyFilters: "ใช้ตัวกรอง",
+    clearAll: "ล้างทั้งหมด",
+    selectedFilters: (count) =>
+      count === 0
+        ? "ยังไม่ได้เลือกตัวกรอง"
+        : `เลือกตัวกรองแล้ว ${count} รายการ`,
+    close: "ปิด",
+    cancel: "ยกเลิก",
+    activeFiltersLabel: "ตัวกรองกระดานเควสต์ที่ใช้งานอยู่",
+    removeFilter: (label) => `ลบตัวกรอง${label}`,
+    tags: "แท็ก",
+    searchTags: "ค้นหาแท็ก",
+    clearTagSearch: "ล้างการค้นหาแท็ก",
+    noMatchingTags: "ไม่พบแท็กที่ตรงกัน",
+    removeSelectedTag: (tag) => `ลบ ${tag}`,
+    givenPrice: "ราคาที่ผู้ว่าจ้างเสนอ",
+    reward: "ค่าตอบแทน",
+    rewardMin: "ราคาขั้นต่ำ",
+    rewardMax: "ราคาสูงสุด",
+    rewardInvalid:
+      "กรอกค่าตอบแทนเป็นจำนวนเต็มที่ไม่ติดลบ และค่าขั้นต่ำต้องไม่มากกว่าค่าสูงสุด",
+    rewardSummary: (minimum, maximum) =>
+      minimum !== null && maximum !== null
+        ? `฿${minimum}–฿${maximum}`
+        : minimum !== null
+          ? `ตั้งแต่ ฿${minimum}`
+          : `ไม่เกิน ฿${maximum}`,
+    noLimit: "ไม่จำกัด",
+    deadline: "กำหนดส่ง",
+    startTime: "เวลาเริ่มต้น",
+    morning: "ช่วงเช้า",
+    afternoon: "ช่วงบ่าย",
+    evening: "ช่วงเย็น",
+    schedule: "เวลา",
+    scheduleLocation: "กำหนดการและสถานที่",
+    startWork: "เริ่มงาน",
+    finishBy: "ส่งงานภายใน",
+    timeNotSpecified: "ยังไม่ระบุเวลา",
+    endTime: "เวลาสิ้นสุด",
+    location: "สถานที่",
+    spotsSummary: (remaining, total) =>
+      `เหลือ ${remaining} จาก ${total} ที่ว่าง`,
+    participantsSummary: (accepted, total) =>
+      `ผู้เข้าร่วม ${accepted}/${total} คน`,
+    manageQuestTitle: "จัดการเควสต์",
+    submittedTeamCount: (count) => `${count} ทีมที่ส่งแล้ว`,
+    manageCandidateAutoCancel:
+      "เลือกผู้ทำงานก่อนเวลาเริ่มงาน มิฉะนั้นเควสต์จะถูกยกเลิกอัตโนมัติ",
+    manageStartedCount: (started, total) =>
+      `เริ่มงานแล้ว ${started}/${total} คน`,
+    manageFundsHeld: "เงินที่กันไว้",
+    manageStartsIn: (days, hours, minutes) =>
+      `เริ่มในอีก ${[
+        days && `${days} วัน`,
+        hours && `${hours} ชม.`,
+        `${minutes} นาที`,
+      ]
+        .filter(Boolean)
+        .join(" ")}`,
+    manageBangkokTime: "เวลาไทย",
+    endingSoon: "ใกล้ปิดรับสมัคร",
+    imageCount: (count) => `${count} รูป`,
+    questImageLabel: (index) => `รูปเควสต์ที่ ${index}`,
+    imageUnavailable: "ไม่สามารถแสดงรูปเควสต์ได้",
+    closeImageViewer: "ปิดโปรแกรมดูรูปภาพ",
+    perPerson: "/ คน",
+    noQuests: "ยังไม่มีเควสต์ที่พร้อมให้ค้นหา",
+    noMatches: "ไม่พบเควสต์",
+    clearFilters: "ล้างตัวกรอง",
+    errorTitle: "ไม่สามารถโหลดกระดานเควสต์ได้",
+    errorDescription: "โหลดเควสต์ที่พร้อมใช้งานไม่สำเร็จ ลองอีกครั้ง",
+    manageSnapshotError: "โหลดข้อมูลเควสต์นี้ไม่สำเร็จ ลองอีกครั้ง",
+    retry: "ลองอีกครั้ง",
+    retrySuccess: "รีเฟรชกระดานเควสต์แล้ว",
+    loading: "กำลังโหลดเควสต์",
+    resultsLabel: "ผลลัพธ์กระดานเควสต์",
+    stateFull: "เควสต์เต็มแล้ว",
+    stateClosed: "ปิดรับสมัครแล้ว",
+    online: "ออนไลน์",
+    onCampus: "ในมหาวิทยาลัย",
+    today: "วันนี้",
+    within3Days: "ภายใน 3 วัน",
+    within7Days: "ภายใน 7 วัน",
+    newest: "ใหม่ล่าสุด",
+    deadlineSoonest: "กำหนดส่งใกล้ที่สุด",
+    rewardHighest: "ราคาสูงสุด",
+    back: "ย้อนกลับ",
+    details: "รายละเอียดเควสต์",
+    viewDetails: "ดูรายละเอียด",
+    creator: "โพสต์โดย",
+    messageOwner: "แชทถามรายละเอียดกับผู้ว่าจ้าง",
+    messageOwnerShort: "แชทผู้ว่าจ้าง",
+    messageOwnerLoading: "กำลังเปิดแชท…",
+    messageOwnerError: "ไม่สามารถเปิดแชทกับผู้ว่าจ้างได้ ลองอีกครั้ง",
+    requirements: "รายละเอียดที่ต้องทำ",
+    description: "คำอธิบาย",
+    completionCriteria: "เกณฑ์การเสร็จงาน",
+    proofRequired: "หลักฐานการทำงาน",
+    required: "จำเป็นต้องมี",
+    optional: "ไม่บังคับ",
+    notNeeded: "ไม่ต้องมี",
+    candidateMode: "รูปแบบการคัดเลือก",
+    candidate: "คัดเลือก",
+    selectRosterTitle: "รายชื่อในเควสต์",
+    confirmSelectCandidateTitle: "เลือกผู้สมัครคนนี้หรือไม่",
+    confirmSelectCandidateMessage:
+      "การเลือกจะมอบหมายเควสต์ให้ผู้สมัครคนนี้และปฏิเสธผู้สมัครคนอื่นโดยอัตโนมัติ ไม่สามารถย้อนกลับได้",
+    confirmSelectTeamTitle: "เลือกทีมนี้หรือไม่",
+    confirmSelectTeamMessage:
+      "การเลือกจะมอบหมายเควสต์ให้สมาชิกทุกคนในทีมนี้และปฏิเสธทีมอื่นโดยอัตโนมัติ ไม่สามารถย้อนกลับได้",
+    confirmRejectCandidateTitle: "ปฏิเสธผู้สมัครคนนี้หรือไม่",
+    confirmRejectTeamTitle: "ปฏิเสธทีมนี้หรือไม่",
+    confirmRejectMessage: "ผู้สมัครนี้จะไม่ถูกพิจารณาสำหรับเควสต์นี้อีก",
+    noSelectionNeeded: "เควสต์นี้รับผู้ทำงานอัตโนมัติ ไม่ต้องคัดเลือก",
+    rosterWorkersTitle: "ผู้ทำงาน",
+    rosterWorkerCount: (count, headcount) =>
+      `ผู้ทำงาน ${count}/${headcount} คน`,
+    rosterNoWorkers: "ยังไม่มีผู้ทำงานเข้าร่วม",
+    rosterProposalsTitle: "ข้อเสนอผู้สมัคร",
+    rosterOpenProfile: (name) => `ดูโปรไฟล์ของ ${name}`,
+    actionFailedTitle: "การดำเนินการล้มเหลว",
+    actionFailedDescription: "ดำเนินการไม่สำเร็จ โปรดลองอีกครั้ง",
+    groupFcfsJoinRule: "ผู้ทำงานเข้าร่วมทีละคนตามลำดับก่อนหลัง",
+    groupFcfsUnderfillRule:
+      "หากมีผู้ทำงานเข้าร่วมน้อยกว่าที่ต้องการเมื่อถึงเวลาเริ่ม ผู้ว่าจ้างจะเลือกดำเนินการต่อหรือยกเลิก หากดำเนินการต่อ ผู้ทำงานที่เข้าร่วมทุกคนต้องยอมรับค่าตอบแทนและกำหนดส่งใหม่ภายใน 10 นาที หากมีผู้ปฏิเสธหรือไม่ตอบ เควสต์จะถูกยกเลิก",
+    groupFcfsJoinedProgress: (joined, headcount) =>
+      `มีผู้ทำงานเข้าร่วม ${joined} จาก ${headcount} คน`,
+    groupFcfsWorkersNeeded: (count) => `ต้องการผู้ทำงานเพิ่มอีก ${count} คน`,
+    groupFcfsAllSpotsFilled: "ครบจำนวนผู้ทำงานแล้ว",
+    groupFcfsFullForOthers: "ปิดรับแล้ว — ไม่สามารถเข้าร่วมเพิ่มได้",
+    groupFcfsYouAreIn: "คุณเข้าร่วมแล้ว",
+    groupFcfsConfirmedSpot: "คุณเข้าร่วมแล้ว — ยืนยันตำแหน่งของคุณแล้ว",
+    groupFcfsAllFilledJoined: "ผู้ทำงานครบแล้ว — คุณเข้าร่วมแล้ว",
+    groupFcfsLastSpotTaken: "มีคนเพิ่งรับตำแหน่งสุดท้ายไป",
+    groupFcfsUnderfillDecisionPending:
+      "มีผู้ทำงานเข้าร่วมไม่ครบ กำลังรอการตัดสินใจจากผู้ว่าจ้าง",
+    groupFcfsConsentRequired:
+      "ผู้ว่าจ้างเลือกดำเนินการต่อ โปรดตรวจสอบค่าตอบแทนและกำหนดส่งใหม่ แล้วตอบกลับก่อนหมดเวลาตามที่เซิร์ฟเวอร์กำหนด",
+    groupFcfsConsentAction: "ตรวจสอบและตอบกลับ",
+    groupFcfsConsentComplete:
+      "ทุกคนยอมรับเงื่อนไขใหม่แล้ว เควสต์ได้รับมอบหมาย เปิดศูนย์งานเพื่อดูขั้นตอนถัดไป",
+    groupFcfsCancelledNextStep: "ไม่ต้องดำเนินการใด ๆ ดูเควสต์อื่นได้",
+    joinAlreadyConfirmed: "คุณเข้าร่วมแล้ว — ยืนยันตำแหน่งของคุณแล้ว",
+    firstCome: "มาก่อนได้ก่อน",
+    reviewCandidates: "ตรวจสอบผู้สมัคร",
+    nextStep: "ขั้นตอนถัดไป",
+    applyForReview: "สมัครเพื่อรอการคัดเลือก",
+    participation: "การเข้าร่วม",
+    participants: "ผู้เข้าร่วม",
+    participantProfile: (name) => `ดูโปรไฟล์ของ ${name}`,
+    singlePerson: "คนเดียว",
+    team: "ทีม",
+    applyNow: "สมัครเลย",
+    joinNow: "เข้าร่วมเควสต์",
+    editPost: "แก้ไขโพสต์",
+    leaveQuest: "ออกจากเควสต์",
+    leaveQuestDescription:
+      "คุณจะออกจากเควสต์นี้และเสียสิทธิ์ที่ได้รับการยืนยันแล้ว",
+    withdrawApplication: "ถอนใบสมัคร",
+    withdrawApplicationDescription:
+      "ใบสมัครของคุณจะถูกถอน และจะไม่ถูกพิจารณาเข้าร่วมเควสต์นี้อีก",
+    leftQuest: "ออกจากเควสต์แล้ว",
+    leftQuestDescription: "เควสต์นี้ถูกนำออกจากรายการเควสต์ที่คุณเข้าร่วมแล้ว",
+    historyQuest: "ประวัติเควสต์",
+    historyQuestDescription:
+      "เควสต์นี้อยู่ในประวัติของคุณและไม่มีการดำเนินการที่ใช้งานอยู่",
+    postOwnerView: "โพสต์เควสต์ของคุณ",
+    postOwnerViewDescription:
+      "จัดการเควสต์นี้ได้จากหน้านี้ แก้ไขโพสต์หรือดูผู้สมัครได้จาก MyQuest",
+    confirmApplicationTitle: "ยืนยันการสมัคร",
+    confirmParticipationTitle: "ยืนยันการเข้าร่วม",
+    confirmApplicationDescription:
+      "คุณกำลังสมัครเควสต์นี้ ตรวจสอบค่าตอบแทนและกำหนดส่งก่อนดำเนินการต่อ",
+    confirmParticipationDescription:
+      "คุณกำลังเข้าร่วมเควสต์นี้ ตรวจสอบค่าตอบแทนและกำหนดการก่อนดำเนินการต่อ",
+    confirmApplication: "ยืนยันการสมัคร",
+    confirmParticipation: "ยืนยันการเข้าร่วม",
+    notYet: "ไว้ก่อน",
+    applicationAccepted: "สมัครสำเร็จ",
+    participationConfirmed: "ยืนยันการเข้าร่วมแล้ว",
+    applicationPending: "รอตรวจสอบการสมัคร",
+    applicationAcceptedDescription:
+      "คุณได้รับการยืนยันเข้าร่วมแล้ว เก็บรายละเอียดเควสต์นี้ไว้ดูภายหลัง",
+    applicationPendingDescription: "เจ้าของเควสต์จะตรวจสอบใบสมัครของคุณ",
+    openWorkHub: "เปิดศูนย์งาน",
+    firstComeDescription: "เข้าร่วมได้ทันทีเมื่อยังมีที่ว่าง",
+    groupFcfsHeadcount: "จำนวนผู้ทำงาน",
+    groupFcfsRequestedWorkers: (headcount) => `${headcount} คน`,
+    reviewCandidatesDescription:
+      "เจ้าของเควสต์จะตรวจสอบใบสมัครก่อนเลือกผู้เข้าร่วม",
+    proofRequiredDescription: "คุณต้องส่งหลักฐานการทำงานเมื่อทำเควสต์เสร็จ",
+    proofOptionalDescription:
+      "คุณสามารถส่งหลักฐานการทำงานเมื่อทำเควสต์เสร็จได้",
+    proofNotNeededDescription: "ไม่จำเป็นต้องส่งหลักฐานการทำงาน",
+    questFull: "เควสต์เต็มแล้ว",
+    joinQuestNotOpen: "เควสต์นี้ไม่เปิดรับผู้เข้าร่วมแล้ว",
+    joinQuestRosterFrozen: "เริ่มงานแล้วและปิดการเปลี่ยนแปลงผู้ทำงาน",
+    joinQuestHirerCannotJoin: "ผู้ว่าจ้างไม่สามารถเข้าร่วมเควสต์ของตนเองได้",
+    joinQuestMemberRestricted: "บัญชีของคุณถูกจำกัดการเข้าร่วมเควสต์ชั่วคราว",
+    joinQuestModeNotAllowed: "เควสต์นี้ไม่อนุญาตให้เข้าร่วมโดยตรง",
+    joinQuestParticipationNotAllowed: "คุณไม่ได้รับอนุญาตให้เข้าร่วมเควสต์นี้",
+    applicationsClosed: "ปิดรับสมัครแล้ว",
+    unavailableApplication: "เควสต์นี้ไม่เปิดรับสมัครแล้ว",
+    questNotFound: "ไม่พบเควสต์",
+    questNotFoundDescription: "ไม่มีเควสต์นี้หรือไม่พร้อมให้ดูรายละเอียดแล้ว",
+    statusLabel: (status) =>
+      ({
+        QUEST_DRAFT: "ฉบับร่าง",
+        QUEST_OPEN: "เปิดรับผู้เข้าร่วม",
+        QUEST_AWAITING_CONSENT: "รอความยินยอมจากผู้ทำงาน",
+        QUEST_AWAITING_PARTIAL_GROUP_START_CONSENT: "รออนุมัติเริ่มงาน",
+        QUEST_AWAITING_EDIT_CONSENT: "รออนุมัติการแก้ไข",
+        QUEST_ASSIGNED: "มอบหมายแล้ว",
+        QUEST_IN_PROGRESS: "กำลังทำงาน",
+        QUEST_SUBMITTED: "ส่งหลักฐานแล้ว",
+        QUEST_APPROVED: "อนุมัติแล้ว",
+        QUEST_REWORK: "ขอแก้ไขหลักฐาน",
+        QUEST_COMPLETED: "เสร็จสิ้น",
+        QUEST_CANCELLED: "ยกเลิกแล้ว",
+        QUEST_FAILED: "ไม่สำเร็จ",
+        QUEST_HIDDEN: "ซ่อนอยู่",
+        TEAM_FORMING: "กำลังรวมทีม",
+        TEAM_SUBMITTED: "ส่งทีมแล้ว",
+        TEAM_SELECTED: "เลือกทีมแล้ว",
+        TEAM_REJECTED: "ไม่ผ่านการเลือก",
+        INVITATION_PENDING: "รอตอบรับคำเชิญ",
+        INVITATION_ACCEPTED: "ตอบรับคำเชิญแล้ว",
+        INVITATION_DECLINED: "ปฏิเสธคำเชิญแล้ว",
+        INVITATION_EXPIRED: "คำเชิญหมดอายุ",
+        INVITATION_REVOKED: "เพิกถอนคำเชิญแล้ว",
+        APPLICATION_APPLIED: "สมัครแล้ว",
+        APPLICATION_SELECTED: "ได้รับเลือก",
+        APPLICATION_REJECTED: "ไม่ผ่านการเลือก",
+        APPLICATION_WITHDRAWN: "ถอนใบสมัครแล้ว",
+        ASSIGNMENT_ACTIVE: "กำลังทำงาน",
+        ASSIGNMENT_COMPLETED: "เสร็จสิ้น",
+        ASSIGNMENT_INCOMPLETE: "ไม่สมบูรณ์",
+        ASSIGNMENT_CANCELLED: "ยกเลิกแล้ว",
+        PROOF_PENDING: "รอตรวจสอบหลักฐาน",
+        PROOF_APPROVED: "อนุมัติหลักฐานแล้ว",
+        PROOF_REJECTED: "หลักฐานถูกปฏิเสธ",
+        PROOF_AUTO_APPROVED: "อนุมัติหลักฐานอัตโนมัติ",
+        EDIT_REQUEST_PENDING: "รอความยินยอม",
+        EDIT_REQUEST_APPROVED: "อนุมัติการแก้ไขแล้ว",
+        EDIT_REQUEST_REJECTED: "ปฏิเสธการแก้ไขแล้ว",
+        EDIT_RESPONSE_APPROVED: "อนุมัติแล้ว",
+        EDIT_RESPONSE_REJECTED: "ปฏิเสธแล้ว",
+      })[status] ?? status,
+    consentBannerTitle: "ต้องขอความยินยอมจากผู้ทำงาน",
+    consentBannerDescription: (approved, required) =>
+      `ผู้ทำงานอนุมัติการแก้ไขแล้ว ${approved} จาก ${required} คน`,
+    consentCountdown: "เวลาที่เหลือสำหรับการยินยอม",
+    approveEdit: "อนุมัติการแก้ไข",
+    rejectEdit: "ปฏิเสธการแก้ไข",
+    teamBannerTitle: "ทีมผู้สมัคร",
+    teamLeader: "หัวหน้าทีม",
+    teamMemberCount: (members, required) => `${members}/${required} คน`,
+    createTeam: "สร้างทีม",
+    inviteWorker: "เชิญผู้ทำงาน",
+    submitTeam: "ส่งทีมเพื่อพิจารณา",
+    acceptInvitation: "ตอบรับคำเชิญ",
+    declineInvitation: "ปฏิเสธคำเชิญ",
+    revokeInvitation: "เพิกถอนคำเชิญ",
+    applicationBannerTitle: "ใบสมัครผู้สมัคร",
+    applicationCount: (count) => `${count} ใบสมัคร`,
+    selectCandidate: "เลือกผู้สมัคร",
+    proofBannerTitle: "หลักฐานและการตรวจสอบ",
+    proofPending: "หลักฐานกำลังรอผู้ว่าจ้างตรวจสอบ",
+    proofRejected: "หลักฐานต้องแก้ไขใหม่",
+    reworkRemaining: (remaining, limit) =>
+      `เหลือสิทธิ์แก้ไข ${remaining} จาก ${limit} ครั้ง`,
+    submitProof: "ส่งหลักฐาน",
+    proofSubmissionTitle: "ส่งหลักฐานการเสร็จงาน",
+    proofSubmissionDescription:
+      "เพิ่มคำอธิบายสั้น ๆ หรือไฟล์หลักฐานได้สูงสุด 5 ไฟล์ เมื่อส่งแล้วจะแก้ไขไม่ได้และจะรอผู้ว่าจ้างตรวจสอบ",
+    proofDescriptionLabel: "รายละเอียดการทำงาน",
+    proofDescriptionPlaceholder: "อธิบายสิ่งที่คุณทำเสร็จแล้ว",
+    proofLockDescription: "ต้องมีคำอธิบายหรือไฟล์หลักฐานอย่างน้อย 1 ไฟล์",
+    proofContentRequired: "เพิ่มคำอธิบายหรือไฟล์หลักฐานอย่างน้อย 1 ไฟล์ก่อนส่ง",
+    proofFilesUploadFailed:
+      "ไฟล์หลักฐานบางรายการอัปโหลดไม่สำเร็จ โปรดเปลี่ยนไฟล์ที่ล้มเหลวแล้วลองใหม่",
+    addProofImages: "เพิ่มไฟล์",
+    proofAttachmentCount: (count, maximum) => `${count}/${maximum} ไฟล์`,
+    proofImageLabel: (index) => `ไฟล์หลักฐานที่ ${index}`,
+    removeProofImage: (index) => `ลบไฟล์หลักฐานที่ ${index}`,
+    proofFilePosition: (position) => `ไฟล์หลักฐานที่ ${position}`,
+    proofImagePickerError: "เพิ่มไฟล์ไม่สำเร็จ ลองอีกครั้ง",
+    proofSubmissionSent: "ส่งหลักฐานให้ผู้ว่าจ้างตรวจสอบแล้ว",
+    confirmCompletionDescription:
+      "ยืนยันว่าคุณทำเควสต์นี้เสร็จแล้ว การดำเนินการนี้ไม่สามารถย้อนกลับได้",
+
+    confirmCompletion: "ยืนยันการเสร็จสิ้น",
+    submitRework: "ส่งหลักฐานที่แก้ไข",
+    approveProof: "อนุมัติหลักฐาน",
+    rejectProof: "ขอให้แก้ไขใหม่",
+    proofReviewTitle: "ตรวจสอบงานที่ส่ง",
+    proofReviewDescription:
+      "ตรวจสอบรายละเอียดและหลักฐานก่อนตัดสินใจขั้นสุดท้าย",
+    proofReviewSubmittedAt: "เวลาที่ส่ง",
+    proofAutoApprovesIn: (hours, minutes) =>
+      `อนุมัติอัตโนมัติในอีก ${hours > 0 ? `${hours} ชม. ` : ""}${minutes} นาที`,
+    proofAutoApprovedNote: "อนุมัติอัตโนมัติหลังครบ 24 ชั่วโมง",
+    proofNotApprovedReason: "เหตุผลของผู้ว่าจ้าง",
+    proofReviewDueAt: "กำหนดส่งเควสต์",
+    proofReviewDescriptionLabel: "รายละเอียดจากผู้ทำงาน",
+    proofReviewNoDescription: "ไม่ได้แนบรายละเอียด",
+    proofReviewEvidenceLabel: "หลักฐานที่แนบ",
+    proofReviewNoEvidence: "ไม่ได้แนบไฟล์หลักฐาน",
+    proofReviewFileLabel: (position, contentType, size) =>
+      `ไฟล์ที่ ${position}${contentType ? ` · ${contentType}` : ""}${size ? ` · ${size}` : ""}`,
+    proofReviewPreview: "ดูตัวอย่าง",
+    proofReviewPreviewUnavailable: "ไม่มีลิงก์ตัวอย่างสำหรับไฟล์ส่วนตัวนี้",
+    proofReviewPreviewError: "ไม่สามารถเปิดหลักฐานนี้ได้",
+    proofReviewDownload: "ดาวน์โหลด",
+    proofReviewDownloading: "กำลังดาวน์โหลด…",
+    proofReviewDownloadErrorTitle: "ดาวน์โหลดไม่สำเร็จ",
+    proofReviewDownloadError:
+      "ไม่สามารถดาวน์โหลดไฟล์หลักฐานได้ โปรดลองอีกครั้ง",
+    proofReviewSharingUnavailable: "อุปกรณ์นี้ไม่รองรับการแชร์ไฟล์",
+    proofReviewDoNotApprove: "ไม่อนุมัติงาน",
+    proofReviewApprove: "อนุมัติงาน",
+    proofReviewReasonLabel: "เหตุผลที่ไม่อนุมัติ",
+    proofReviewReasonPlaceholder:
+      "อธิบายว่าเหตุใดงานที่ส่งจึงไม่ตรงตามเงื่อนไขของเควสต์",
+    proofReviewReasonRequired: "กรุณาระบุเหตุก่อนยืนยันการไม่อนุมัติ",
+    proofReviewReasonTooLong: "เหตุผลต้องมีความยาวไม่เกิน 1,000 ตัวอักษร",
+    proofReviewFileStatus: (status) =>
+      ({
+        PROOF_FILE_READY: "พร้อม",
+        PROOF_FILE_FAILED: "ล้มเหลว",
+        PROOF_FILE_PENDING: "กำลังอัปโหลด",
+      })[status] ?? status,
+    proofReviewConfirmNotApproved: "ยืนยันการไม่อนุมัติ",
+    proofReviewNothingPending: "เควสต์นี้ไม่มีงานที่รอให้คุณตรวจ",
+    proofReviewSingleHint:
+      "ผู้ทำงานหนึ่งคนส่งงานสำหรับเควสต์นี้ หากไม่อนุมัติ เควสต์จะล้มเหลว",
+    proofReviewGroupHint:
+      "ผู้ทำงานแต่ละคนส่งงานของตนเอง และคุณต้องตรวจทีละรายการ หากไม่อนุมัติงานใดงานหนึ่ง เควสต์จะล้มเหลว ผู้ทำงานที่คุณอนุมัติแล้วยังได้รับรางวัล",
+    proofReviewTeamHint:
+      "หัวหน้าทีมส่งงานหนึ่งชิ้นแทนทั้งทีม การตัดสินใจของคุณมีผลกับสมาชิกทุกคนในทีม",
+    proofReviewPendingCount: (count) =>
+      count === 0 ? "ไม่มีงานที่รอตรวจ" : `มีงาน ${count} รายการรอตรวจ`,
+    proofReviewStatus: (status) =>
+      status === null
+        ? "ยังไม่ส่งงาน"
+        : ((
+            {
+              PROOF_PENDING: "รอตรวจ",
+              PROOF_APPROVED: "อนุมัติแล้ว",
+              PROOF_NOT_APPROVED: "ไม่อนุมัติ",
+            } as Record<string, string>
+          )[status] ?? status),
+    proofReviewWorkerFallback: "ผู้ทำงาน",
+    proofReviewTeamSubmittedBy: (leaderName) => `ส่งโดย ${leaderName}`,
+    proofReviewOpen: "ตรวจงาน",
+    proofReviewOpenLabel: (submitterName) =>
+      `ตรวจงานที่ส่งโดย ${submitterName}`,
+    disputeBannerTitle: "ข้อพิพาทเควสต์",
+    disputeDescription: "เควสต์นี้รอการแก้ไขข้อพิพาทจากผู้มีอำนาจ",
+    resolveDispute: "แก้ไขข้อพิพาท",
+    completeQuest: "ทำเควสต์ให้เสร็จสิ้น",
+    cancelQuest: "ยกเลิกเควสต์",
+    publishQuest: "เผยแพร่เควสต์",
+    escrowRewardPool: "เงินรางวัลรวม",
+    escrowPlatformFee: "ค่าธรรมเนียมแพลตฟอร์ม",
+    escrowTotal: "ยอดเงินที่ต้องพักไว้",
+    terminalBannerTitle: "ปิดเควสต์แล้ว",
+    terminalDescription:
+      "เควสต์นี้อยู่ในสถานะสิ้นสุด ไม่สามารถเปิดใหม่หรือรับผู้เข้าร่วมเพิ่มได้",
+    conditionEditTitle: "เสนอแก้ไขเงื่อนไข",
+    conditionEditSubtitle:
+      "ตรวจสอบเงื่อนไขปัจจุบัน แล้วแก้ไข เพิ่ม ลบ หรือจัดลำดับใหม่ด้านล่าง",
+    conditionEditWarning:
+      "ผู้ทำงานที่ยังปฏิบัติงานอยู่ทุกคนต้องตอบภายใน 10 นาที หากมีผู้ปฏิเสธหรือหมดเวลา เควสต์จะยังคงใช้เงื่อนไขเดิม",
+    proposeConditionChanges: "เสนอแก้ไขเงื่อนไข",
+    conditionItemPlaceholder: "อธิบายเงื่อนไข",
+    conditionItemLabel: (index) => `เงื่อนไขที่ ${index}`,
+    addConditionItem: "เพิ่มเงื่อนไข",
+    moveConditionItemUp: (index) => `เลื่อนเงื่อนไขที่ ${index} ขึ้น`,
+    moveConditionItemDown: (index) => `เลื่อนเงื่อนไขที่ ${index} ลง`,
+    removeConditionItem: (index) => `ลบเงื่อนไขที่ ${index}`,
+    conditionItemRequired: "ข้อความเงื่อนไขต้องไม่ว่างเปล่า",
+    conditionDiffTitle: "การเปลี่ยนแปลง",
+    conditionDiffAdded: "เพิ่มแล้ว",
+    conditionDiffRemoved: "ลบแล้ว",
+    conditionDiffReordered: "ลำดับเปลี่ยนไป",
+    conditionNoChanges: "ยังไม่มีการเปลี่ยนแปลง",
+    submitConditionEdit: "ส่งให้ผู้ทำงาน",
+    submittingConditionEdit: "กำลังส่ง…",
+    conditionEditSubmitError: "ไม่สามารถส่งคำขอแก้ไขเงื่อนไขได้ ลองอีกครั้ง",
+    conditionEditPendingTitle: "รอการตอบรับการแก้ไขเงื่อนไข",
+    conditionEditPendingDescription:
+      "ผู้ทำงานที่ยังปฏิบัติงานอยู่กำลังพิจารณาเงื่อนไขที่เสนอ เงื่อนไขปัจจุบันจะยังมีผลจนกว่าทุกคนจะตอบหรือหมดเวลา",
+    conditionEditCountdownLabel: "เวลาที่เหลือ",
+    conditionEditVotingProgress: (accepted, total) =>
+      `ผู้ทำงานตอบแล้ว ${accepted} จาก ${total} คน`,
+    reviewQuest: "เขียนรีวิว",
+    fileDispute: "ยื่นข้อพิพาท",
+  },
+};

@@ -1,0 +1,142 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <meta name="color-scheme" content="light dark" />
+    <meta name="theme-color" content="#5F7655" />
+    <title>KUQuest — Download for Android</title>
+    <link rel="icon" href="favicon.svg" type="image/svg+xml" />
+    <link rel="stylesheet" href="style.css" />
+    <script type="module" src="app.js"></script>
+  </head>
+  <body>
+    <header class="top">
+      <a class="brand" href="./">
+        <img src="favicon.svg" alt="" width="40" height="40" />
+        <span>KUQuest</span>
+      </a>
+      <button class="lang" id="lang" type="button" lang="th">ไทย</button>
+    </header>
+
+    <main>
+      <h1 data-i18n="title">Get KUQuest on Android</h1>
+      <p class="lede" data-i18n="lede">
+        KUQuest is for people with an @ku.th account. Pick a build, download the
+        APK, then install it.
+      </p>
+
+      <article class="build" id="build-uat" aria-labelledby="uat-name">
+        <h2 id="uat-name" data-i18n="uatName">UAT</h2>
+        <p class="note" data-i18n="uatNote">
+          The latest main build, for acceptance testing against the UAT server.
+        </p>
+        <p class="status" role="status"></p>
+        <dl class="meta" hidden>
+          <div data-row="version">
+            <dt data-i18n="version">Version</dt>
+            <dd></dd>
+          </div>
+          <div data-row="build">
+            <dt data-i18n="build">Build</dt>
+            <dd></dd>
+          </div>
+          <div data-row="commit">
+            <dt data-i18n="commit">Commit</dt>
+            <dd class="hash"></dd>
+          </div>
+          <div data-row="size">
+            <dt data-i18n="size">Size</dt>
+            <dd></dd>
+          </div>
+          <div data-row="updated">
+            <dt data-i18n="updated">Updated</dt>
+            <dd></dd>
+          </div>
+          <div data-row="sha256">
+            <dt>SHA-256</dt>
+            <dd class="hash"></dd>
+          </div>
+        </dl>
+        <a class="button" href="#" hidden data-i18n="download">Download APK</a>
+        <button class="button retry" type="button" hidden data-i18n="retry">
+          Try again
+        </button>
+      </article>
+
+      <article class="build" id="build-staging" aria-labelledby="staging-name">
+        <h2 id="staging-name" data-i18n="stagingName">Staging</h2>
+        <p class="note" data-i18n="stagingNote">
+          The latest develop build, for testing against the staging server.
+        </p>
+        <p class="status" role="status"></p>
+        <dl class="meta" hidden>
+          <div data-row="version">
+            <dt data-i18n="version">Version</dt>
+            <dd></dd>
+          </div>
+          <div data-row="build">
+            <dt data-i18n="build">Build</dt>
+            <dd></dd>
+          </div>
+          <div data-row="commit">
+            <dt data-i18n="commit">Commit</dt>
+            <dd class="hash"></dd>
+          </div>
+          <div data-row="size">
+            <dt data-i18n="size">Size</dt>
+            <dd></dd>
+          </div>
+          <div data-row="updated">
+            <dt data-i18n="updated">Updated</dt>
+            <dd></dd>
+          </div>
+          <div data-row="sha256">
+            <dt>SHA-256</dt>
+            <dd class="hash"></dd>
+          </div>
+        </dl>
+        <a class="button" href="#" hidden data-i18n="download">Download APK</a>
+        <button class="button retry" type="button" hidden data-i18n="retry">
+          Try again
+        </button>
+      </article>
+
+      <section class="install" aria-labelledby="install-title">
+        <h2 id="install-title" data-i18n="installTitle">How to install</h2>
+        <ol>
+          <li data-i18n="step1">
+            Open this page on your Android phone and tap Download APK.
+          </li>
+          <li data-i18n="step2">
+            When Android asks, allow your browser to install unknown apps.
+          </li>
+          <li data-i18n="step3">Open the downloaded file and tap Install.</li>
+        </ol>
+        <p data-i18n="sideBySide">
+          UAT and Staging can be installed side by side.
+        </p>
+        <p data-i18n="verify">
+          Compare the SHA-256 with the value shown to confirm the file is
+          intact.
+        </p>
+      </section>
+
+      <noscript>
+        <p class="status">
+          <a href="https://github.com/KUQuest/KUQUest-Mobile/releases"
+            >GitHub releases</a
+          >
+        </p>
+      </noscript>
+    </main>
+
+    <footer>
+      <a
+        href="https://github.com/KUQuest/KUQUest-Mobile/releases"
+        data-i18n="allReleases"
+        >All releases on GitHub</a
+      >
+    </footer>
+  </body>
+</html>

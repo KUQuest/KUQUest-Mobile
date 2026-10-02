@@ -1,0 +1,97 @@
+import { useEffect } from "react";
+import { useQuery, useQueryClient } from "@tanstack/react-query";
+
+import { subscribeToHirerQuestEvents } from "@/features/questBoard/live/questEvents";
+import { myQuestService } from "../myQuestService";
+export const myQuestsKeys = {
+  all: ["myQuests"] as const,
+  hirer: () => [...myQuestsKeys.all, "hirer"] as const,
+  hirerProofReviewableIds: (failedQuestIds: readonly string[]) =>
+    [...myQuestsKeys.hirer(), "proof-review", failedQuestIds] as const,
+  worker: (viewerId: string) =>
+    [...myQuestsKeys.all, "worker", viewerId] as const,
+  workerCandidateApplications: (viewerId: string) =>
+    [...myQuestsKeys.worker(viewerId), "candidateApplications"] as const,
+};
+
+export function useMyHirerQuestsQuery(enabled = true) {
+  const queryClient = useQueryClient();
+  const query = useQuery({
+    enabled,
+    queryKey: myQuestsKeys.hirer(),
+    queryFn: ({ signal }) => myQuestService.listAllMyHirerQuests({ signal }),
+  });
+  const hasSnapshot = query.data !== undefined;
+
+  useEffect(() => {
+    if (!enabled || !hasSnapshot) return;
+    const invalidate = () => {
+      void queryClient.invalidateQueries({ queryKey: myQuestsKeys.hirer() });
+    };
+    return subscribeToHirerQuestEvents(invalidate, invalidate);
+  }, [enabled, hasSnapshot, queryClient]);
+
+  return query;
+}
+
+export function useMyHirerProofReviewableIdsQuery(
+  failedQuestIds: readonly string[],
+  enabled = true
+) {
+  const queryClient = useQueryClient();
+  const query = useQuery({
+    enabled: failedQuestIds.length > 0 && enabled,
+    queryKey: myQuestsKeys.hirerProofReviewableIds(failedQuestIds),
+    queryFn: ({ signal }) =>
+      myQuestService.listMyHirerProofReviewableQuestIds(failedQuestIds, {
+        signal,
+      }),
+  });
+  const hasData = query.data !== undefined;
+
+  useEffect(() => {
+    if (!enabled || failedQuestIds.length === 0 || !hasData) return;
+    const invalidate = () => {
+      void queryClient.invalidateQueries({
+        queryKey: myQuestsKeys.hirerProofReviewableIds(failedQuestIds),
+      });
+    };
+    return subscribeToHirerQuestEvents(invalidate, invalidate);
+  }, [enabled, failedQuestIds, hasData, queryClient]);
+
+  return query;
+}
+
+export function useMyWorkerQuestSnapshotsQuery(
+  viewerId: string | null,
+  enabled = true
+) {
+  return useQuery({
+    enabled: Boolean(viewerId) && enabled,
+    queryKey: myQuestsKeys.worker(viewerId ?? ""),
+    queryFn: ({ signal }) => {
+      if (!viewerId) {
+        throw new Error("A viewer ID is required");
+      }
+      return myQuestService.listMyWorkerQuestSnapshots(viewerId, "all", {
+        signal,
+      });
+    },
+  });
+}
+
+export function useMyWorkerCandidateApplicationsQuery(
+  viewerId: string | null,
+  enabled = true
+) {
+  return useQuery({
+    enabled: Boolean(viewerId) && enabled,
+    queryKey: myQuestsKeys.workerCandidateApplications(viewerId ?? ""),
+    queryFn: ({ signal }) => {
+      if (!viewerId) {
+        throw new Error("A viewer ID is required");
+      }
+      return myQuestService.listMyWorkerCandidateApplications({ signal });
+    },
+  });
+}
