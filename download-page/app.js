@@ -1,4 +1,5 @@
-import { API, formatSize, pickApk, shortSha } from "./release.js";
+/* global qrcode */
+import { formatSize, parseNotes, pickApk, shortSha } from "./release.js";
 
 const messages = {
   en: {
@@ -15,6 +16,11 @@ const messages = {
     commit: "Commit",
     size: "Size",
     updated: "Updated",
+    package: "Package",
+    message: "Latest change",
+    buildLog: "Build log",
+    scan: "Show QR code for your phone",
+    qrLabel: "QR code that opens the APK download",
     download: "Download APK",
     retry: "Try again",
     checking: "Checking the latest build…",
@@ -44,6 +50,11 @@ const messages = {
     commit: "คอมมิต",
     size: "ขนาด",
     updated: "อัปเดต",
+    package: "แพ็กเกจ",
+    message: "การเปลี่ยนแปลงล่าสุด",
+    buildLog: "บันทึกการบิลด์",
+    scan: "แสดง QR code สำหรับโทรศัพท์",
+    qrLabel: "QR code สำหรับดาวน์โหลด APK",
     download: "ดาวน์โหลด APK",
     retry: "ลองอีกครั้ง",
     checking: "กำลังตรวจสอบรุ่นล่าสุด…",
@@ -63,9 +74,19 @@ const messages = {
   },
 };
 
+// Release data comes from nginx (same origin), which caches the GitHub API.
+const REFRESH_MS = 5 * 60_000;
 const builds = [
-  { id: "uat", path: "/releases/tags/uat-latest" },
-  { id: "staging", path: "/releases/tags/staging-latest" },
+  {
+    id: "uat",
+    path: "/api/uat-latest",
+    packageId: "org.kubits.kuquest.uat",
+  },
+  {
+    id: "staging",
+    path: "/api/staging-latest",
+    packageId: "org.kubits.kuquest.staging",
+  },
 ].map((build) => ({
   ...build,
   card: document.getElementById(`build-${build.id}`),
@@ -84,13 +105,41 @@ try {
 }
 
 async function loadRelease(path) {
-  const response = await fetch(`${API}${path}`, {
-    headers: { Accept: "application/vnd.github+json" },
-    signal: AbortSignal.timeout(10_000),
-  });
+  const response = await fetch(path, { signal: AbortSignal.timeout(10_000) });
   if (response.status === 404) return null;
   if (!response.ok) throw new Error(`GitHub answered ${response.status}`);
   return response.json();
+}
+
+// Draw the QR as inline SVG elements: no innerHTML, no data: URL (the CSP
+// allows neither). Dark modules on a white quiet zone scan in any colour scheme.
+function drawQr(svg, text, label) {
+  if (typeof qrcode === "undefined") return;
+  const qr = qrcode(0, "L");
+  qr.addData(text);
+  qr.make();
+  const count = qr.getModuleCount();
+  const quiet = 4;
+  const size = count + 2 * quiet;
+  let modules = "";
+  for (let row = 0; row < count; row++) {
+    for (let col = 0; col < count; col++) {
+      if (qr.isDark(row, col)) {
+        modules += `M${col + quiet} ${row + quiet}h1v1h-1z`;
+      }
+    }
+  }
+  const ns = "http://www.w3.org/2000/svg";
+  const background = document.createElementNS(ns, "rect");
+  background.setAttribute("width", size);
+  background.setAttribute("height", size);
+  background.setAttribute("fill", "#fff");
+  const path = document.createElementNS(ns, "path");
+  path.setAttribute("d", modules);
+  path.setAttribute("fill", "#000");
+  svg.setAttribute("viewBox", `0 0 ${size} ${size}`);
+  svg.setAttribute("aria-label", label);
+  svg.replaceChildren(background, path);
 }
 
 function setRow(card, name, value) {
@@ -116,7 +165,11 @@ function renderBuild(build) {
   meta.hidden = !ready;
   download.hidden = !ready;
   retry.hidden = state !== "error";
-  if (!ready) return;
+  card.querySelector("details.qr").hidden = !ready;
+  if (!ready) {
+    card.querySelector("a.log").hidden = true;
+    return;
+  }
 
   download.href = apk.url;
   setRow(card, "version", apk.version ? `v${apk.version}` : null);
@@ -132,6 +185,13 @@ function renderBuild(build) {
     }).format(new Date(release.published_at))
   );
   setRow(card, "sha256", apk.sha256);
+  setRow(card, "package", build.packageId);
+  const notes = parseNotes(release.body);
+  setRow(card, "message", notes.message);
+  const log = card.querySelector("a.log");
+  log.hidden = !notes.runUrl;
+  if (notes.runUrl) log.href = notes.runUrl;
+  drawQr(card.querySelector("svg.qr"), apk.url, text.qrLabel);
 }
 
 function render() {
@@ -147,9 +207,11 @@ function render() {
   builds.forEach(renderBuild);
 }
 
-async function refresh(build) {
-  build.state = "loading";
-  renderBuild(build);
+async function refresh(build, { quiet = false } = {}) {
+  if (!quiet) {
+    build.state = "loading";
+    renderBuild(build);
+  }
   try {
     const release = await loadRelease(build.path);
     const apk = pickApk(release);
@@ -158,6 +220,8 @@ async function refresh(build) {
       apk ? { state: "ready", release, apk } : { state: "none" }
     );
   } catch {
+    // A background refresh keeps the last good data instead of showing an error.
+    if (quiet) return;
     build.state = "error";
   }
   renderBuild(build);
@@ -181,3 +245,13 @@ for (const build of builds) {
 
 render();
 builds.forEach(refresh);
+
+function refreshAll() {
+  builds.forEach((build) => refresh(build, { quiet: true }));
+}
+setInterval(() => {
+  if (!document.hidden) refreshAll();
+}, REFRESH_MS);
+document.addEventListener("visibilitychange", () => {
+  if (!document.hidden) refreshAll();
+});

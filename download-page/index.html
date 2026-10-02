@@ -8,6 +8,7 @@
     <title>KUQuest — Download for Android</title>
     <link rel="icon" href="favicon.svg" type="image/svg+xml" />
     <link rel="stylesheet" href="style.css" />
+    <script src="vendor/qrcode.js"></script>
     <script type="module" src="app.js"></script>
   </head>
   <body>
@@ -37,6 +38,10 @@
             <dt data-i18n="version">Version</dt>
             <dd></dd>
           </div>
+          <div data-row="package">
+            <dt data-i18n="package">Package</dt>
+            <dd class="hash"></dd>
+          </div>
           <div data-row="build">
             <dt data-i18n="build">Build</dt>
             <dd></dd>
@@ -44,6 +49,10 @@
           <div data-row="commit">
             <dt data-i18n="commit">Commit</dt>
             <dd class="hash"></dd>
+          </div>
+          <div data-row="message">
+            <dt data-i18n="message">Latest change</dt>
+            <dd></dd>
           </div>
           <div data-row="size">
             <dt data-i18n="size">Size</dt>
@@ -62,6 +71,16 @@
         <button class="button retry" type="button" hidden data-i18n="retry">
           Try again
         </button>
+        <a class="log" href="#" hidden data-i18n="buildLog">Build log</a>
+        <details class="qr">
+          <summary data-i18n="scan">Show QR code for your phone</summary>
+          <svg
+            class="qr"
+            role="img"
+            aria-label=""
+            xmlns="http://www.w3.org/2000/svg"
+          ></svg>
+        </details>
       </article>
 
       <article class="build" id="build-staging" aria-labelledby="staging-name">
@@ -75,6 +94,10 @@
             <dt data-i18n="version">Version</dt>
             <dd></dd>
           </div>
+          <div data-row="package">
+            <dt data-i18n="package">Package</dt>
+            <dd class="hash"></dd>
+          </div>
           <div data-row="build">
             <dt data-i18n="build">Build</dt>
             <dd></dd>
@@ -82,6 +105,10 @@
           <div data-row="commit">
             <dt data-i18n="commit">Commit</dt>
             <dd class="hash"></dd>
+          </div>
+          <div data-row="message">
+            <dt data-i18n="message">Latest change</dt>
+            <dd></dd>
           </div>
           <div data-row="size">
             <dt data-i18n="size">Size</dt>
@@ -100,6 +127,16 @@
         <button class="button retry" type="button" hidden data-i18n="retry">
           Try again
         </button>
+        <a class="log" href="#" hidden data-i18n="buildLog">Build log</a>
+        <details class="qr">
+          <summary data-i18n="scan">Show QR code for your phone</summary>
+          <svg
+            class="qr"
+            role="img"
+            aria-label=""
+            xmlns="http://www.w3.org/2000/svg"
+          ></svg>
+        </details>
       </article>
 
       <section class="install" aria-labelledby="install-title">

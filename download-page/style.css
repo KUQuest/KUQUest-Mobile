@@ -231,6 +231,37 @@ dd {
   background: var(--color-primary-subtle);
 }
 
+.log,
+details.qr summary {
+  display: flex;
+  align-items: center;
+  min-height: 48px;
+  margin-top: var(--space-sm);
+  color: var(--color-primary-dark);
+  font-weight: 600;
+  cursor: pointer;
+}
+
+.log[hidden],
+details.qr[hidden] {
+  display: none;
+}
+
+details.qr svg {
+  display: block;
+  width: min(100%, 14rem);
+  height: auto;
+  margin: var(--space-sm) auto var(--space-md);
+  border-radius: 8px;
+}
+
+@media (prefers-color-scheme: dark) {
+  .log,
+  details.qr summary {
+    color: var(--color-primary);
+  }
+}
+
 .install {
   margin-top: var(--space-xl);
 }
