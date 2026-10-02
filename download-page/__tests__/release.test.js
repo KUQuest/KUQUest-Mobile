@@ -29,7 +29,7 @@ describe("pickApk", () => {
     });
   });
 
-  it("has no build number for a production APK and tolerates a missing digest", () => {
+  it("has no build number for an untagged APK and tolerates a missing digest", () => {
     const apk = pickApk({
       assets: [
         {

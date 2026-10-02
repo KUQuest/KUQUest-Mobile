@@ -1,6 +1,6 @@
 import type { ConfigContext, ExpoConfig } from "expo/config";
 
-type AppVariant = "debug" | "staging" | "production";
+type AppVariant = "debug" | "staging" | "uat";
 
 const APP_VARIANTS: Record<
   AppVariant,
@@ -20,22 +20,18 @@ const APP_VARIANTS: Record<
     name: "KUQuest Staging",
     scheme: "kuquestmobile-staging",
   },
-  production: {
-    identifier: "com.kuquest.mobile",
-    name: "KUQuest",
-    scheme: "kuquestmobile",
+  uat: {
+    identifier: "com.kuquest.mobile.uat",
+    name: "KUQuest UAT",
+    scheme: "kuquestmobile-uat",
   },
 };
 
 function resolveAppVariant(value = process.env.APP_VARIANT): AppVariant {
   const variant = value ?? "debug";
-  if (
-    variant !== "debug" &&
-    variant !== "staging" &&
-    variant !== "production"
-  ) {
+  if (variant !== "debug" && variant !== "staging" && variant !== "uat") {
     throw new Error(
-      `APP_VARIANT must be debug, staging, or production; received "${variant}"`
+      `APP_VARIANT must be debug, staging, or uat; received "${variant}"`
     );
   }
   return variant;
@@ -45,7 +41,7 @@ function resolveAndroidVersionCode(
   variant: AppVariant,
   configuredVersionCode: number | undefined
 ): number {
-  if (variant !== "staging") {
+  if (variant === "debug") {
     if (
       !Number.isInteger(configuredVersionCode) ||
       (configuredVersionCode ?? 0) < 1
@@ -62,7 +58,7 @@ function resolveAndroidVersionCode(
     versionCode > 2_100_000_000
   ) {
     throw new Error(
-      "ANDROID_VERSION_CODE must be an integer from 1 through 2100000000 for staging"
+      `ANDROID_VERSION_CODE must be an integer from 1 through 2100000000 for ${variant}`
     );
   }
   return versionCode;

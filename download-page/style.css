@@ -135,7 +135,7 @@ h2 {
   background: var(--color-surface);
 }
 
-#build-production {
+#build-uat {
   border-color: var(--color-primary);
 }
 

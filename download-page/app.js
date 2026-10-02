@@ -4,8 +4,9 @@ const messages = {
   en: {
     title: "Get KUQuest on Android",
     lede: "KUQuest is for people with an @ku.th account. Pick a build, download the APK, then install it.",
-    productionName: "Production",
-    productionNote: "The stable release.",
+    uatName: "UAT",
+    uatNote:
+      "The latest main build, for acceptance testing against the UAT server.",
     stagingName: "Staging",
     stagingNote:
       "The latest develop build, for testing against the staging server.",
@@ -23,7 +24,7 @@ const messages = {
     step1: "Open this page on your Android phone and tap Download APK.",
     step2: "When Android asks, allow your browser to install unknown apps.",
     step3: "Open the downloaded file and tap Install.",
-    sideBySide: "Production and Staging can be installed side by side.",
+    sideBySide: "UAT and Staging can be installed side by side.",
     verify:
       "Compare the SHA-256 with the value shown to confirm the file is intact.",
     allReleases: "All releases on GitHub",
@@ -34,8 +35,8 @@ const messages = {
   th: {
     title: "ดาวน์โหลด KUQuest สำหรับ Android",
     lede: "KUQuest สำหรับผู้ที่มีบัญชี @ku.th เลือกเวอร์ชัน ดาวน์โหลดไฟล์ APK แล้วติดตั้ง",
-    productionName: "เวอร์ชันใช้งานจริง",
-    productionNote: "รุ่นเสถียรที่เผยแพร่แล้ว",
+    uatName: "เวอร์ชัน UAT",
+    uatNote: "รุ่นล่าสุดจาก main สำหรับทดสอบยอมรับกับเซิร์ฟเวอร์ UAT",
     stagingName: "เวอร์ชันทดสอบ",
     stagingNote: "รุ่นล่าสุดจาก develop สำหรับทดสอบกับเซิร์ฟเวอร์ staging",
     version: "เวอร์ชัน",
@@ -53,7 +54,7 @@ const messages = {
     step2:
       "เมื่อ Android ถาม ให้อนุญาตเบราว์เซอร์ติดตั้งแอปจากแหล่งที่ไม่รู้จัก",
     step3: "เปิดไฟล์ที่ดาวน์โหลด แล้วแตะ ติดตั้ง",
-    sideBySide: "ติดตั้งเวอร์ชันใช้งานจริงและเวอร์ชันทดสอบไว้ด้วยกันได้",
+    sideBySide: "ติดตั้งเวอร์ชัน UAT และเวอร์ชันทดสอบไว้ด้วยกันได้",
     verify: "เปรียบเทียบ SHA-256 กับค่าที่แสดงเพื่อยืนยันว่าไฟล์ไม่เสียหาย",
     allReleases: "ดูรุ่นทั้งหมดบน GitHub",
     otherLanguage: "English",
@@ -63,7 +64,7 @@ const messages = {
 };
 
 const builds = [
-  { id: "production", path: "/releases/latest" },
+  { id: "uat", path: "/releases/tags/uat-latest" },
   { id: "staging", path: "/releases/tags/staging-latest" },
 ].map((build) => ({
   ...build,

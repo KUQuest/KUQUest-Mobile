@@ -1,6 +1,5 @@
 #!/usr/bin/env node
 
-const { createHash } = require("node:crypto");
 const fs = require("node:fs");
 const path = require("node:path");
 const { spawnSync } = require("node:child_process");
@@ -14,11 +13,10 @@ const ENVIRONMENT_CONFIG = {
     distinguishedName: "CN=KUQuest Android Staging, OU=Mobile, O=KUQuest, C=TH",
     packageName: "com.kuquest.mobile.staging",
   },
-  production: {
-    alias: "kuquest-production",
-    distinguishedName:
-      "CN=KUQuest Android Production, OU=Mobile, O=KUQuest, C=TH",
-    packageName: "com.kuquest.mobile",
+  uat: {
+    alias: "kuquest-uat",
+    distinguishedName: "CN=KUQuest Android UAT, OU=Mobile, O=KUQuest, C=TH",
+    packageName: "com.kuquest.mobile.uat",
   },
 };
 
@@ -43,10 +41,9 @@ Commands:
   upload    Verify a keystore and send its credentials directly to GitHub secrets
 
 Options:
-  --environment <name>  staging or production
+  --environment <name>  staging or uat
   --keystore <path>     Explicit keystore path outside the repository
-  --alias <name>        Key alias (default: kuquest-staging or kuquest-production)
-  --backup-file <path>  Required identical backup for production uploads
+  --alias <name>        Key alias (default: kuquest-staging or kuquest-uat)
   --repository <owner/repo>  GitHub repository (default: current gh repository)
   --dry-run             Validate and describe changes without mutating local or remote state
   --json                Print machine-readable output
@@ -60,7 +57,7 @@ as command-line flags.
 Examples:
   node scripts/bootstrap-android-signing.js generate --environment staging --keystore /secure/kuquest-staging.jks
   node scripts/bootstrap-android-signing.js upload --environment staging --keystore /secure/kuquest-staging.jks
-  node scripts/bootstrap-android-signing.js upload --environment production --keystore /secure/kuquest-production.jks --backup-file /vault/kuquest-production.jks
+  node scripts/bootstrap-android-signing.js generate --environment uat --keystore /secure/kuquest-uat.jks
 `);
 }
 
@@ -98,8 +95,6 @@ function parseArgs(argv) {
       options.keystore = argv[++index];
     } else if (argument === "--alias") {
       options.alias = argv[++index];
-    } else if (argument === "--backup-file") {
-      options.backupFile = argv[++index];
     } else if (argument === "--repository") {
       options.repository = argv[++index];
     } else {
@@ -115,7 +110,7 @@ function parseArgs(argv) {
 
 function validateOptions(options) {
   if (!ENVIRONMENT_CONFIG[options.environment]) {
-    throw new CliError(2, "--environment must be staging or production");
+    throw new CliError(2, "--environment must be staging or uat");
   }
   if (!options.keystore) {
     throw new CliError(
@@ -142,11 +137,8 @@ function validateOptions(options) {
     throw new CliError(
       78,
       "Keystore path must be outside the repository checkout",
-      "Use an administrator-controlled path such as /secure/kuquest-production.jks."
+      "Use an administrator-controlled path such as /secure/kuquest-staging.jks."
     );
-  }
-  if (options.backupFile) {
-    options.backupFile = path.resolve(options.backupFile);
   }
   return options;
 }
@@ -274,40 +266,6 @@ function inspectKeystore(options, signingCredentials) {
   return { sha1, sha256 };
 }
 
-function sha256(file) {
-  return createHash("sha256").update(fs.readFileSync(file)).digest("hex");
-}
-
-function verifyProductionBackup(options) {
-  if (options.environment !== "production") {
-    return;
-  }
-  if (!options.backupFile) {
-    throw new CliError(
-      78,
-      "Production upload requires --backup-file",
-      "Copy the keystore to encrypted offline storage, then pass that distinct backup path."
-    );
-  }
-  if (!fs.existsSync(options.backupFile)) {
-    throw new CliError(
-      3,
-      `Production backup does not exist: ${options.backupFile}`
-    );
-  }
-  if (
-    fs.realpathSync(options.backupFile) === fs.realpathSync(options.keystore)
-  ) {
-    throw new CliError(78, "Production backup must be a distinct file.");
-  }
-  if (sha256(options.backupFile) !== sha256(options.keystore)) {
-    throw new CliError(
-      78,
-      "Production backup does not match the signing keystore."
-    );
-  }
-}
-
 function resolveRepository(requestedRepository) {
   const repository =
     requestedRepository ??
@@ -393,7 +351,6 @@ async function upload(options) {
   }
   const signingCredentials = await credentials(false);
   const fingerprints = inspectKeystore(options, signingCredentials);
-  verifyProductionBackup(options);
   const repository = resolveRepository(options.repository);
 
   if (!options.dryRun) {
@@ -472,7 +429,7 @@ function writeSuccess(options, data) {
     );
   } else {
     process.stdout.write(
-      `Next: register both fingerprints for ${data.packageName}, back up production keys, then run the upload command.\n`
+      `Next: register both fingerprints for ${data.packageName}, then run the upload command.\n`
     );
   }
 }
@@ -535,4 +492,4 @@ if (require.main === module) {
   });
 }
 
-module.exports = { main, parseArgs, validateOptions, verifyProductionBackup };
+module.exports = { main, parseArgs, validateOptions };

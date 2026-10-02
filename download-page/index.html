@@ -26,18 +26,24 @@
         APK, then install it.
       </p>
 
-      <article
-        class="build"
-        id="build-production"
-        aria-labelledby="production-name"
-      >
-        <h2 id="production-name" data-i18n="productionName">Production</h2>
-        <p class="note" data-i18n="productionNote">The stable release.</p>
+      <article class="build" id="build-uat" aria-labelledby="uat-name">
+        <h2 id="uat-name" data-i18n="uatName">UAT</h2>
+        <p class="note" data-i18n="uatNote">
+          The latest main build, for acceptance testing against the UAT server.
+        </p>
         <p class="status" role="status"></p>
         <dl class="meta" hidden>
           <div data-row="version">
             <dt data-i18n="version">Version</dt>
             <dd></dd>
+          </div>
+          <div data-row="build">
+            <dt data-i18n="build">Build</dt>
+            <dd></dd>
+          </div>
+          <div data-row="commit">
+            <dt data-i18n="commit">Commit</dt>
+            <dd class="hash"></dd>
           </div>
           <div data-row="size">
             <dt data-i18n="size">Size</dt>
@@ -108,7 +114,7 @@
           <li data-i18n="step3">Open the downloaded file and tap Install.</li>
         </ol>
         <p data-i18n="sideBySide">
-          Production and Staging can be installed side by side.
+          UAT and Staging can be installed side by side.
         </p>
         <p data-i18n="verify">
           Compare the SHA-256 with the value shown to confirm the file is
