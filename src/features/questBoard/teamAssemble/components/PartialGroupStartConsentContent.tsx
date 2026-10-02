@@ -425,155 +425,7 @@ export function PartialGroupStartConsentContent({
         ) : null}
       </View>
     ) : (
-      <ScrollView
-        className={styles.sheetScroll}
-        contentContainerClassName={styles.sheetContent}
-        showsVerticalScrollIndicator={false}
-        testID="partial-group-start-scroll"
-      >
-        {terminal !== "pending" ? (
-          <>
-            <View
-              className={`${styles.consentStatusCard} ${terminal === "approved" ? styles.consentStatusCardApproved : styles.consentStatusCardCancelled}`}
-              testID={`partial-group-start-${terminal}`}
-            >
-              <View className={styles.consentStatusHeader}>
-                <View
-                  className={`${styles.consentStatusIcon} ${terminal === "cancelled" ? styles.consentStatusIconCancelled : ""}`}
-                >
-                  {terminal === "approved" ? (
-                    <Check color={colors.success} size={20} strokeWidth={2.6} />
-                  ) : (
-                    <CircleX
-                      color={colors.dangerDark}
-                      size={20}
-                      strokeWidth={2.2}
-                    />
-                  )}
-                </View>
-                <View className={styles.consentStatusCopy}>
-                  <Text
-                    accessibilityRole="header"
-                    className={styles.consentStatusTitle}
-                  >
-                    {terminal === "approved"
-                      ? messages.questAssignedNext
-                      : messages.cancelledTitle}
-                  </Text>
-                  <Text className={styles.consentStatusDescription}>
-                    {terminal === "approved"
-                      ? messages.approvedDescription(actual)
-                      : terminalDescription}
-                  </Text>
-                  {terminal === "cancelled" &&
-                  cancellationDate &&
-                  cancellationTime ? (
-                    <Text className={styles.consentStatusDescription}>
-                      {messages.cancelledAt(cancellationDate, cancellationTime)}
-                    </Text>
-                  ) : null}
-                </View>
-              </View>
-            </View>
-            {terminal === "approved" && onOpenWorkHub ? (
-              <Pressable
-                accessibilityRole="button"
-                className={`${styles.consentAction} ${styles.consentActionApprove}`}
-                onPress={onOpenWorkHub}
-              >
-                <Text
-                  className={`${styles.consentActionText} ${styles.consentActionTextApprove}`}
-                >
-                  {messages.assignedOpenWorkHub}
-                </Text>
-              </Pressable>
-            ) : terminal === "cancelled" && onBrowseQuests ? (
-              <Pressable
-                accessibilityRole="button"
-                className={`${styles.consentAction} ${styles.consentActionApprove}`}
-                onPress={onBrowseQuests}
-              >
-                <Text
-                  className={`${styles.consentActionText} ${styles.consentActionTextApprove}`}
-                >
-                  {messages.browseOtherQuests}
-                </Text>
-              </Pressable>
-            ) : null}
-          </>
-        ) : null}
-
-        <View
-          accessibilityLabel={`${messages.requestedHeadcount}: ${requested}. ${messages.actualHeadcount}: ${actual}`}
-          className={styles.proposalSummary}
-          testID="partial-group-start-summary"
-        >
-          <View className={styles.reviewHeader}>
-            <View className={styles.reviewIcon}>
-              <UsersRound color={colors.primary} size={20} strokeWidth={2.1} />
-            </View>
-            <View className={styles.reviewHeaderCopy}>
-              <Text
-                accessibilityRole="header"
-                className={styles.proposalSummaryTitle}
-              >
-                {messages.partialDetailsChanged}
-              </Text>
-              <Text className={styles.reviewCopy}>
-                {decisionPending
-                  ? messages.hirerDecisionPending
-                  : messages.workerResponseRequired}
-              </Text>
-              <Text className={styles.reviewCopy}>
-                {messages.workerHeadcountJoined(actual, requested)}
-              </Text>
-            </View>
-          </View>
-          <View className={styles.reviewRows}>
-            <View className={styles.reviewRow}>
-              <Text className={styles.reviewLabel}>
-                {messages.requestedHeadcount}
-              </Text>
-              <Text className={styles.reviewValue}>{requested}</Text>
-            </View>
-            <View className={styles.reviewRow}>
-              <Text className={styles.reviewLabel}>
-                {messages.actualHeadcount}
-              </Text>
-              <Text className={styles.reviewValue}>{actual}</Text>
-            </View>
-          </View>
-          {underfilled ? (
-            <>
-              {newRewardSatang !== undefined ? (
-                <View className={styles.reviewRow}>
-                  <Text className={styles.reviewLabel}>
-                    {messages.newRewardPerWorker}
-                  </Text>
-                  <Text selectable className={styles.reviewValue}>
-                    {originalRewardSatang !== undefined
-                      ? `${formatSatang(originalRewardSatang, locale)} → `
-                      : ""}
-                    {formatSatang(newRewardSatang, locale)}
-                  </Text>
-                </View>
-              ) : null}
-              {underfilled.dueAt ? (
-                <View className={styles.reviewRow}>
-                  <Text className={styles.reviewLabel}>{messages.dueDate}</Text>
-                  <Text selectable className={styles.reviewValue}>
-                    {originalDueAt
-                      ? `${formatTimestampDate(originalDueAt, locale)} ${formatTimeInBangkok(originalDueAt)} → `
-                      : ""}
-                    {formatTimestampDate(underfilled.dueAt, locale)}{" "}
-                    {formatTimeInBangkok(underfilled.dueAt)}
-                  </Text>
-                </View>
-              ) : null}
-            </>
-          ) : null}
-        </View>
-
+      <View className="flex-1">
         <View
           accessibilityRole={
             expired && terminal === "pending" ? "alert" : undefined
@@ -605,111 +457,276 @@ export function PartialGroupStartConsentContent({
             </Text>
           )}
         </View>
-        {decisionPending ? (
-          <>
-            <Text className={styles.reviewCopy}>
-              {messages.proceedConsequence}
-            </Text>
-            <Text className={styles.reviewCopy}>
-              {messages.cancelConsequence}
-            </Text>
-          </>
-        ) : underfilled ? (
-          <>
-            <Text className={styles.reviewCopy}>
-              {messages.acceptingWaitsForEveryone}
-            </Text>
-            <Text className={styles.reviewCopy}>
-              {messages.decliningCancelsForEveryone}
-            </Text>
-            {currentResponse ===
-            QuestPartialStartVoteStatus.PARTIAL_START_VOTE_APPROVED ? (
-              <Text accessibilityRole="alert" className={styles.reviewCopy}>
-                {messages.acceptedWaiting(underfilled.consent.pendingCount)}
-              </Text>
-            ) : null}
-          </>
-        ) : null}
-        {terminal === "pending" ? (
-          <View
-            accessibilityRole="progressbar"
-            accessibilityValue={{ min: 0, max: 100, now: progress }}
-            className={styles.progressTrack}
-          >
-            <View
-              className={styles.progressFill}
-              style={{ width: `${progress}%` }}
-            />
-          </View>
-        ) : null}
-
-        <View
-          className={styles.voterSection}
-          testID="partial-group-start-roster"
+        <ScrollView
+          className={styles.sheetScroll}
+          contentContainerClassName={styles.sheetContent}
+          showsVerticalScrollIndicator={false}
+          testID="partial-group-start-scroll"
         >
-          <View className={styles.sectionHeader}>
-            <Text accessibilityRole="header" className={styles.sectionTitle}>
-              {messages.frozenRoster}
-            </Text>
-            <Text className={styles.sectionMeta}>
-              {decisionPending
-                ? messages.workerHeadcountJoined(actual, requested)
-                : underfilled
-                  ? messages.workersAcceptedProgress(
-                      approvedCount,
-                      requiredCount
-                    )
-                  : messages.votesProgress(approvedCount, requiredCount)}
-            </Text>
-          </View>
-          <View className={styles.voterList}>
-            {frozenWorkerIds.map((workerId) => {
-              const voter = requiredVoters.find(
-                (candidate) => candidate.id === workerId
-              );
-              return voter ? (
-                <VoterRow
-                  key={workerId}
-                  labels={messages}
-                  response={responseMap.get(workerId)}
-                  voter={voter}
-                />
-              ) : null;
-            })}
-          </View>
-        </View>
+          {terminal !== "pending" ? (
+            <>
+              <View
+                className={`${styles.consentStatusCard} ${terminal === "approved" ? styles.consentStatusCardApproved : styles.consentStatusCardCancelled}`}
+                testID={`partial-group-start-${terminal}`}
+              >
+                <View className={styles.consentStatusHeader}>
+                  <View
+                    className={`${styles.consentStatusIcon} ${terminal === "cancelled" ? styles.consentStatusIconCancelled : ""}`}
+                  >
+                    {terminal === "approved" ? (
+                      <Check
+                        color={colors.success}
+                        size={20}
+                        strokeWidth={2.6}
+                      />
+                    ) : (
+                      <CircleX
+                        color={colors.dangerDark}
+                        size={20}
+                        strokeWidth={2.2}
+                      />
+                    )}
+                  </View>
+                  <View className={styles.consentStatusCopy}>
+                    <Text
+                      accessibilityRole="header"
+                      className={styles.consentStatusTitle}
+                    >
+                      {terminal === "approved"
+                        ? messages.questAssignedNext
+                        : messages.cancelledTitle}
+                    </Text>
+                    <Text className={styles.consentStatusDescription}>
+                      {terminal === "approved"
+                        ? messages.approvedDescription(actual)
+                        : terminalDescription}
+                    </Text>
+                    {terminal === "cancelled" &&
+                    cancellationDate &&
+                    cancellationTime ? (
+                      <Text className={styles.consentStatusDescription}>
+                        {messages.cancelledAt(
+                          cancellationDate,
+                          cancellationTime
+                        )}
+                      </Text>
+                    ) : null}
+                  </View>
+                </View>
+              </View>
+              {terminal === "approved" && onOpenWorkHub ? (
+                <Pressable
+                  accessibilityRole="button"
+                  className={`${styles.consentAction} ${styles.consentActionApprove}`}
+                  onPress={onOpenWorkHub}
+                >
+                  <Text
+                    className={`${styles.consentActionText} ${styles.consentActionTextApprove}`}
+                  >
+                    {messages.assignedOpenWorkHub}
+                  </Text>
+                </Pressable>
+              ) : terminal === "cancelled" && onBrowseQuests ? (
+                <Pressable
+                  accessibilityRole="button"
+                  className={`${styles.consentAction} ${styles.consentActionApprove}`}
+                  onPress={onBrowseQuests}
+                >
+                  <Text
+                    className={`${styles.consentActionText} ${styles.consentActionTextApprove}`}
+                  >
+                    {messages.browseOtherQuests}
+                  </Text>
+                </Pressable>
+              ) : null}
+            </>
+          ) : null}
 
-        {!decisionPending ? (
+          <View
+            accessibilityLabel={`${messages.requestedHeadcount}: ${requested}. ${messages.actualHeadcount}: ${actual}`}
+            className={styles.proposalSummary}
+            testID="partial-group-start-summary"
+          >
+            <View className={styles.reviewHeader}>
+              <View className={styles.reviewIcon}>
+                <UsersRound
+                  color={colors.primary}
+                  size={20}
+                  strokeWidth={2.1}
+                />
+              </View>
+              <View className={styles.reviewHeaderCopy}>
+                <Text
+                  accessibilityRole="header"
+                  className={styles.proposalSummaryTitle}
+                >
+                  {messages.partialDetailsChanged}
+                </Text>
+                <Text className={styles.reviewCopy}>
+                  {decisionPending
+                    ? messages.hirerDecisionPending
+                    : messages.workerResponseRequired}
+                </Text>
+                <Text className={styles.reviewCopy}>
+                  {messages.workerHeadcountJoined(actual, requested)}
+                </Text>
+              </View>
+            </View>
+            <View className={styles.reviewRows}>
+              <View className={styles.reviewRow}>
+                <Text className={styles.reviewLabel}>
+                  {messages.requestedHeadcount}
+                </Text>
+                <Text className={styles.reviewValue}>{requested}</Text>
+              </View>
+              <View className={styles.reviewRow}>
+                <Text className={styles.reviewLabel}>
+                  {messages.actualHeadcount}
+                </Text>
+                <Text className={styles.reviewValue}>{actual}</Text>
+              </View>
+            </View>
+            {underfilled ? (
+              <>
+                {newRewardSatang !== undefined ? (
+                  <View className={styles.reviewRow}>
+                    <Text className={styles.reviewLabel}>
+                      {messages.newRewardPerWorker}
+                    </Text>
+                    <Text selectable className={styles.reviewValue}>
+                      {originalRewardSatang !== undefined
+                        ? `${formatSatang(originalRewardSatang, locale)} → `
+                        : ""}
+                      {formatSatang(newRewardSatang, locale)}
+                    </Text>
+                  </View>
+                ) : null}
+                {underfilled.dueAt ? (
+                  <View className={styles.reviewRow}>
+                    <Text className={styles.reviewLabel}>
+                      {messages.dueDate}
+                    </Text>
+                    <Text selectable className={styles.reviewValue}>
+                      {originalDueAt
+                        ? `${formatTimestampDate(originalDueAt, locale)} ${formatTimeInBangkok(originalDueAt)} → `
+                        : ""}
+                      {formatTimestampDate(underfilled.dueAt, locale)}{" "}
+                      {formatTimeInBangkok(underfilled.dueAt)}
+                    </Text>
+                  </View>
+                ) : null}
+              </>
+            ) : null}
+          </View>
+
+          {decisionPending ? (
+            <>
+              <Text className={styles.reviewCopy}>
+                {messages.proceedConsequence}
+              </Text>
+              <Text className={styles.reviewCopy}>
+                {messages.cancelConsequence}
+              </Text>
+            </>
+          ) : underfilled ? (
+            <>
+              <Text className={styles.reviewCopy}>
+                {messages.acceptingWaitsForEveryone}
+              </Text>
+              <Text className={styles.reviewCopy}>
+                {messages.decliningCancelsForEveryone}
+              </Text>
+              {currentResponse ===
+              QuestPartialStartVoteStatus.PARTIAL_START_VOTE_APPROVED ? (
+                <Text accessibilityRole="alert" className={styles.reviewCopy}>
+                  {messages.acceptedWaiting(underfilled.consent.pendingCount)}
+                </Text>
+              ) : null}
+            </>
+          ) : null}
+          {terminal === "pending" ? (
+            <View
+              accessibilityRole="progressbar"
+              accessibilityValue={{ min: 0, max: 100, now: progress }}
+              className={styles.progressTrack}
+            >
+              <View
+                className={styles.progressFill}
+                style={{ width: `${progress}%` }}
+              />
+            </View>
+          ) : null}
+
           <View
             className={styles.voterSection}
-            testID="partial-group-start-votes"
+            testID="partial-group-start-roster"
           >
             <View className={styles.sectionHeader}>
               <Text accessibilityRole="header" className={styles.sectionTitle}>
-                {messages.voteStatus}
+                {messages.frozenRoster}
               </Text>
               <Text className={styles.sectionMeta}>
-                {underfilled
-                  ? messages.workersAcceptedProgress(
-                      approvedCount,
-                      requiredCount
-                    )
-                  : messages.votesProgress(approvedCount, requiredCount)}
+                {decisionPending
+                  ? messages.workerHeadcountJoined(actual, requested)
+                  : underfilled
+                    ? messages.workersAcceptedProgress(
+                        approvedCount,
+                        requiredCount
+                      )
+                    : messages.votesProgress(approvedCount, requiredCount)}
               </Text>
             </View>
             <View className={styles.voterList}>
-              {requiredVoters.map((voter) => (
-                <VoterRow
-                  key={voter.id}
-                  labels={messages}
-                  response={responseMap.get(voter.id)}
-                  voter={voter}
-                />
-              ))}
+              {frozenWorkerIds.map((workerId) => {
+                const voter = requiredVoters.find(
+                  (candidate) => candidate.id === workerId
+                );
+                return voter ? (
+                  <VoterRow
+                    key={workerId}
+                    labels={messages}
+                    response={responseMap.get(workerId)}
+                    voter={voter}
+                  />
+                ) : null;
+              })}
             </View>
           </View>
-        ) : null}
 
+          {!decisionPending ? (
+            <View
+              className={styles.voterSection}
+              testID="partial-group-start-votes"
+            >
+              <View className={styles.sectionHeader}>
+                <Text
+                  accessibilityRole="header"
+                  className={styles.sectionTitle}
+                >
+                  {messages.voteStatus}
+                </Text>
+                <Text className={styles.sectionMeta}>
+                  {underfilled
+                    ? messages.workersAcceptedProgress(
+                        approvedCount,
+                        requiredCount
+                      )
+                    : messages.votesProgress(approvedCount, requiredCount)}
+                </Text>
+              </View>
+              <View className={styles.voterList}>
+                {requiredVoters.map((voter) => (
+                  <VoterRow
+                    key={voter.id}
+                    labels={messages}
+                    response={responseMap.get(voter.id)}
+                    voter={voter}
+                  />
+                ))}
+              </View>
+            </View>
+          ) : null}
+        </ScrollView>
         {decisionPending && canDecide && onHirerDecision && !expired ? (
           <View
             className={styles.consentActions}
@@ -779,7 +796,7 @@ export function PartialGroupStartConsentContent({
             </Pressable>
           </View>
         ) : null}
-      </ScrollView>
+      </View>
     );
 
   return content;

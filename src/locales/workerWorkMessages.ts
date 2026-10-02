@@ -85,7 +85,6 @@ export interface WorkerWorkMessages {
   discardProofMessage: string;
   discardProof: string;
   keepProof: string;
-  rateHirer: string;
 }
 
 export const workerWorkMessages: Record<SupportedLocale, WorkerWorkMessages> = {
@@ -169,7 +168,6 @@ export const workerWorkMessages: Record<SupportedLocale, WorkerWorkMessages> = {
       "ไฟล์และคำอธิบายที่เพิ่มไว้ยังไม่ได้บันทึก ออกและละทิ้งหรือไม่?",
     discardProof: "ละทิ้ง",
     keepProof: "แก้ไขต่อ",
-    rateHirer: "ให้คะแนนผู้ว่าจ้าง",
   },
   en: {
     title: "My work",
@@ -251,6 +249,5 @@ export const workerWorkMessages: Record<SupportedLocale, WorkerWorkMessages> = {
       "Files and description added here are not saved yet. Leave and discard them?",
     discardProof: "Discard",
     keepProof: "Keep editing",
-    rateHirer: "Rate the Hirer",
   },
 };

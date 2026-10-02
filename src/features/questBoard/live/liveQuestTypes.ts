@@ -13,7 +13,11 @@ import type {
   QuestV2EditRequest,
 } from "@/api/questV2Contracts";
 import type { ServerChatConversation } from "@/api/ChatApi";
-import { QuestActor, type QuestNextAction } from "../domain/types";
+import {
+  QuestActor,
+  type QuestNextAction,
+  type QuestTeamRole,
+} from "../domain/types";
 
 export const LiveQuestActor = QuestActor;
 export type LiveQuestActor =
@@ -83,6 +87,8 @@ export interface LiveQuestSnapshot {
   application: QuestV2Application | null;
   applications: QuestV2Application[];
   team: QuestV2Team | null;
+  /** Viewer's role on a `GROUP + CANDIDATE` Team; null on every other Quest and for the Hirer. */
+  teamRole: QuestTeamRole | null;
   teams: QuestV2Team[];
   underfilled: QuestV2Underfilled | null;
   editRequest: QuestV2EditRequest | null;

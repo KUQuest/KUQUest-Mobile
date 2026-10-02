@@ -28,6 +28,15 @@ export function ModeSummary({
     candidateMode === QuestMode.FIRST_COME_FIRST_SERVED
       ? messages.instantAccept
       : messages.selectCandidate;
+  const isSingle = participation === QuestParticipation.SINGLE;
+  const isFirstCome = candidateMode === QuestMode.FIRST_COME_FIRST_SERVED;
+  const hint = isSingle
+    ? isFirstCome
+      ? messages.singleFirstComeHint
+      : messages.singleCandidateHint
+    : isFirstCome
+      ? messages.groupFirstComeHint
+      : messages.groupCandidateHint;
   const Icon =
     participation === QuestParticipation.SINGLE ? UserRoundCheck : UsersRound;
 
@@ -41,6 +50,7 @@ export function ModeSummary({
         <Text className={styles.modeValue}>
           {participationLabel} + {candidateLabel}
         </Text>
+        <Text className={styles.helperText}>{hint}</Text>
       </View>
     </View>
   );

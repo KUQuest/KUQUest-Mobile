@@ -640,6 +640,7 @@ export default function HirerQuestManageScreen({
         closeLabel={groupQuestMessages[locale].close}
         onClose={() => setUnderfilledOpen(false)}
         testID="partial-group-start-consent-sheet"
+        fullScreen
       >
         <PartialGroupStartConsentContent
           underfilled={snapshot.underfilled}

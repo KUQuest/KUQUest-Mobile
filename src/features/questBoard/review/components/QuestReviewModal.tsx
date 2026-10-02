@@ -61,13 +61,11 @@ function QuestReviewSheet({
     setRating,
     setSelectedId,
     setSubmitError,
-    setSuccessMessage,
     submitError,
-    successMessage,
     targetOptions,
     updateReviewMutation,
     questTitle,
-  } = useQuestReviewFeature({ questId });
+  } = useQuestReviewFeature({ questId, onSubmitted: onClose });
   const pending =
     createReviewMutation.isPending || updateReviewMutation.isPending;
   const notice = (title: string, description: string, action?: ReactNode) => (
@@ -189,7 +187,6 @@ function QuestReviewSheet({
                               onPress={() => {
                                 setSelectedId(target.id);
                                 setSubmitError(null);
-                                setSuccessMessage(null);
                               }}
                               testID={`quest-review-worker-${target.id}`}
                             >
@@ -252,14 +249,6 @@ function QuestReviewSheet({
                     value={comment}
                   />
 
-                  {successMessage ? (
-                    <Text
-                      className="rounded-[12px] bg-ku-surface-success p-ku-12 text-ku-primary"
-                      testID="quest-review-success"
-                    >
-                      {successMessage}
-                    </Text>
-                  ) : null}
                   {submitError ? (
                     <Text
                       accessibilityRole="alert"

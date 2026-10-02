@@ -79,8 +79,9 @@ async function loadHirerHome(signal: AbortSignal): Promise<HirerHomeData> {
       const isGroupCandidate =
         q.mode === QuestMode.CANDIDATE &&
         q.participation === QuestParticipation.GROUP;
-      const shouldLoadProposals =
-        isCarouselQuest || q.state === QuestStatus.QUEST_OPEN;
+      // Applications and Candidate Teams answer 404 once a Quest has started,
+      // and applicants only matter while it is open.
+      const shouldLoadProposals = q.state === QuestStatus.QUEST_OPEN;
       const [assignments, applications, teams, proofs] = await Promise.all([
         isCarouselQuest
           ? questApi.listQuestAssignments(q.id, { signal }).catch(() => {
