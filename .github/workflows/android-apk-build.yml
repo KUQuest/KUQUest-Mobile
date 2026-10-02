@@ -158,7 +158,9 @@ jobs:
           KUQUEST_ANDROID_KEYSTORE_PASSWORD: ${{ secrets.ANDROID_KEYSTORE_PASSWORD }}
           KUQUEST_ANDROID_KEY_ALIAS: ${{ secrets.ANDROID_KEY_ALIAS }}
           KUQUEST_ANDROID_KEY_PASSWORD: ${{ secrets.ANDROID_KEY_PASSWORD }}
-        run: ./gradlew --no-daemon app:assembleRelease
+        # Build cache lives in ~/.gradle, which persists on the self-hosted runner;
+        # the template's 2 GB heap is small for this 8 GB, 4 vCPU host.
+        run: ./gradlew --no-daemon --build-cache -Dorg.gradle.jvmargs="-Xmx3g -XX:MaxMetaspaceSize=768m" app:assembleRelease
 
       - name: Package APK and checksum
         id: package
