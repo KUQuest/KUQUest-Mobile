@@ -75,11 +75,11 @@ Native Android Google Sign-In requires the APK's Package Name and Keystore SHA-1
 
 - **Google Cloud Console**: [Credentials Page](https://console.cloud.google.com/apis/credentials)
 - **Application Type**: Android
-- **Package Name**: `org.kubits.kuquest.debug`
+- **Package Name**: `org.kubits.kuquest.staging`
 - **SHA-1 Fingerprint**: `5E:8F:16:06:2E:A3:CD:2C:4A:0D:54:78:76:BA:A6:F3:8C:AB:F6:25`
 - **SHA-256 Fingerprint**: `FA:C6:17:45:DC:09:03:78:6F:B9:ED:E6:2A:96:2B:39:9F:73:48:F0:BB:6F:89:9B:83:32:66:75:91:03:3B:9C`
 
-> **Scope**: The debug keystore is checked into the repository (`android/app/debug.keystore`), so adding this SHA-1 once fixes Google Sign-In for all emulators, simulators, and team workstations.
+> **Scope**: The dev client is the staging variant built with the shared debug keystore (`android/app/debug.keystore`), so this SHA-1 fixes Google Sign-In once for all emulators, simulators, and team workstations. The CI staging APK uses the same package ID but a different signing key (the staging keystore); it needs its own Android OAuth client with that SHA-1. Android installs one signature per package ID, so uninstall one before installing the other.
 
 ---
 

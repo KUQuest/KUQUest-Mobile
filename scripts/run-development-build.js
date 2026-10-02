@@ -3,7 +3,7 @@ const { delimiter, join, resolve } = require("node:path");
 const { spawnSync } = require("node:child_process");
 const { createInterface } = require("node:readline/promises");
 
-const ANDROID_PACKAGE = "org.kubits.kuquest.debug";
+const ANDROID_PACKAGE = "org.kubits.kuquest.staging";
 const DEFAULT_PORT = "6767";
 
 function clearStaleAndroidAutolinkingCache() {
@@ -157,7 +157,7 @@ function ensureDebugAndroidProject(environment) {
   if (applicationId !== null) prebuildArgs.push("--clean");
   console.log(
     applicationId === null
-      ? "Generating the Android native project for the debug variant."
+      ? "Generating the Android native project for the staging variant."
       : `Android applicationId is ${applicationId}; regenerating for ${ANDROID_PACKAGE}.`
   );
   run("npx", prebuildArgs, { env: environment });
@@ -203,7 +203,8 @@ function withoutDeviceArgument(args) {
 async function runAndroidBuild(args, environment = process.env) {
   const debugEnvironment = getAndroidEnvironment({
     ...environment,
-    APP_VARIANT: "debug",
+    APP_VARIANT: "staging",
+    ANDROID_VERSION_CODE: "1",
   });
   console.log(`Android package: ${ANDROID_PACKAGE}`);
   const device = await selectAndroidDevice(debugEnvironment);
