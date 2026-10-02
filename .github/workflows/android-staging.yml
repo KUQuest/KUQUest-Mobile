@@ -51,3 +51,37 @@ jobs:
       version_code: ${{ github.run_number }}
       environment_name: staging
       retention_days: 7
+
+  publish:
+    name: Publish staging-latest prerelease
+    needs: build
+    runs-on: ubuntu-latest
+    permissions:
+      actions: read
+      contents: write
+    steps:
+      - name: Download signed APK artifact
+        uses: actions/download-artifact@d3f86a106a0bac45b974a628896c90dbdf5c8093 # v4
+        with:
+          name: ${{ needs.build.outputs.artifact_name }}
+          path: staging
+
+      - name: Replace the rolling staging-latest prerelease
+        env:
+          GH_TOKEN: ${{ github.token }}
+          APK_NAME: ${{ needs.build.outputs.apk_name }}
+        run: |
+          set -euo pipefail
+          [[ -s "staging/$APK_NAME" ]] || { printf 'Downloaded staging APK is missing\n' >&2; exit 1; }
+          (cd staging && sha256sum --check "$APK_NAME.sha256")
+          if gh release view staging-latest --repo "$GITHUB_REPOSITORY" >/dev/null 2>&1; then
+            gh release delete staging-latest --repo "$GITHUB_REPOSITORY" --cleanup-tag --yes
+          fi
+          gh release create staging-latest \
+            "staging/$APK_NAME" \
+            "staging/$APK_NAME.sha256" \
+            --repo "$GITHUB_REPOSITORY" \
+            --target "$GITHUB_SHA" \
+            --prerelease \
+            --title "KUQuest Staging" \
+            --notes "Latest develop build ($GITHUB_SHA). Replaced on every develop push."

@@ -118,6 +118,18 @@ node scripts/bootstrap-android-signing.js generate \
 
 After changing OAuth configuration or signing keys, rebuild and reinstall the native app. Existing APKs do not receive native OAuth configuration changes from JavaScript updates.
 
+### Android download page
+
+`download-page/` is a static page (no build step) that lists the latest production release (`/releases/latest`) and the rolling `staging-latest` prerelease from GitHub Releases. Every develop push rebuilds the staging APK and replaces `staging-latest`; a `vX.Y.Z` tag publishes the production release. The page only reads the GitHub API; APKs download straight from GitHub.
+
+It is hosted by nginx on the build server (`192.168.1.101`, LAN only). Deploy or update it from a checkout:
+
+```bash
+scp download-page/{index.html,app.js,release.js,style.css,favicon.svg} root@192.168.1.101:/var/www/kuquest-download/
+scp download-page/nginx.conf root@192.168.1.101:/etc/nginx/sites-available/kuquest-download
+ssh root@192.168.1.101 'ln -sf /etc/nginx/sites-available/kuquest-download /etc/nginx/sites-enabled/ && rm -f /etc/nginx/sites-enabled/default && nginx -t && systemctl reload nginx'
+```
+
 ### Verify the staging backend
 
 Optional endpoint and account verification:
