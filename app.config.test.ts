@@ -44,6 +44,7 @@ describe("app config variants", () => {
     expect(config.android?.package).toBe("org.kubits.kuquest.staging");
     expect(config.ios?.bundleIdentifier).toBe("org.kubits.kuquest.staging");
     expect(config.android?.versionCode).toBe(1);
+    expect(config.extra?.appVariant).toBe("staging");
     expect(config.android?.softwareKeyboardLayoutMode).toBe("resize");
   });
 
@@ -64,6 +65,7 @@ describe("app config variants", () => {
     expect(config.android?.package).toBe("org.kubits.kuquest.uat");
     expect(config.ios?.bundleIdentifier).toBe("org.kubits.kuquest.uat");
     expect(config.android?.versionCode).toBe(311);
+    expect(config.extra?.appVariant).toBe("uat");
   });
 
   test("rejects invalid variants and missing CI version codes", () => {

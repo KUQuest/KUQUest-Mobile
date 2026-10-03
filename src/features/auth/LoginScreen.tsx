@@ -20,6 +20,7 @@ import {
 } from "./types";
 import { authService } from "./AuthService";
 import {
+  isStagingTestAuthAvailable,
   signInWithStagingTestAccount,
   STAGING_TEST_ACCOUNTS,
   type StagingTestAccount,
@@ -198,7 +199,7 @@ export default function LoginScreen({
               </Host>
             </View>
 
-            {__DEV__ && (
+            {isStagingTestAuthAvailable() && (
               <View className={styles.stagingTestSection}>
                 <Pressable
                   className={styles.stagingTestToggle}

@@ -4,6 +4,13 @@ import { authClient } from "../authClient";
 import { AUTH_COOKIE_STORAGE_KEY } from "../authStorage";
 import { signInWithStagingTestAccount } from "../stagingTestAuth";
 
+jest.mock("expo-constants", () => ({
+  __esModule: true,
+  default: {
+    expoConfig: { extra: { appVariant: "staging" } },
+  },
+}));
+
 function response(setCookie: string | null, status = 200): Response {
   return {
     ok: status >= 200 && status < 300,
@@ -19,9 +26,12 @@ const initialDevFlag = devFlag.__DEV__;
 const initialApiUrl = process.env.EXPO_PUBLIC_API_URL;
 const API_BASE_URL = "https://kuquest-dev-api.kubits.org";
 
+const mockExpoConstants = jest.requireMock("expo-constants").default;
+
 describe("signInWithStagingTestAccount", () => {
   beforeEach(() => {
     devFlag.__DEV__ = true;
+    mockExpoConstants.expoConfig.extra.appVariant = "staging";
     process.env.EXPO_PUBLIC_API_URL = API_BASE_URL;
     (authClient.getCookie as jest.Mock).mockReturnValue("");
   });
@@ -34,7 +44,8 @@ describe("signInWithStagingTestAccount", () => {
     jest.clearAllMocks();
   });
 
-  test("posts to the requested staging test-auth route and stores the session cookie", async () => {
+  test("allows a staging release build to use test-auth", async () => {
+    devFlag.__DEV__ = false;
     const fetchImpl = jest
       .fn()
       .mockResolvedValue(
@@ -116,13 +127,15 @@ describe("signInWithStagingTestAccount", () => {
     expect(fetchImpl).not.toHaveBeenCalled();
   });
 
-  test("refuses to run outside a debug build", async () => {
-    devFlag.__DEV__ = false;
+  test("refuses test sign-in from UAT, including development builds", async () => {
+    mockExpoConstants.expoConfig.extra.appVariant = "uat";
     const fetchImpl = jest.fn();
 
     await expect(
       signInWithStagingTestAccount("default", { fetchImpl })
-    ).rejects.toThrow("debug builds");
+    ).rejects.toThrow(
+      "Staging test sign-in is only available in staging builds."
+    );
     expect(fetchImpl).not.toHaveBeenCalled();
   });
 });
