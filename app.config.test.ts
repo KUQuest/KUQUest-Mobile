@@ -81,9 +81,9 @@ describe("app config variants", () => {
     );
   });
 
-  test("registers HTTPS team invite links for Android and iOS", () => {
-    process.env.EXPO_PUBLIC_API_URL = "https://invite.example.test/api";
-    const config = configure("staging", "247");
+  test("registers UAT API host for Android and iOS team invite links", () => {
+    process.env.EXPO_PUBLIC_API_URL = "https://uat-api.kubits.org";
+    const config = configure("uat", "247");
 
     expect(config.android?.intentFilters).toEqual(
       expect.arrayContaining([
@@ -94,7 +94,7 @@ describe("app config variants", () => {
           data: [
             {
               scheme: "https",
-              host: "invite.example.test",
+              host: "uat-api.kubits.org",
               pathPrefix: "/invite/team",
             },
           ],
@@ -102,7 +102,7 @@ describe("app config variants", () => {
       ])
     );
     expect(config.ios?.associatedDomains).toContain(
-      "applinks:invite.example.test"
+      "applinks:uat-api.kubits.org"
     );
   });
 
