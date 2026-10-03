@@ -40,6 +40,14 @@ reason to weaken either contract.
 - `android/` — native/generated Android build project. Change it only for an explicit native Android task; do not use generated build output as application source.
 - `.expo/`, `node_modules/`, build outputs, and caches are generated state. They are not source-of-truth files.
 
+### App version and updates
+
+`expo.version` in `app.json` stays `1.0.0` for a long time and says nothing about a build. Android installs a build as an update only when its `versionCode` is higher than the installed one (same package ID and signing key), so every CI build carries a higher `versionCode` than the one before it, and that number is what makes each build update the last.
+
+- `staging` and `uat` take `versionCode` from `github.run_number` of their own workflow (`android-staging.yml`, `android-uat.yml`). The number only grows. It is visible in the APK name (`KUQuest-Staging-v1.0.0-build.<versionCode>-<sha>.apk`) and in the Build row of the download page.
+- Keep those workflow file names. A new workflow file restarts `run_number` at 1, and Android then rejects the new builds as downgrades (`INSTALL_FAILED_VERSION_DOWNGRADE`) until the number passes the installed one.
+- Leave `expo.version` and `expo.android.versionCode` in `app.json` alone for builds; raise `expo.version` only when the user names a release version.
+
 ### Mobile route layer
 
 `src/app/` is the Expo Router entry layer. Route files should compose the owning feature and navigation shell; domain rules do not belong only in a route component.
