@@ -6,8 +6,17 @@ import { AuthAdapter, AuthError, type AuthSession } from "../types";
 import { authMessages } from "../../../locales/authMessages";
 import { signInWithStagingTestAccount } from "../stagingTestAuth";
 
+jest.mock("expo-constants", () => ({
+  __esModule: true,
+  default: {
+    expoConfig: { extra: { appVariant: "staging" } },
+  },
+}));
+
 let mockLocale: "en" | "th" = "th";
 let mockSearchParams: { sessionExpired?: string } = {};
+
+const mockExpoConstants = jest.requireMock("expo-constants").default;
 
 jest.mock("expo-router", () => ({
   useLocalSearchParams: () => mockSearchParams,
@@ -61,6 +70,7 @@ describe("LoginScreen", () => {
     mockLocale = "th";
     mockSearchParams = {};
     mockSignInWithStagingTestAccount.mockReset();
+    mockExpoConstants.expoConfig.extra.appVariant = "staging";
   });
   test("offers one Google sign-in action in Thai", async () => {
     const authAdapter = createAdapter();
@@ -122,7 +132,7 @@ describe("LoginScreen", () => {
     });
   });
 
-  test("offers every staging test account as a debug-only sign-in action", async () => {
+  test("offers every staging test account in staging builds", async () => {
     const authAdapter = createAdapter();
     await renderWithQueryClient(<LoginScreen authAdapter={authAdapter} />);
 
@@ -137,6 +147,14 @@ describe("LoginScreen", () => {
     expect(screen.queryByTestId("staging-test-signin-default")).toBeNull();
     expect(screen.getByText("Nattapong Srisawat")).toBeTruthy();
     expect(screen.getByText("Nichakan Kaewmanee")).toBeTruthy();
+  });
+
+  test("hides staging test accounts in UAT builds", async () => {
+    mockExpoConstants.expoConfig.extra.appVariant = "uat";
+    const authAdapter = createAdapter();
+    await renderWithQueryClient(<LoginScreen authAdapter={authAdapter} />);
+
+    expect(screen.queryByTestId("staging-test-toggle")).toBeNull();
   });
 
   test("signs in with a staging test account and routes to the resolved destination", async () => {

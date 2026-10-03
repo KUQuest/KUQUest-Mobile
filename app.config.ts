@@ -97,6 +97,10 @@ export default function configureApp({ config }: ConfigContext): ExpoConfig {
     ...baseConfig,
     name: variantConfig.name,
     scheme: variantConfig.scheme,
+    extra: {
+      ...(baseConfig.extra ?? {}),
+      appVariant: variant,
+    },
     android: {
       ...baseConfig.android,
       softwareKeyboardLayoutMode: "resize",
