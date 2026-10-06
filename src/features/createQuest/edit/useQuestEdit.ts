@@ -26,6 +26,7 @@ import {
 } from "../domain/createQuestModel";
 import {
   questDetailToDraft,
+  toOpenQuestEditPayload,
   toQuestV2Payload,
 } from "../api/createQuestApiAdapter";
 import type {
@@ -138,6 +139,8 @@ export function useQuestEdit({
       if (!questId || versionRef.current === null) {
         throw new Error(createQuestMessages[locale].saveError);
       }
+      const current = detailQuery.data;
+      if (!current) throw new Error(createQuestMessages[locale].saveError);
       const normalizedDraft = {
         ...draftToSave,
         headcount: getHeadcountForParticipation(
@@ -145,14 +148,21 @@ export function useQuestEdit({
           draftToSave.headcount
         ),
       };
-      const updated = await editMutation.mutateAsync({
-        questId,
-        version: versionRef.current,
-        payload: toQuestV2Payload(normalizedDraft),
-        idempotencyKey,
-      });
-      versionRef.current = updated.version;
-      const gallery = await syncImages(normalizedDraft.imageUris);
+      const isOpenQuest = current.state === QuestStatus.QUEST_OPEN;
+      const payload = isOpenQuest
+        ? toOpenQuestEditPayload(normalizedDraft, current)
+        : toQuestV2Payload(normalizedDraft);
+      let gallery = existingImagesRef.current;
+      if (Object.keys(payload).length > 0) {
+        const updated = await editMutation.mutateAsync({
+          questId,
+          version: versionRef.current,
+          payload,
+          idempotencyKey,
+        });
+        versionRef.current = updated.version;
+      }
+      if (!isOpenQuest) gallery = await syncImages(normalizedDraft.imageUris);
       if (state === "OPEN") {
         const messages = createQuestMessages[locale];
         const check = await questApi.getPublishCheck(questId);
@@ -255,6 +265,7 @@ export function useQuestEdit({
     draftLoadError: Boolean(detailQuery.error),
     retryDraftLoad,
     isDraft: detailQuery.data?.state === QuestStatus.QUEST_DRAFT,
+    isOpenQuest: detailQuery.data?.state === QuestStatus.QUEST_OPEN,
     saveState,
     saveErrorIntent,
     saveErrorMessage:

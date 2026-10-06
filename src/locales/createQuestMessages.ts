@@ -47,6 +47,7 @@ export interface CreateQuestMessages {
   scheduleLocationDescription: string;
   participantsReward: string;
   participantsRewardDescription: string;
+  openQuestFieldsLocked: string;
   titleLabel: string;
   titlePlaceholder: string;
   questTag: string;
@@ -297,6 +298,8 @@ export const createQuestMessages: Record<SupportedLocale, CreateQuestMessages> =
       participantsReward: "Participants & Quest funding",
       participantsRewardDescription:
         "Set the maximum participants and inclusive Quest Funding Total per person.",
+      openQuestFieldsLocked:
+        "Participation format, headcount, Quest funding, and images cannot be changed while this Quest is open.",
       titleLabel: "Title",
       titlePlaceholder: "e.g. Design a poster for the faculty fair",
       questTag: "Quest Tag",
@@ -606,6 +609,8 @@ export const createQuestMessages: Record<SupportedLocale, CreateQuestMessages> =
       participantsReward: "ผู้เข้าร่วมและเงินทุนเควสต์",
       participantsRewardDescription:
         "กำหนดจำนวนผู้เข้าร่วมสูงสุดและเงินทุนเควสต์รวมต่อคน",
+      openQuestFieldsLocked:
+        "เมื่อเควสต์เปิดรับแล้ว จะเปลี่ยนรูปแบบการเข้าร่วม จำนวนผู้เข้าร่วม เงินทุนเควสต์ และรูปภาพไม่ได้",
       titleLabel: "ชื่อเควสต์",
       titlePlaceholder: "เช่น ออกแบบโปสเตอร์สำหรับงานคณะ",
       questTag: "แท็กเควสต์",
