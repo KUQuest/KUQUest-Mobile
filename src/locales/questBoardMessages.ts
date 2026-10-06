@@ -480,7 +480,7 @@ export const questBoardMessages: Record<SupportedLocale, QuestBoardMessages> = {
     team: "Team",
     applyNow: "Apply now",
     joinNow: "Join Quest",
-    editPost: "Edit post",
+    editPost: "Edit details",
     leaveQuest: "Leave Quest",
     leaveQuestDescription:
       "You will leave this Quest and lose your confirmed place.",
@@ -952,7 +952,7 @@ export const questBoardMessages: Record<SupportedLocale, QuestBoardMessages> = {
     team: "ทีม",
     applyNow: "สมัครเลย",
     joinNow: "เข้าร่วมเควสต์",
-    editPost: "แก้ไขโพสต์",
+    editPost: "แก้ไขรายละเอียด",
     leaveQuest: "ออกจากเควสต์",
     leaveQuestDescription:
       "คุณจะออกจากเควสต์นี้และเสียสิทธิ์ที่ได้รับการยืนยันแล้ว",
