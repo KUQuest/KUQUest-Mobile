@@ -42,6 +42,7 @@ describe("ChatApi", () => {
             latestMessage: {
               id: "msg-1",
               kind: "USER",
+              systemType: null,
               preview: "Hello from staging",
               createdAt: "2026-09-15T12:00:00Z",
             },

@@ -1,6 +1,7 @@
 import React from "react";
 import { act, fireEvent, waitFor } from "@testing-library/react-native";
 import { walletApi } from "@/api/WalletApi";
+import { openServerSocket } from "@/api/ServerSocket";
 import { renderWithQueryClient } from "@/testing/queryTestUtils";
 import { workerRamp } from "@/theme/colors";
 import { useRoleWorkspaceStore } from "@/features/workspace/roleWorkspaceStore";
@@ -10,6 +11,13 @@ const mockBack = jest.fn();
 const mockCanGoBack = jest.fn(() => true);
 const mockReplace = jest.fn();
 const mockPush = jest.fn();
+jest.mock("@/api/ServerSocket", () => ({
+  openServerSocket: jest.fn(() => ({
+    send: jest.fn(),
+    close: jest.fn(),
+  })),
+}));
+
 jest.mock("expo-router", () => ({
   useRouter: () => ({
     back: mockBack,
@@ -386,8 +394,7 @@ describe("TopUpScreen", () => {
     expect(walletApi.getTopUpStatus).not.toHaveBeenCalled();
   });
 
-  it("moves to success when polling reports PAID without pressing Check Status", async () => {
-    jest.useFakeTimers();
+  it("moves to success when a realtime top-up event reports PAID", async () => {
     (walletApi.getTopUpStatus as jest.Mock)
       .mockResolvedValueOnce(mockTopUpRecord)
       .mockResolvedValueOnce({ ...mockTopUpRecord, topUpStatus: "PAID" });
@@ -403,18 +410,26 @@ describe("TopUpScreen", () => {
       expect(walletApi.getTopUpStatus).toHaveBeenCalledTimes(1)
     );
 
+    const socketCall = jest
+      .mocked(openServerSocket)
+      .mock.calls.find(([path]) => path === "/api/v1/wallet/events");
+    expect(socketCall).toBeDefined();
     await act(async () => {
-      await jest.advanceTimersByTimeAsync(5_000);
+      socketCall?.[1].onFrame({
+        version: 1,
+        type: "TOP_UP_UPDATED",
+        topUpId: mockTopUpRecord.id,
+      });
     });
 
     await waitFor(() => {
+      expect(walletApi.getTopUpStatus).toHaveBeenCalledTimes(2);
       expect(view.getByTestId("top-up-success-view")).toBeTruthy();
       expect(view.queryByTestId("top-up-check-status-btn")).toBeNull();
     });
-    jest.useRealTimers();
   });
 
-  it("stops polling after a terminal status", async () => {
+  it("does not repeat requests after a terminal status without a new event", async () => {
     jest.useFakeTimers();
     (walletApi.getTopUpStatus as jest.Mock).mockResolvedValue({
       ...mockTopUpRecord,

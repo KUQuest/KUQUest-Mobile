@@ -12,6 +12,7 @@ import { navigationMessages } from "@/locales/navigationMessages";
 import { getThemeColors } from "@/theme/colors";
 import { getAppChromeMetrics } from "@/theme/layout";
 import { useHasUnreadChatQuery } from "@/features/chat/api/chatQueries";
+import { useChatInboxRealtime } from "@/features/chat/api/useChatInboxRealtime";
 import {
   useNavigationCompact,
   showNavigation,
@@ -45,6 +46,7 @@ export function BottomNav({
   const navigationCompact = useNavigationCompact();
   const sessionQuery = useSessionQuery();
   const viewerId = sessionQuery.data?.user.id ?? "";
+  useChatInboxRealtime(viewerId);
   const unreadChatQuery = useHasUnreadChatQuery(viewerId);
   const hasUnreadChat = unreadChatQuery.data === true;
   const profileQuery = useProfileQuery(locale);

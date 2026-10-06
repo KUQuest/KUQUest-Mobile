@@ -48355,6 +48355,7 @@ paths:
                                   required: 
                                     - id
                                     - kind
+                                    - systemType
                                     - preview
                                     - createdAt
                                   properties: 
@@ -50612,6 +50613,7 @@ paths:
                                   required: 
                                     - id
                                     - kind
+                                    - systemType
                                     - preview
                                     - createdAt
                                   properties: 
@@ -50624,6 +50626,9 @@ paths:
                                           type: string
                                         - const: SYSTEM
                                           type: string
+                                    systemType:
+                                      nullable: true
+                                      type: string
                                     preview: 
                                       type: string
                                     createdAt: 

@@ -4,8 +4,10 @@ import {
   useQuery,
   useQueryClient,
 } from "@tanstack/react-query";
+import { useEffect } from "react";
 
 import { walletApi } from "@/api/WalletApi";
+import { openServerSocket } from "@/api/ServerSocket";
 
 export const walletKeys = {
   all: ["wallet"] as const,
@@ -23,7 +25,22 @@ export function invalidateWalletQueries(
   return queryClient.invalidateQueries({ queryKey: walletKeys.all });
 }
 
+function useWalletRealtime(enabled: boolean) {
+  const queryClient = useQueryClient();
+  useEffect(() => {
+    if (!enabled) return;
+    const invalidate = () => {
+      void invalidateWalletQueries(queryClient);
+    };
+    const socket = openServerSocket("/api/v1/wallet/events", {
+      onFrame: invalidate,
+    });
+    return () => socket.close();
+  }, [enabled, queryClient]);
+}
+
 export function useWalletQuery(enabled = true) {
+  useWalletRealtime(enabled);
   return useQuery({
     enabled,
     queryKey: walletKeys.detail(),
@@ -40,6 +57,7 @@ export function useTransactionHistoryQuery(limit: number, enabled = true) {
 }
 
 export function useTopUpStatusQuery(topUpId: string | null) {
+  useWalletRealtime(Boolean(topUpId));
   return useQuery({
     enabled: Boolean(topUpId),
     queryKey: walletKeys.topUpStatus(topUpId ?? ""),
@@ -48,13 +66,6 @@ export function useTopUpStatusQuery(topUpId: string | null) {
         throw new Error("A top-up ID is required");
       }
       return walletApi.getTopUpStatus(topUpId, { signal });
-    },
-    refetchInterval: (query) => {
-      const topUp = query.state.data;
-      return topUp?.topUpStatus === "PENDING" &&
-        Date.parse(topUp.qrExpiresAt ?? "") > Date.now()
-        ? 5_000
-        : false;
     },
   });
 }

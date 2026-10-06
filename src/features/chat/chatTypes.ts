@@ -38,6 +38,7 @@ export interface ChatMessage {
   createdAt: string;
   attachment?: ChatAttachment;
   kind?: "USER" | "SYSTEM";
+  systemType?: string | null;
   pending?: boolean;
   hidden?: boolean;
 }

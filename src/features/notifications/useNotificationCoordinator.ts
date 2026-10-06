@@ -22,10 +22,7 @@ import {
   myQuestsKeys,
   useMyWorkerCandidateApplicationsQuery,
 } from "@/features/myQuests/api/myQuestsQueries";
-import {
-  useWorkerAssignmentsQuery,
-  workerHomeKeys,
-} from "@/features/workerHome/api/workerHomeQueries";
+import { useWorkerAssignmentsQuery } from "@/features/workerHome/api/workerHomeQueries";
 
 import {
   detectApplicationDecisions,
@@ -81,8 +78,7 @@ export function useNotificationCoordinator() {
   const workerEnabled = Boolean(viewerId) && isWorker && foreground;
   const conversationsQuery = useChatNotificationConversationsQuery(
     viewerId,
-    Boolean(viewerId) && foreground,
-    foreground ? POLL_INTERVAL_MS : undefined
+    Boolean(viewerId) && foreground
   );
   const applicationsQuery = useMyWorkerCandidateApplicationsQuery(
     viewerId || null,
@@ -293,10 +289,6 @@ export function useNotificationCoordinator() {
     const interval = setInterval(() => {
       void queryClient.refetchQueries({
         queryKey: myQuestsKeys.workerCandidateApplications(viewerId),
-        type: "active",
-      });
-      void queryClient.refetchQueries({
-        queryKey: workerHomeKeys.assignments("all"),
         type: "active",
       });
     }, POLL_INTERVAL_MS);
