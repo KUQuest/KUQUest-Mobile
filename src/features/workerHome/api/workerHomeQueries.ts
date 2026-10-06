@@ -1,8 +1,13 @@
 import { useEffect } from "react";
 
-import { useQuery, useQueryClient } from "@tanstack/react-query";
+import {
+  type QueryClient,
+  useQuery,
+  useQueryClient,
+} from "@tanstack/react-query";
 
 import { questApi, type QuestV2AssignmentMineStatus } from "@/api/QuestApi";
+import { openServerSocket, type ServerSocket } from "@/api/ServerSocket";
 import { subscribeToQuestBoardEvents } from "@/features/questBoard/live/questEvents";
 import { workerHomeKeys } from "./workerHomeKeys";
 
@@ -13,10 +18,47 @@ type WorkerBoardQueryParams = {
   tagId?: string | null;
 };
 
+const workerAssignmentSockets = new WeakMap<
+  QueryClient,
+  { consumers: number; socket: ServerSocket }
+>();
+
 export function useWorkerAssignmentsQuery(
   status: QuestV2AssignmentMineStatus,
   enabled = true
 ) {
+  const queryClient = useQueryClient();
+  useEffect(() => {
+    if (!enabled) return;
+    const invalidateAssignments = () => {
+      void queryClient.invalidateQueries({
+        queryKey: [...workerHomeKeys.all, "assignments"],
+      });
+    };
+    const existing = workerAssignmentSockets.get(queryClient);
+    if (existing) {
+      existing.consumers += 1;
+      return () => {
+        existing.consumers -= 1;
+        if (existing.consumers === 0) {
+          workerAssignmentSockets.delete(queryClient);
+          existing.socket.close();
+        }
+      };
+    }
+    const socket = openServerSocket("/api/v2/me/worker-assignments/events", {
+      onFrame: invalidateAssignments,
+    });
+    const subscription = { consumers: 1, socket };
+    workerAssignmentSockets.set(queryClient, subscription);
+    return () => {
+      subscription.consumers -= 1;
+      if (subscription.consumers === 0) {
+        workerAssignmentSockets.delete(queryClient);
+        socket.close();
+      }
+    };
+  }, [enabled, queryClient]);
   return useQuery({
     enabled,
     queryKey: workerHomeKeys.assignments(status),

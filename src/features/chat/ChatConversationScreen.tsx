@@ -1,4 +1,6 @@
 import { useCallback, useMemo, useRef } from "react";
+import { BackHandler } from "react-native";
+import { useFocusEffect } from "expo-router";
 import {
   RefreshControl,
   type ListRenderItemInfo,
@@ -46,7 +48,6 @@ import {
   useChatConversationController,
 } from "./workflow/useChatConversationController";
 import type { ConversationMode } from "./workflow/useChatConversationController";
-import { goBackOrReplace } from "@/utils/navigation";
 
 export interface ChatConversationScreenProps {
   conversationType?: ConversationMode;
@@ -95,6 +96,18 @@ export default function ChatConversationScreen({
     handleImagePress,
     openFile,
   } = controller;
+  useFocusEffect(
+    useCallback(() => {
+      const subscription = BackHandler.addEventListener(
+        "hardwareBackPress",
+        () => {
+          router.replace("/(tabs)/chat");
+          return true;
+        }
+      );
+      return () => subscription.remove();
+    }, [router])
+  );
   const messageListRef = useRef<NativeFlatList<DisplayChatMessage>>(null);
   const lastMessageIdRef = useRef<string | null>(null);
   const handleMessageListContentSizeChange = useCallback(() => {
@@ -122,6 +135,13 @@ export default function ChatConversationScreen({
   const renderMessage = useCallback(
     ({ item }: ListRenderItemInfo<DisplayChatMessage>) => {
       if (!conversation) return null;
+      if (
+        item.kind === "SYSTEM" &&
+        (item.systemType === "ACCEPTED_PARTICIPANT_JOINED" ||
+          item.systemType === "WORKER_DEPARTED")
+      ) {
+        return null;
+      }
       return (
         <MessageBubble
           message={item}
@@ -153,7 +173,7 @@ export default function ChatConversationScreen({
       <ChatConversationSkeleton
         loadingLabel={messages.loading}
         backLabel={messages.backToChat}
-        onBack={() => goBackOrReplace(router, "/(tabs)/chat")}
+        onBack={() => router.replace("/(tabs)/chat")}
       />
     );
   }
@@ -170,7 +190,7 @@ export default function ChatConversationScreen({
               accessibilityLabel={messages.backToChat}
               accessibilityRole="button"
               className={styles.backButton}
-              onPress={() => goBackOrReplace(router, "/(tabs)/chat")}
+              onPress={() => router.replace("/(tabs)/chat")}
             >
               <ChevronLeft
                 color={colors.primaryDeep}
@@ -206,7 +226,7 @@ export default function ChatConversationScreen({
               accessibilityLabel={messages.backToChat}
               accessibilityRole="button"
               className={styles.backButton}
-              onPress={() => goBackOrReplace(router, "/(tabs)/chat")}
+              onPress={() => router.replace("/(tabs)/chat")}
             >
               <ChevronLeft
                 color={colors.primaryDeep}
@@ -266,7 +286,7 @@ export default function ChatConversationScreen({
               accessibilityLabel={messages.backToChat}
               accessibilityRole="button"
               className={styles.backButton}
-              onPress={() => goBackOrReplace(router, "/(tabs)/chat")}
+              onPress={() => router.replace("/(tabs)/chat")}
             >
               <ChevronLeft
                 color={colors.primaryDeep}
