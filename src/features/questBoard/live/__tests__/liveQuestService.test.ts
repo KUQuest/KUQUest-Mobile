@@ -710,13 +710,15 @@ describe("LiveQuestService", () => {
         declinedCount: 0,
         pendingCount: 1,
       },
-      ownResponse: null,
+      // The Server's shape for a Worker who has not answered yet.
+      ownResponse: { decision: null, reason: null, respondedAt: null },
     };
 
     async function loadWorkerSnapshot(
       pendingEditRequest:
         { requestId: string; expiresAt: string } | null | undefined,
-      options: { editRequestId?: string } = {}
+      options: { editRequestId?: string } = {},
+      mockEditRequest = true
     ) {
       mockedQuestApi.getDetail.mockRejectedValue(new Error("forbidden"));
       mockedQuestApi.getPublicDetail.mockRejectedValue(new Error("not open"));
@@ -757,7 +759,9 @@ describe("LiveQuestService", () => {
       mockedQuestApi.listCandidateTeams.mockResolvedValue([]);
       mockedQuestApi.getUnderfilled.mockResolvedValue(null as never);
       mockedQuestApi.listProofSubmissions.mockResolvedValue([]);
-      mockedQuestApi.getEditRequest.mockResolvedValue(pendingEdit as never);
+      if (mockEditRequest) {
+        mockedQuestApi.getEditRequest.mockResolvedValue(pendingEdit as never);
+      }
       mockedChatApi.listConversations.mockResolvedValue({
         items: [],
         nextCursor: null,
@@ -801,6 +805,24 @@ describe("LiveQuestService", () => {
       const snapshot = await loadWorkerSnapshot(null);
 
       expect(mockedQuestApi.getEditRequest).not.toHaveBeenCalled();
+      expect(snapshot.capabilities.canRespondToEdit).toBe(false);
+    });
+
+    it("stops offering a response once the Worker has answered", async () => {
+      mockedQuestApi.getEditRequest.mockResolvedValue({
+        ...pendingEdit,
+        ownResponse: {
+          decision: "EDIT_RESPONSE_ACCEPTED",
+          reason: null,
+          respondedAt: "2099-08-26T09:01:00+07:00",
+        },
+      } as never);
+      const snapshot = await loadWorkerSnapshot(
+        { requestId: "edit-request-1", expiresAt: pendingEdit.expiresAt },
+        {},
+        false
+      );
+
       expect(snapshot.capabilities.canRespondToEdit).toBe(false);
     });
 

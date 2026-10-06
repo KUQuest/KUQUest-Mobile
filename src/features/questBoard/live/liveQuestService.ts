@@ -462,9 +462,11 @@ function deriveCapabilities(input: {
     assignments.filter(
       (candidate) => candidate.state !== "ASSIGNMENT_CANCELLED"
     ).length < headcount;
+  // The Server returns a responding Worker's ownResponse with a null decision
+  // until they answer, not a null ownResponse.
   const pendingEdit =
     editRequest?.status === "EDIT_REQUEST_PENDING" &&
-    editRequest.ownResponse === null;
+    (editRequest.ownResponse?.decision ?? null) === null;
   const pendingProof = proofs.some((proof) => proof.status === "PROOF_PENDING");
   const canWorkChat =
     Boolean(workConversation) && (isHirer || assignment !== null);
