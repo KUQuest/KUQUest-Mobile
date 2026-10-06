@@ -40,8 +40,6 @@ export interface HirerHomeMessages {
   shortcutsTitle: string;
   shortcutMyQuestsTitle: string;
   shortcutMyQuestsDesc: string;
-  shortcutBoardTitle: string;
-  shortcutBoardDesc: string;
   shortcutTopUpTitle: string;
   shortcutTopUpDesc: string;
   shortcutSettingsTitle: string;
@@ -99,8 +97,6 @@ export const hirerHomeMessages: Record<SupportedLocale, HirerHomeMessages> = {
     shortcutsTitle: "Shortcuts",
     shortcutMyQuestsTitle: "My Quests",
     shortcutMyQuestsDesc: "Every Quest you posted",
-    shortcutBoardTitle: "Quest Board",
-    shortcutBoardDesc: "Browse all Quests",
     shortcutTopUpTitle: "Top up",
     shortcutTopUpDesc: "PromptPay QR deposit",
     shortcutSettingsTitle: "Settings",
@@ -163,8 +159,6 @@ export const hirerHomeMessages: Record<SupportedLocale, HirerHomeMessages> = {
     shortcutsTitle: "ทางลัด",
     shortcutMyQuestsTitle: "เควสต์ของฉัน",
     shortcutMyQuestsDesc: "เควสต์ทั้งหมดที่คุณโพสต์",
-    shortcutBoardTitle: "กระดานเควสต์",
-    shortcutBoardDesc: "ดูเควสต์ทั้งหมดในกระดาน",
     shortcutTopUpTitle: "เติมเงิน",
     shortcutTopUpDesc: "เติมเงินผ่านพร้อมเพย์",
     shortcutSettingsTitle: "การตั้งค่า",
