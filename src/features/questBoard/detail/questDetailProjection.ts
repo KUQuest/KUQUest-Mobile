@@ -90,6 +90,7 @@ function fixtureCapabilities(
     canDecideUnderfilled: false,
     canConsentUnderfilled: canRespondPartialStart,
     canRespondPartialStart,
+    canRespondToEdit: false,
     canMessageOwner:
       !isOwner &&
       Boolean(state.conversation.conversationId && state.conversation.canRead),
@@ -124,6 +125,7 @@ function liveCapabilities(
     canDecideUnderfilled: capabilities.canDecideUnderfilled,
     canConsentUnderfilled: capabilities.canConsentUnderfilled,
     canRespondPartialStart: capabilities.canConsentUnderfilled,
+    canRespondToEdit: capabilities.canRespondToEdit,
     canMessageOwner,
   };
 }
