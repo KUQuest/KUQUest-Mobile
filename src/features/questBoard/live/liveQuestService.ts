@@ -851,6 +851,12 @@ export class LiveQuestService {
       }
     }
 
+    // The detail read names a pending edit, so a cold start finds it without
+    // the realtime event; the event id still covers a request that has ended.
+    const editRequestId =
+      ("pendingEditRequest" in quest
+        ? quest.pendingEditRequest?.requestId
+        : undefined) ?? options.editRequestId;
     const [
       assignments,
       applications,
@@ -891,9 +897,9 @@ export class LiveQuestService {
         },
         null as ServerChatConversation | null
       ),
-      options.editRequestId
+      editRequestId
         ? optionalResource(
-            () => questApi.getEditRequest(options.editRequestId!, options),
+            () => questApi.getEditRequest(editRequestId, options),
             null as QuestV2EditRequest | null
           )
         : Promise.resolve(null as QuestV2EditRequest | null),

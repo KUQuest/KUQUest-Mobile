@@ -35,6 +35,7 @@ jest.mock("@/api/QuestApi", () => ({
     createCandidateTeam: jest.fn(),
     getUnderfilled: jest.fn(),
     listProofSubmissions: jest.fn(),
+    getEditRequest: jest.fn(),
   },
 }));
 
@@ -691,6 +692,131 @@ describe("LiveQuestService", () => {
       { id: "worker-1", displayName: "worker-1" },
     ]);
   });
+  describe("pending Quest Edit Request discovery", () => {
+    const pendingEdit = {
+      requestId: "edit-request-1",
+      questId: "quest-edit-1",
+      status: "EDIT_REQUEST_PENDING",
+      failureCode: null,
+      createdAt: "2099-08-26T09:00:00+07:00",
+      expiresAt: "2099-08-26T09:10:00+07:00",
+      appliedAt: null,
+      failedAt: null,
+      previousCondition: { items: [{ position: 0, text: "Old" }] },
+      proposedCondition: { items: [{ position: 0, text: "New" }] },
+      responseSummary: {
+        totalCount: 1,
+        acceptedCount: 0,
+        declinedCount: 0,
+        pendingCount: 1,
+      },
+      ownResponse: null,
+    };
+
+    async function loadWorkerSnapshot(
+      pendingEditRequest:
+        { requestId: string; expiresAt: string } | null | undefined,
+      options: { editRequestId?: string } = {}
+    ) {
+      mockedQuestApi.getDetail.mockRejectedValue(new Error("forbidden"));
+      mockedQuestApi.getPublicDetail.mockRejectedValue(new Error("not open"));
+      mockedQuestApi.getParticipationDetail.mockResolvedValue({
+        id: "quest-edit-1",
+        title: "Assigned Quest",
+        description: null,
+        condition: { items: [{ id: "condition-1", text: "Old" }] },
+        tag: null,
+        mode: "FIRST_COME_FIRST_SERVED",
+        participation: "SINGLE",
+        state: "QUEST_ASSIGNED",
+        questReward: 100,
+        headcount: 1,
+        activeWorkerCount: 1,
+        startTime: "2099-08-26T09:00:00+07:00",
+        dueAt: "2099-08-27T12:00:00+07:00",
+        proofRequired: true,
+        hirerName: "Hirer Alice",
+        locations: [],
+        images: [],
+        assignment: { status: "ASSIGNMENT_ACTIVE", startedAt: null },
+        capabilities: { canViewOnly: false },
+        ...(pendingEditRequest === undefined ? {} : { pendingEditRequest }),
+      } as never);
+      mockedQuestApi.listQuestAssignments.mockResolvedValue([
+        {
+          id: "assignment-worker-1",
+          questId: "quest-edit-1",
+          workerId: "worker-1",
+          state: "ASSIGNMENT_ACTIVE",
+          questState: "QUEST_ASSIGNED",
+          startedAt: null,
+          createdAt: "2099-08-25T09:00:00+07:00",
+        },
+      ] as never);
+      mockedQuestApi.listApplications.mockResolvedValue([]);
+      mockedQuestApi.listCandidateTeams.mockResolvedValue([]);
+      mockedQuestApi.getUnderfilled.mockResolvedValue(null as never);
+      mockedQuestApi.listProofSubmissions.mockResolvedValue([]);
+      mockedQuestApi.getEditRequest.mockResolvedValue(pendingEdit as never);
+      mockedChatApi.listConversations.mockResolvedValue({
+        items: [],
+        nextCursor: null,
+      } as never);
+
+      return liveQuestService.getLiveSnapshot(
+        "quest-edit-1",
+        "worker-1",
+        options
+      );
+    }
+
+    it("loads the pending request the participation detail names without a realtime event", async () => {
+      const snapshot = await loadWorkerSnapshot({
+        requestId: "edit-request-1",
+        expiresAt: pendingEdit.expiresAt,
+      });
+
+      expect(mockedQuestApi.getEditRequest).toHaveBeenCalledWith(
+        "edit-request-1",
+        expect.anything()
+      );
+      expect(snapshot.capabilities.canRespondToEdit).toBe(true);
+      expect(snapshot.nextAction).toBe("RESPOND_TO_EDIT");
+    });
+
+    it("prefers the server-named pending request over an older event id", async () => {
+      await loadWorkerSnapshot(
+        { requestId: "edit-request-1", expiresAt: pendingEdit.expiresAt },
+        { editRequestId: "edit-request-old" }
+      );
+
+      expect(mockedQuestApi.getEditRequest).toHaveBeenCalledTimes(1);
+      expect(mockedQuestApi.getEditRequest).toHaveBeenCalledWith(
+        "edit-request-1",
+        expect.anything()
+      );
+    });
+
+    it("reads no edit request when the detail names none and no event arrived", async () => {
+      const snapshot = await loadWorkerSnapshot(null);
+
+      expect(mockedQuestApi.getEditRequest).not.toHaveBeenCalled();
+      expect(snapshot.capabilities.canRespondToEdit).toBe(false);
+    });
+
+    it("still uses the event id when the server does not return the field yet", async () => {
+      const snapshot = await loadWorkerSnapshot(undefined, {
+        editRequestId: "edit-request-1",
+      });
+
+      expect(mockedQuestApi.getEditRequest).toHaveBeenCalledWith(
+        "edit-request-1",
+        expect.anything()
+      );
+      expect(snapshot.capabilities.canRespondToEdit).toBe(true);
+    });
+  });
+
   describe("Start Work required starter", () => {
     const assignment = (
       workerId: string,
