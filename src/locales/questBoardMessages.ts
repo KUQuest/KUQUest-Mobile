@@ -146,8 +146,6 @@ export interface QuestBoardMessages {
   leftQuestDescription: string;
   historyQuest: string;
   historyQuestDescription: string;
-  postOwnerView: string;
-  postOwnerViewDescription: string;
   confirmApplicationTitle: string;
   confirmParticipationTitle: string;
   confirmApplicationDescription: string;
@@ -493,9 +491,6 @@ export const questBoardMessages: Record<SupportedLocale, QuestBoardMessages> = {
     historyQuest: "Quest history",
     historyQuestDescription:
       "This Quest is in your history and no longer has an active action.",
-    postOwnerView: "Your Quest post",
-    postOwnerViewDescription:
-      "Manage this Quest from here. You can edit the post or review applicants from My Quests.",
     confirmApplicationTitle: "Confirm your application",
     confirmParticipationTitle: "Confirm your participation",
     confirmApplicationDescription:
@@ -964,9 +959,6 @@ export const questBoardMessages: Record<SupportedLocale, QuestBoardMessages> = {
     historyQuest: "ประวัติเควสต์",
     historyQuestDescription:
       "เควสต์นี้อยู่ในประวัติของคุณและไม่มีการดำเนินการที่ใช้งานอยู่",
-    postOwnerView: "โพสต์เควสต์ของคุณ",
-    postOwnerViewDescription:
-      "จัดการเควสต์นี้ได้จากหน้านี้ แก้ไขโพสต์หรือดูผู้สมัครได้จาก MyQuest",
     confirmApplicationTitle: "ยืนยันการสมัคร",
     confirmParticipationTitle: "ยืนยันการเข้าร่วม",
     confirmApplicationDescription:

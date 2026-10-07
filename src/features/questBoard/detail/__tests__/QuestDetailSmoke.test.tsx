@@ -214,7 +214,6 @@ describe("QuestDetailScreen smoke", () => {
           title: "Application accepted",
           description: "Your place is confirmed",
           unavailable: false,
-          postView: false,
           leftQuest: false,
           history: false,
           Icon: CircleAlert,

@@ -370,7 +370,6 @@ export interface QuestDetailBodyProps {
     title: string;
     description: string;
     unavailable: boolean;
-    postView: boolean;
     leftQuest: boolean;
     history: boolean;
     Icon: LucideIcon;
@@ -651,7 +650,6 @@ export function QuestDetailBody({
           className={cn(
             styles.statusCard,
             status.unavailable && styles.statusCardBlocked,
-            status.postView && styles.statusCardOwner,
             (status.leftQuest || status.history) && styles.statusCardMuted
           )}
         >
@@ -664,7 +662,7 @@ export function QuestDetailBody({
               {status.description}
             </Text>
           ) : null}
-          {!status.unavailable && !status.postView && !status.leftQuest ? (
+          {!status.unavailable && !status.leftQuest ? (
             <Pressable
               accessibilityRole="button"
               onPress={onOpenWorkHub}
