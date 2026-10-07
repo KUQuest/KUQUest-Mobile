@@ -97,6 +97,7 @@ export interface QuestBoardMessages {
   details: string;
   viewDetails: string;
   creator: string;
+  ownerPostLabel: string;
   messageOwner: string;
   messageOwnerShort: string;
   messageOwnerLoading: string;
@@ -434,6 +435,7 @@ export const questBoardMessages: Record<SupportedLocale, QuestBoardMessages> = {
     details: "Quest details",
     viewDetails: "View details",
     creator: "Posted by",
+    ownerPostLabel: "Your post",
     messageOwner: "Message Quest owner",
     messageOwnerShort: "Message owner",
     messageOwnerLoading: "Opening chat…",
@@ -883,6 +885,7 @@ export const questBoardMessages: Record<SupportedLocale, QuestBoardMessages> = {
     details: "รายละเอียดเควสต์",
     viewDetails: "ดูรายละเอียด",
     creator: "โพสต์โดย",
+    ownerPostLabel: "โพสต์ของคุณ",
     messageOwner: "แชทถามรายละเอียดกับผู้ว่าจ้าง",
     messageOwnerShort: "แชทผู้ว่าจ้าง",
     messageOwnerLoading: "กำลังเปิดแชท…",

@@ -401,6 +401,7 @@ export function buildQuestDetailBodyProps(
       : undefined,
     messages: facts.messages,
     locale: facts.locale,
+    isOwnerPost: facts.isPostView && facts.isHirerView,
     onOpenWorkHub: navigation.openWorkHub,
     onRefresh: context.onRefresh,
     prototypeEntry: facts.activePrototypeState

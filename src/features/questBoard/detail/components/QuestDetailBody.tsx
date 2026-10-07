@@ -355,6 +355,7 @@ export interface QuestDetailBodyProps {
   quest: QuestBoardQuest;
   locale: "en" | "th";
   messages: QuestBoardMessages;
+  isOwnerPost?: boolean;
   imageUris: string[];
   canonicalStatus?: string;
   refreshing: boolean;
@@ -409,6 +410,7 @@ export function QuestDetailBody({
   quest,
   locale,
   messages,
+  isOwnerPost = false,
   imageUris,
   canonicalStatus,
   refreshing,
@@ -464,9 +466,18 @@ export function QuestDetailBody({
           </View>
           <View className={styles.creatorCopy}>
             <Text className={styles.creatorLabel}>{messages.creator}</Text>
-            <Text className={styles.creatorValue} numberOfLines={1}>
-              {`${quest.creator.name}${quest.creator.faculty ? ` · ${localizeFacultyName(quest.creator.faculty, locale)}` : ""}`}
-            </Text>
+            <View className={styles.creatorIdentityRow}>
+              <Text className={styles.creatorValue} numberOfLines={1}>
+                {`${quest.creator.name}${quest.creator.faculty ? ` · ${localizeFacultyName(quest.creator.faculty, locale)}` : ""}`}
+              </Text>
+              {isOwnerPost ? (
+                <View accessibilityRole="text" className={styles.ownerBadge}>
+                  <Text className={styles.ownerBadgeText}>
+                    {messages.ownerPostLabel}
+                  </Text>
+                </View>
+              ) : null}
+            </View>
           </View>
         </View>
         <View accessibilityLabel={messages.tags} className={styles.tagRow}>
