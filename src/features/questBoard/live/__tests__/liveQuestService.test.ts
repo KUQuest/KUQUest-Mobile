@@ -1,5 +1,6 @@
 import { resetServerClock, syncServerClock } from "@/api/serverClock";
 import { liveQuestService } from "../liveQuestService";
+import { getQuestDetailProjection } from "../../detail/questDetailProjection";
 import { ApiError } from "@/api/ApiClient";
 import { questApi } from "@/api/QuestApi";
 import { chatApi } from "@/api/ChatApi";
@@ -768,6 +769,9 @@ describe("LiveQuestService", () => {
       { id: "worker-2", displayName: "Worker Two" },
       { id: "worker-3", displayName: "Worker Three" },
     ]);
+    const detail = getQuestDetailProjection(snapshot, "worker-1");
+    expect(detail.participantCount).toBe(3);
+    expect(detail.quest.acceptedParticipants).toBe(3);
   });
 
   describe("Start Work required starter", () => {

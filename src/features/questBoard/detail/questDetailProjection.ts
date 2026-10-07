@@ -1,3 +1,4 @@
+import { isTerminalStatus } from "@/domain/questLifecycle";
 import {
   getQuestAvailability,
   toBoardQuest,
@@ -134,7 +135,7 @@ export function getQuestDetailProjection(
   now = new Date()
 ): QuestDetailProjection {
   if (isLiveSnapshot(source)) {
-    const quest = liveQuest(source);
+    const baseQuest = liveQuest(source);
     const isOwner = isHirerActor(source.actor);
     const isAssigned = source.assignment?.state !== undefined;
     const hasPendingApplication =
@@ -167,13 +168,17 @@ export function getQuestDetailProjection(
           id: assignment.workerId,
           displayName: assignment.workerId,
         }));
-    const participantCount =
-      "activeWorkerCount" in source.quest
+    // activeWorkerCount drops to 0 once settlement ends every Assignment, so a
+    // terminal Quest counts the roster of Workers who worked it instead.
+    const participantCount = isTerminalStatus(source.state)
+      ? participants.length
+      : "activeWorkerCount" in source.quest
         ? source.quest.activeWorkerCount
         : source.assignments.filter(
             (assignment) =>
               assignment.state !== QuestAssignmentStatus.ASSIGNMENT_CANCELLED
           ).length;
+    const quest = { ...baseQuest, acceptedParticipants: participantCount };
     return {
       state: null,
       quest,
