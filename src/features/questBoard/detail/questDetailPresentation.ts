@@ -260,8 +260,8 @@ export function getQuestDetailPresentationFacts({
   const statusIcon = statusIsUnavailable
     ? CircleAlert
     : surface.leftQuest
-        ? LogOut
-        : Check;
+      ? LogOut
+      : Check;
   const statusIconColor = statusIsUnavailable
     ? colors.textMuted
     : surface.leftQuest
