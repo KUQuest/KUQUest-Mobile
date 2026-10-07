@@ -710,7 +710,13 @@ export function buildQuestDetailActionBar(
     canEditPost:
       facts.isPostView &&
       facts.isHirerView &&
-      facts.quest.status === QuestStatus.QUEST_DRAFT,
+      (facts.quest.status === QuestStatus.QUEST_DRAFT ||
+        (facts.quest.status === QuestStatus.QUEST_OPEN &&
+          facts.source.kind === "live-snapshot" &&
+          facts.liveSnapshot?.actor === QuestActor.HIRER &&
+          facts.liveSnapshot.assignments.length === 0 &&
+          facts.liveSnapshot.applications.length === 0 &&
+          facts.liveSnapshot.teams.length === 0)),
     canReview:
       facts.isPostView &&
       (facts.isHirerView || facts.liveSnapshot?.actor === QuestActor.WORKER) &&
