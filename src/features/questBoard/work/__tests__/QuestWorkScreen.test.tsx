@@ -544,6 +544,26 @@ describe("QuestWorkScreen", () => {
     expect(solo.queryByTestId("work-group-start-progress")).toBeNull();
   });
 
+  // Mobile #287: settlement ends every Assignment, so the counts read 0 of 0 and the
+  // Start Work warning no longer applies once the Quest is terminal.
+  it("hides the Group Start Work progress once the Quest is terminal", async () => {
+    const base = makeSnapshot({
+      state: "QUEST_COMPLETED",
+      participation: "GROUP",
+      quest: { ...defaultQuest, state: "QUEST_COMPLETED" },
+    });
+    mockedGetSnapshot.mockResolvedValue({
+      ...base,
+      quest: { ...base.quest, activeWorkerCount: 0, startedWorkerCount: 0 },
+    });
+    const view = await renderWithQueryClient(
+      <QuestWorkScreen questId="quest-work-1" viewerId="worker-1" />
+    );
+
+    await view.findAllByText("Prepare the student workshop");
+    expect(view.queryByTestId("work-group-start-progress")).toBeNull();
+  });
+
   it("keeps refreshing while other Workers still have to press Start Work", async () => {
     jest.useFakeTimers();
     const waiting = makeSnapshot({
