@@ -55,7 +55,7 @@ export function TeamAssembleSubmissionPanel({
 }: TeamAssembleSubmissionPanelProps) {
   const { colors } = useAppTheme();
   const canSubmit =
-    submissionReady && (!canonical || Boolean(text.trim() && files.length > 0));
+    submissionReady && (!canonical || Boolean(text.trim()));
   if (submissionBlocker && canonical && submissionReady) {
     return (
       <View
@@ -120,7 +120,7 @@ export function TeamAssembleSubmissionPanel({
             </View>
           ) : null}
         </View>
-        {canonical && (!text.trim() || files.length === 0) ? (
+        {canonical && !text.trim() ? (
           <Text
             accessibilityRole="alert"
             className={styles.noticeText}

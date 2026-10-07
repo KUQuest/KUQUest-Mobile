@@ -167,7 +167,7 @@ describe("group Quest sheets", () => {
         messages={{
           teamSubmissionUnavailable: "Team submission unavailable",
           submissionContentRequired:
-            "Add a proposal note and at least one supporting file to submit.",
+            "Add a proposal note to submit. Supporting files are optional.",
           reviewTitle: "Review team",
           reviewDescription: "Check proposal",
           roster: "Roster",
@@ -206,7 +206,7 @@ describe("group Quest sheets", () => {
         messages={{
           teamSubmissionUnavailable: "Team submission unavailable",
           submissionContentRequired:
-            "Add a proposal note and at least one supporting file to submit.",
+            "Add a proposal note to submit. Supporting files are optional.",
           reviewTitle: "Review team",
           reviewDescription: "Check proposal",
           roster: "Roster",
@@ -232,6 +232,46 @@ describe("group Quest sheets", () => {
       view.getByTestId("team-assemble-confirm-submit").props.accessibilityState
         .disabled
     ).toBe(true);
+  });
+
+  it("allows a full team to submit a proposal note without supporting files", async () => {
+    const onSubmit = jest.fn();
+    const view = await renderWithQueryClient(
+      <TeamAssembleSubmissionPanel
+        submissionReady
+        canonical
+        acceptedCount={3}
+        files={[]}
+        isReviewing
+        messages={{
+          teamSubmissionUnavailable: "Team submission unavailable",
+          submissionContentRequired:
+            "Add a proposal note to submit. Supporting files are optional.",
+          reviewTitle: "Review team",
+          reviewDescription: "Check proposal",
+          roster: "Roster",
+          rosterCount: (actual, required) => `${actual}/${required}`,
+          partialRosterHint: "Full team",
+          attachedFiles: "Files",
+          proposal: "Proposal",
+          submittingTeam: "Submitting",
+          confirmSubmit: "Confirm submission",
+          cancel: "Cancel",
+          reviewRoster: "Review roster",
+        }}
+        onReviewChange={jest.fn()}
+        onSubmit={onSubmit}
+        requiredHeadcount={3}
+        submissionBlocker={undefined}
+        submitting={false}
+        text="We can do the work."
+      />
+    );
+
+    const submit = view.getByTestId("team-assemble-confirm-submit");
+    expect(submit.props.accessibilityState).toEqual({ disabled: false });
+    await fireEvent.press(submit);
+    expect(onSubmit).toHaveBeenCalledTimes(1);
   });
 
   it("supports a partial roster, directory search, multi-invite, and review before submit", async () => {
