@@ -169,8 +169,18 @@ export const questV2CanonicalQuestSchema = z.object({
 });
 export type QuestV2CanonicalQuest = z.infer<typeof questV2CanonicalQuestSchema>;
 
+/** The pending Quest Edit Request that waits for the viewer. Optional until every environment returns it. */
+export const questV2PendingEditRequestSchema = z.object({
+  requestId: questV2IdSchema,
+  expiresAt: z.string(),
+});
+export type QuestV2PendingEditRequest = z.infer<
+  typeof questV2PendingEditRequestSchema
+>;
+
 export const questV2DetailSchema = questV2CanonicalQuestSchema.extend({
   images: z.array(questV2ImageSchema),
+  pendingEditRequest: questV2PendingEditRequestSchema.nullable().optional(),
 });
 export type QuestV2Detail = z.infer<typeof questV2DetailSchema>;
 
@@ -220,6 +230,7 @@ export const questV2ParticipationDetailSchema =
     }),
     dispute: questV2DisputeWindowSchema.nullable().optional(),
     moneyHold: questV2MoneyHoldSchema.nullable().optional(),
+    pendingEditRequest: questV2PendingEditRequestSchema.nullable().optional(),
     /** Active Assignments with a Start Work time; names no one. */
     startedWorkerCount: z.number().int().nonnegative().optional(),
   });
