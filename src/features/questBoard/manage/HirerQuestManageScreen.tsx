@@ -115,27 +115,36 @@ function PrimaryAction({
 function ActionRow({
   icon: Icon,
   label,
+  description,
   onPress,
   testID,
 }: {
   icon: LucideIcon;
   label: string;
+  description?: string;
   onPress: () => void;
   testID: string;
 }) {
   const { colors } = useAppTheme();
   return (
     <Pressable
-      accessibilityLabel={label}
+      accessibilityLabel={description ? `${label}. ${description}` : label}
       accessibilityRole="button"
       testID={testID}
       onPress={onPress}
       className="min-h-[60px] flex-row items-center gap-ku-12 rounded-ku-card border border-ku-border bg-ku-surface px-ku-md py-ku-sm active:opacity-80"
     >
       <Icon color={colors.hirer} size={20} strokeWidth={2} />
-      <Text className="flex-1 font-ku-medium text-ku-body text-ku-text-strong">
-        {label}
-      </Text>
+      <View className="flex-1 gap-ku-xs">
+        <Text className="font-ku-medium text-ku-body text-ku-text-strong">
+          {label}
+        </Text>
+        {description ? (
+          <Text className="text-ku-body-small text-ku-text-secondary">
+            {description}
+          </Text>
+        ) : null}
+      </View>
       <ChevronRight color={colors.textSecondary} size={20} strokeWidth={2} />
     </Pressable>
   );
@@ -474,6 +483,7 @@ export default function HirerQuestManageScreen({
               <ActionRow
                 icon={Flag}
                 label={conductReport.messages.reportWorker}
+                description={conductReport.messages.reportWorkerHint}
                 onPress={conductReport.openReport}
                 testID="hirer-manage-conduct-report"
               />

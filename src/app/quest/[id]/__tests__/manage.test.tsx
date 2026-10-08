@@ -407,9 +407,13 @@ describe("HirerQuestManageRoute condition edit", () => {
     });
     const view = await render(<HirerQuestManageRoute />);
 
-    await fireEvent.press(
-      await view.findByTestId("hirer-manage-conduct-report")
-    );
+    const reportAction = await view.findByTestId("hirer-manage-conduct-report");
+    expect(
+      within(reportAction).getByText(
+        "Ask an Admin to review how the Worker behaved. It does not change any money."
+      )
+    ).toBeTruthy();
+    await fireEvent.press(reportAction);
     expect(view.getByTestId("conduct-report-sheet")).toBeTruthy();
     expect(view.getByTestId("conduct-report-worker-worker-1")).toBeTruthy();
     expect(mockGetConductReports).toHaveBeenCalledWith(

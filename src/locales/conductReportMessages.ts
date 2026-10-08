@@ -7,6 +7,8 @@ type ConductReportStatus =
 
 export interface ConductReportMessages {
   reportWorker: string;
+  /** Sets the action apart from the Dispute Case, which decides money. */
+  reportWorkerHint: string;
   title: string;
   rules: readonly string[];
   reasonAbandoned: string;
@@ -37,6 +39,8 @@ export const conductReportMessages: Record<
 > = {
   en: {
     reportWorker: "Report Worker",
+    reportWorkerHint:
+      "Ask an Admin to review how the Worker behaved. It does not change any money.",
     title: "Report a Worker",
     rules: [
       "Use this when a Worker did not send the work before the deadline.",
@@ -72,6 +76,7 @@ export const conductReportMessages: Record<
   },
   th: {
     reportWorker: "รายงานผู้ทำงาน",
+    reportWorkerHint: "ให้ผู้ดูแลระบบตรวจสอบพฤติกรรมผู้ทำงาน ไม่เกี่ยวกับเงิน",
     title: "รายงานผู้ทำงาน",
     rules: [
       "ใช้เมื่อผู้ทำงานไม่ได้ส่งงานก่อนถึงกำหนดเวลา",
