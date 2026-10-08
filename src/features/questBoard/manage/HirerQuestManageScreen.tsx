@@ -9,6 +9,7 @@ import {
   CalendarClock,
   ChevronRight,
   FileEdit,
+  Flag,
   Hourglass,
   Lock,
   MessageSquare,
@@ -38,6 +39,10 @@ import { questWorkMessages } from "@/locales/questWorkMessages";
 import { useHirerQuestManageFeature } from "./useHirerQuestManageFeature";
 import { getCancelTier } from "./cancelQuestGuardrail";
 import { useFileDispute } from "@/features/questBoard/dispute/useFileDispute";
+import { ConductReportSheet } from "@/features/questBoard/conductReport/ConductReportSheet";
+import { FiledConductReports } from "@/features/questBoard/conductReport/FiledConductReports";
+import { useHirerConductReport } from "@/features/questBoard/conductReport/useHirerConductReport";
+import type { LiveQuestAssignment } from "@/features/questBoard/live/liveQuestService";
 import { FailedQuestNotice } from "@/features/questBoard/shared/FailedQuestNotice";
 import { useAppTheme } from "@/features/workspace/AppThemeProvider";
 import {
@@ -50,6 +55,8 @@ import {
   QuestStatus,
   QuestTeamStatus,
 } from "../domain/types";
+
+const NO_ASSIGNMENTS: readonly LiveQuestAssignment[] = [];
 
 export interface HirerQuestManageScreenProps {
   questId?: string;
@@ -225,6 +232,13 @@ export default function HirerQuestManageScreen({
     submitConditionEdit,
   } = view;
   const { confirmFileDispute } = useFileDispute();
+  const conductReport = useHirerConductReport({
+    questId: questId ?? null,
+    viewerId,
+    assignments: snapshot?.assignments ?? NO_ASSIGNMENTS,
+    participants: snapshot?.participants,
+    questState: snapshot?.state,
+  });
   const topBar = (
     <TopBar
       title={messages.manageQuestTitle}
@@ -356,7 +370,10 @@ export default function HirerQuestManageScreen({
         refreshControl={
           <RefreshControl
             refreshing={snapshotQuery.isRefetching}
-            onRefresh={() => void snapshotQuery.refetch()}
+            onRefresh={() => {
+              void snapshotQuery.refetch();
+              conductReport.refresh();
+            }}
           />
         }
         contentContainerClassName="w-full max-w-[720px] gap-ku-lg self-center px-ku-lg pt-ku-md pb-ku-48"
@@ -386,6 +403,7 @@ export default function HirerQuestManageScreen({
         showCandidateReview ||
         showProofReview ||
         showDispute ||
+        conductReport.canReport ||
         editPending ? (
           <View className="gap-ku-12">
             {nextStep ? (
@@ -452,6 +470,14 @@ export default function HirerQuestManageScreen({
                 tone="danger"
               />
             ) : null}
+            {conductReport.canReport ? (
+              <ActionRow
+                icon={Flag}
+                label={conductReport.messages.reportWorker}
+                onPress={conductReport.openReport}
+                testID="hirer-manage-conduct-report"
+              />
+            ) : null}
             {editPending && snapshot.editRequest ? (
               <QuestConditionEditStatusCard
                 editRequest={snapshot.editRequest}
@@ -464,6 +490,10 @@ export default function HirerQuestManageScreen({
         {snapshot.state === QuestStatus.QUEST_FAILED ? (
           <FailedQuestNotice quest={quest} />
         ) : null}
+        <FiledConductReports
+          messages={conductReport.messages}
+          reports={conductReport.filedReports}
+        />
         {snapshot.state === QuestStatus.QUEST_OPEN ? (
           <StartsIn
             startTime={quest.startTime}
@@ -660,6 +690,7 @@ export default function HirerQuestManageScreen({
           locale={locale}
         />
       </BottomSheet>
+      <ConductReportSheet {...conductReport} />
       <CancelQuestGuardrailSheet
         visible={guardrailTier !== null}
         tier={guardrailTier ?? 2}
