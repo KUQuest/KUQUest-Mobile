@@ -582,13 +582,15 @@ describe("HomeScreen live active quests syncing", () => {
     });
   });
 
-  it("opens My Quests from the overview counts and each shortcut destination", async () => {
+  it("keeps Hirer shortcuts and hides the Worker Quest Board", async () => {
     (questApi.listMine as jest.Mock).mockResolvedValue({
       items: [],
       nextCursor: null,
     });
 
-    const { getByTestId } = await renderWithQueryClient(<HomeScreen />);
+    const { getByTestId, queryByTestId } = await renderWithQueryClient(
+      <HomeScreen />
+    );
 
     await waitFor(() => {
       expect(getByTestId("hirer-home-shortcuts")).toBeTruthy();
@@ -608,8 +610,7 @@ describe("HomeScreen live active quests syncing", () => {
       params: { role: "hirer" },
     });
 
-    await fireEvent.press(getByTestId("hirer-shortcut-board"));
-    expect(mockPush).toHaveBeenCalledWith("/quest-board");
+    expect(queryByTestId("hirer-shortcut-board")).toBeNull();
 
     await fireEvent.press(getByTestId("hirer-shortcut-topup"));
     expect(mockPush).toHaveBeenCalledWith("/top-up");
