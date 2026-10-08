@@ -54,8 +54,7 @@ export function TeamAssembleSubmissionPanel({
   onReviewChange,
 }: TeamAssembleSubmissionPanelProps) {
   const { colors } = useAppTheme();
-  const canSubmit =
-    submissionReady && (!canonical || Boolean(text.trim()));
+  const canSubmit = submissionReady && (!canonical || Boolean(text.trim()));
   if (submissionBlocker && canonical && submissionReady) {
     return (
       <View
