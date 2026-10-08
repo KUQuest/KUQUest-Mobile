@@ -25403,6 +25403,496 @@ paths:
                       message: 
                         type: string
                 additionalProperties: false
+  "/api/v2/quests/{questId}/conduct-reports": 
+    get: 
+      tags: 
+        - Quest Conduct Reports v2
+      summary: "Read the caller’s Conduct Report options and filed reports"
+      description: "Returns `reportable`, the Conduct Reports the caller can file now, and `items`, the caller’s own Conduct Reports on the Quest with their status. The caller must be the Hirer or a Worker with an Assignment. A Hirer can report a Worker with CONDUCT_ABANDONED after `dueAt` when the Worker sent no Proof Submission and made no proof-free confirmation; on GROUP + CANDIDATE only the selected Team Leader can be reported. A Worker can report the Hirer with CONDUCT_OUT_OF_SCOPE, and on GROUP + FIRST_COME_FIRST_SERVED another Worker who delivered nothing with CONDUCT_NO_SHOW. The window opens at QUEST_ASSIGNED and closes 1 day after the Quest becomes Terminal (`windowEndsAt`). One Conduct Report per reported Member per Quest."
+      operationId: getQuestConductReportsV2
+      security: 
+        - betterAuthSession: 
+            []
+      parameters: 
+        - name: questId
+          in: path
+          required: true
+          schema: 
+            format: uuid
+            type: string
+      responses: 
+        "200": 
+          description: Response for status 200
+          content: 
+            application/json: 
+              schema: 
+                type: object
+                required: 
+                  - success
+                  - data
+                properties: 
+                  success: 
+                    const: true
+                    type: boolean
+                  data: 
+                    type: object
+                    required: 
+                      - windowEndsAt
+                      - reportable
+                      - items
+                    properties: 
+                      windowEndsAt: 
+                        nullable: true
+                        anyOf: 
+                          - format: date-time
+                            description: One day after the Quest became Terminal. Null while the Quest is not Terminal or before the filing window opens.
+                            type: string
+                          - type: "null"
+                      reportable: 
+                        description: The Conduct Reports the caller can file now. Empty when the filing window is closed.
+                        type: array
+                        items: 
+                          type: object
+                          required: 
+                            - memberId
+                            - reason
+                          properties: 
+                            memberId: 
+                              format: uuid
+                              type: string
+                            reason: 
+                              type: string
+                              enum: 
+                                - CONDUCT_ABANDONED
+                                - CONDUCT_OUT_OF_SCOPE
+                                - CONDUCT_NO_SHOW
+                      items: 
+                        description: "The caller’s own Conduct Reports on this Quest."
+                        type: array
+                        items: 
+                          type: object
+                          required: 
+                            - id
+                            - displayId
+                            - questId
+                            - reportedMemberId
+                            - reason
+                            - detail
+                            - status
+                            - createdAt
+                          properties: 
+                            id: 
+                              format: uuid
+                              type: string
+                            displayId: 
+                              type: string
+                            questId: 
+                              format: uuid
+                              type: string
+                            reportedMemberId: 
+                              format: uuid
+                              type: string
+                            reason: 
+                              type: string
+                              enum: 
+                                - CONDUCT_ABANDONED
+                                - CONDUCT_OUT_OF_SCOPE
+                                - CONDUCT_NO_SHOW
+                            detail: 
+                              nullable: true
+                              anyOf: 
+                                - type: string
+                                - type: "null"
+                            status: 
+                              type: string
+                              enum: 
+                                - CONDUCT_REPORT_PENDING
+                                - CONDUCT_REPORT_UPHELD
+                                - CONDUCT_REPORT_DISMISSED
+                            createdAt: 
+                              format: date-time
+                              type: string
+        "401": 
+          description: Response for status 401
+          content: 
+            application/json: 
+              schema: 
+                type: object
+                required: 
+                  - success
+                  - error
+                properties: 
+                  success: 
+                    const: false
+                    type: boolean
+                  error: 
+                    type: object
+                    required: 
+                      - code
+                      - message
+                    properties: 
+                      code: 
+                        type: string
+                      message: 
+                        type: string
+        "404": 
+          description: Response for status 404
+          content: 
+            application/json: 
+              schema: 
+                type: object
+                required: 
+                  - success
+                  - error
+                properties: 
+                  success: 
+                    const: false
+                    type: boolean
+                  error: 
+                    type: object
+                    required: 
+                      - code
+                      - message
+                    properties: 
+                      code: 
+                        type: string
+                      message: 
+                        type: string
+        "500": 
+          description: Response for status 500
+          content: 
+            application/json: 
+              schema: 
+                type: object
+                required: 
+                  - success
+                  - error
+                properties: 
+                  success: 
+                    const: false
+                    type: boolean
+                  error: 
+                    type: object
+                    required: 
+                      - code
+                      - message
+                    properties: 
+                      code: 
+                        type: string
+                      message: 
+                        type: string
+    post: 
+      tags: 
+        - Quest Conduct Reports v2
+      summary: File a Conduct Report
+      description: "Files one CONDUCT_REPORT_PENDING Conduct Report for Admin review. The pair must be listed in `reportable` of the GET. Filing moves no money, changes no Quest or Assignment state, and sends no notification. The reported Member never learns the filer. A matching Idempotency-Key replays the original result."
+      operationId: createQuestConductReportV2
+      security: 
+        - betterAuthSession: 
+            []
+      parameters: 
+        - name: questId
+          in: path
+          required: true
+          schema: 
+            format: uuid
+            type: string
+        - name: idempotency-key
+          in: header
+          required: true
+          schema: 
+            minLength: 1
+            maxLength: 200
+            pattern: "\\S"
+            description: Non-blank command identity for a replay-safe Conduct Report filing
+            type: string
+      requestBody: 
+        required: true
+        content: 
+          application/json: 
+            schema: 
+              additionalProperties: false
+              type: object
+              required: 
+                - reportedMemberId
+                - reason
+              properties: 
+                reportedMemberId: 
+                  format: uuid
+                  type: string
+                reason: 
+                  type: string
+                  enum: 
+                    - CONDUCT_ABANDONED
+                    - CONDUCT_OUT_OF_SCOPE
+                    - CONDUCT_NO_SHOW
+                detail: 
+                  minLength: 1
+                  maxLength: 1000
+                  pattern: "\\S"
+                  type: string
+          application/x-www-form-urlencoded: 
+            schema: 
+              additionalProperties: false
+              type: object
+              required: 
+                - reportedMemberId
+                - reason
+              properties: 
+                reportedMemberId: 
+                  format: uuid
+                  type: string
+                reason: 
+                  type: string
+                  enum: 
+                    - CONDUCT_ABANDONED
+                    - CONDUCT_OUT_OF_SCOPE
+                    - CONDUCT_NO_SHOW
+                detail: 
+                  minLength: 1
+                  maxLength: 1000
+                  pattern: "\\S"
+                  type: string
+          multipart/form-data: 
+            schema: 
+              additionalProperties: false
+              type: object
+              required: 
+                - reportedMemberId
+                - reason
+              properties: 
+                reportedMemberId: 
+                  format: uuid
+                  type: string
+                reason: 
+                  type: string
+                  enum: 
+                    - CONDUCT_ABANDONED
+                    - CONDUCT_OUT_OF_SCOPE
+                    - CONDUCT_NO_SHOW
+                detail: 
+                  minLength: 1
+                  maxLength: 1000
+                  pattern: "\\S"
+                  type: string
+      responses: 
+        "200": 
+          description: Response for status 200
+          content: 
+            application/json: 
+              schema: 
+                type: object
+                required: 
+                  - success
+                  - data
+                properties: 
+                  success: 
+                    const: true
+                    type: boolean
+                  data: 
+                    type: object
+                    required: 
+                      - id
+                      - displayId
+                      - questId
+                      - reportedMemberId
+                      - reason
+                      - detail
+                      - status
+                      - createdAt
+                    properties: 
+                      id: 
+                        format: uuid
+                        type: string
+                      displayId: 
+                        type: string
+                      questId: 
+                        format: uuid
+                        type: string
+                      reportedMemberId: 
+                        format: uuid
+                        type: string
+                      reason: 
+                        type: string
+                        enum: 
+                          - CONDUCT_ABANDONED
+                          - CONDUCT_OUT_OF_SCOPE
+                          - CONDUCT_NO_SHOW
+                      detail: 
+                        nullable: true
+                        anyOf: 
+                          - type: string
+                          - type: "null"
+                      status: 
+                        type: string
+                        enum: 
+                          - CONDUCT_REPORT_PENDING
+                          - CONDUCT_REPORT_UPHELD
+                          - CONDUCT_REPORT_DISMISSED
+                      createdAt: 
+                        format: date-time
+                        type: string
+        "400": 
+          description: Response for status 400
+          content: 
+            application/json: 
+              schema: 
+                type: object
+                required: 
+                  - success
+                  - error
+                properties: 
+                  success: 
+                    const: false
+                    type: boolean
+                  error: 
+                    type: object
+                    required: 
+                      - code
+                      - message
+                    properties: 
+                      code: 
+                        type: string
+                      message: 
+                        type: string
+        "401": 
+          description: Response for status 401
+          content: 
+            application/json: 
+              schema: 
+                type: object
+                required: 
+                  - success
+                  - error
+                properties: 
+                  success: 
+                    const: false
+                    type: boolean
+                  error: 
+                    type: object
+                    required: 
+                      - code
+                      - message
+                    properties: 
+                      code: 
+                        type: string
+                      message: 
+                        type: string
+        "403": 
+          description: Response for status 403
+          content: 
+            application/json: 
+              schema: 
+                type: object
+                required: 
+                  - success
+                  - error
+                properties: 
+                  success: 
+                    const: false
+                    type: boolean
+                  error: 
+                    type: object
+                    required: 
+                      - code
+                      - message
+                    properties: 
+                      code: 
+                        type: string
+                      message: 
+                        type: string
+        "404": 
+          description: Response for status 404
+          content: 
+            application/json: 
+              schema: 
+                type: object
+                required: 
+                  - success
+                  - error
+                properties: 
+                  success: 
+                    const: false
+                    type: boolean
+                  error: 
+                    type: object
+                    required: 
+                      - code
+                      - message
+                    properties: 
+                      code: 
+                        type: string
+                      message: 
+                        type: string
+        "409": 
+          description: Response for status 409
+          content: 
+            application/json: 
+              schema: 
+                type: object
+                required: 
+                  - success
+                  - error
+                properties: 
+                  success: 
+                    const: false
+                    type: boolean
+                  error: 
+                    type: object
+                    required: 
+                      - code
+                      - message
+                    properties: 
+                      code: 
+                        type: string
+                      message: 
+                        type: string
+        "500": 
+          description: Response for status 500
+          content: 
+            application/json: 
+              schema: 
+                type: object
+                required: 
+                  - success
+                  - error
+                properties: 
+                  success: 
+                    const: false
+                    type: boolean
+                  error: 
+                    type: object
+                    required: 
+                      - code
+                      - message
+                    properties: 
+                      code: 
+                        type: string
+                      message: 
+                        type: string
+        "503": 
+          description: Response for status 503
+          content: 
+            application/json: 
+              schema: 
+                type: object
+                required: 
+                  - success
+                  - error
+                properties: 
+                  success: 
+                    const: false
+                    type: boolean
+                  error: 
+                    type: object
+                    required: 
+                      - code
+                      - message
+                    properties: 
+                      code: 
+                        type: string
+                      message: 
+                        type: string
   /api/v2/quests/board/events: 
     ws: 
       tags: 

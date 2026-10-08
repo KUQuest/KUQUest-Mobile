@@ -9,6 +9,10 @@ import {
 import type { QueryClient, QueryKey } from "@tanstack/react-query";
 import { ApiError } from "@/api/ApiClient";
 import type { UploadAsset } from "@/api/fileUpload";
+import {
+  conductReportApi,
+  type ConductReportInput,
+} from "@/api/ConductReportApi";
 import { disputeApi } from "@/api/DisputeApi";
 import type {
   QuestV2CreateEditRequestPayload,
@@ -61,6 +65,8 @@ export const questBoardKeys = {
   myDisputeCase: (questId: string, viewerId: string) =>
     [...questBoardKeys.all, "my-dispute-case", questId, viewerId] as const,
   disputeFiling: () => [...questBoardKeys.all, "dispute-filing"] as const,
+  conductReports: (questId: string, viewerId: string) =>
+    [...questBoardKeys.all, "conduct-reports", questId, viewerId] as const,
   editRequestId: (questId: string) =>
     [...questBoardKeys.all, "edit-request-id", questId] as const,
   reviewsScope: (questId: string) =>
@@ -929,6 +935,44 @@ export function useFileDisputeMutation() {
         });
       }
     },
+  });
+}
+
+export function useConductReportsQuery(
+  questId: string | null,
+  viewerId: string | null,
+  enabled = true
+) {
+  return useQuery({
+    enabled: Boolean(questId && viewerId) && enabled,
+    queryKey: questBoardKeys.conductReports(questId ?? "", viewerId ?? ""),
+    queryFn: ({ signal }) => {
+      if (!questId) throw new Error("Quest ID is required");
+      return conductReportApi.getConductReports(questId, signal);
+    },
+  });
+}
+
+export function useFileConductReportMutation() {
+  const queryClient = useQueryClient();
+  return useMutation({
+    mutationFn: ({
+      questId,
+      input,
+      idempotencyKey,
+    }: {
+      questId: string;
+      viewerId: string;
+      input: ConductReportInput;
+      idempotencyKey: string;
+    }) => conductReportApi.fileConductReport(questId, input, idempotencyKey),
+    onSettled: (_report, _error, variables) =>
+      queryClient.invalidateQueries({
+        queryKey: questBoardKeys.conductReports(
+          variables.questId,
+          variables.viewerId
+        ),
+      }),
   });
 }
 

@@ -39,6 +39,7 @@ interface GestureMockChain {
 const mockPush = jest.fn();
 const mockReplace = jest.fn();
 const mockConfirmFileDispute = jest.fn();
+const mockGetConductReports = jest.fn();
 jest.mock("expo-router", () => ({
   useRouter: () => ({
     push: mockPush,
@@ -65,6 +66,13 @@ jest.mock("react-native-gesture-handler", () => {
 
 jest.mock("@/features/questBoard/dispute/useFileDispute", () => ({
   useFileDispute: () => ({ confirmFileDispute: mockConfirmFileDispute }),
+}));
+
+jest.mock("@/api/ConductReportApi", () => ({
+  conductReportApi: {
+    getConductReports: (...args: unknown[]) => mockGetConductReports(...args),
+    fileConductReport: jest.fn(),
+  },
 }));
 
 jest.mock("@/features/preferences/localeStore", () => ({
@@ -215,6 +223,11 @@ function makeEditRequest(
 describe("HirerQuestManageRoute condition edit", () => {
   beforeEach(() => {
     jest.clearAllMocks();
+    mockGetConductReports.mockResolvedValue({
+      windowEndsAt: null,
+      reportable: [],
+      items: [],
+    });
     (liveQuestService.cancelQuest as jest.Mock).mockResolvedValue({
       paidSatang: 0,
       refundedSatang: 0,
@@ -378,6 +391,35 @@ describe("HirerQuestManageRoute condition edit", () => {
     await fireEvent.press(disputeButton);
     expect(mockConfirmFileDispute).toHaveBeenCalledWith("quest-1");
     expect(mockPush).not.toHaveBeenCalled();
+  });
+
+  it("offers Report Worker only for a Worker the Server lists as reportable", async () => {
+    (liveQuestService.getLiveSnapshot as jest.Mock).mockResolvedValue(
+      createSnapshot({
+        state: "QUEST_FAILED",
+        quest: { ...createSnapshot().quest, state: "QUEST_FAILED" },
+      })
+    );
+    mockGetConductReports.mockResolvedValue({
+      windowEndsAt: "2026-10-09T05:00:00.000Z",
+      reportable: [{ memberId: "worker-1", reason: "CONDUCT_ABANDONED" }],
+      items: [],
+    });
+    const view = await render(<HirerQuestManageRoute />);
+
+    const reportAction = await view.findByTestId("hirer-manage-conduct-report");
+    expect(
+      within(reportAction).getByText(
+        "Ask an Admin to review how the Worker behaved. It does not change any money."
+      )
+    ).toBeTruthy();
+    await fireEvent.press(reportAction);
+    expect(view.getByTestId("conduct-report-sheet")).toBeTruthy();
+    expect(view.getByTestId("conduct-report-worker-worker-1")).toBeTruthy();
+    expect(mockGetConductReports).toHaveBeenCalledWith(
+      "quest-1",
+      expect.anything()
+    );
   });
 
   it("does not render the dispute action for non-failed Quests", async () => {
