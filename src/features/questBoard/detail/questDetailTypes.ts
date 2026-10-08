@@ -31,6 +31,7 @@ export interface QuestDetailProjectionCapabilities {
   canDecideUnderfilled: boolean;
   canConsentUnderfilled: boolean;
   canRespondPartialStart: boolean;
+  canRespondToEdit: boolean;
   canMessageOwner: boolean;
 }
 

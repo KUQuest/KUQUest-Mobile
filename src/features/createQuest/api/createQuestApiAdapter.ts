@@ -102,6 +102,39 @@ export function toQuestV2Payload(draft: QuestDraft): CreateQuestV2Payload {
   };
 }
 
+/**
+ * An OPEN Quest can only update the fields allowed by the server edit
+ * contract. Funding, headcount, and images are immutable after publication;
+ * send only changed fields so the server's locked-field guard is not tripped.
+ */
+export function toOpenQuestEditPayload(
+  draft: QuestDraft,
+  current: QuestV2Detail
+): Partial<CreateQuestV2Payload> {
+  const proposed = toQuestV2Payload(draft);
+  const original = toQuestV2Payload(questDetailToDraft(current));
+  const editableFields = [
+    "title",
+    "description",
+    "condition",
+    "mode",
+    "startTime",
+    "dueAt",
+    "tagId",
+    "proofRequired",
+    "locations",
+  ] as const satisfies readonly (keyof CreateQuestV2Payload)[];
+
+  return Object.fromEntries(
+    editableFields
+      .filter(
+        (field) =>
+          JSON.stringify(proposed[field]) !== JSON.stringify(original[field])
+      )
+      .map((field) => [field, proposed[field]])
+  ) as Partial<CreateQuestV2Payload>;
+}
+
 export function adaptV2PublishCheck(
   serverCheck: QuestV2PublishCheck
 ): QuestPublishCheck {

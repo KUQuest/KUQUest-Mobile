@@ -377,6 +377,7 @@ export interface QuestDetailBodyProps {
     history: boolean;
     Icon: LucideIcon;
     iconColor: string;
+    actionLabel: string;
   };
   onOpenWorkHub: () => void;
   prototypeEntry?: {
@@ -679,7 +680,7 @@ export function QuestDetailBody({
               testID="open-work-hub"
             >
               <Text className={styles.statusActionText}>
-                {messages.openWorkHub}
+                {status.actionLabel}
               </Text>
             </Pressable>
           ) : null}

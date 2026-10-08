@@ -86,6 +86,7 @@ export interface QuestDetailPresentationFacts {
   statusIsUnavailable: boolean;
   statusIcon: LucideIcon;
   statusIconColor: string;
+  statusActionLabel: string;
   teamSheetTeam: QuestDetailState["teams"][number] | undefined;
   teamDirectory: TeamDirectoryMember[];
   liveTeamSheetTeam: NonNullable<
@@ -235,14 +236,18 @@ export function getQuestDetailPresentationFacts({
         : joinedStatus === "history"
           ? messages.historyQuest
           : joinedStatus === "accepted"
-            ? messages.participationConfirmed
+            ? capabilities?.canRespondToEdit
+              ? messages.editResponsePending
+              : messages.participationConfirmed
             : joinedStatus === "pending"
               ? messages.applicationPending
               : ""
       : previewApplicationStatus === "accepted"
-        ? firstCome
-          ? messages.participationConfirmed
-          : messages.applicationAccepted
+        ? capabilities?.canRespondToEdit
+          ? messages.editResponsePending
+          : firstCome
+            ? messages.participationConfirmed
+            : messages.applicationAccepted
         : previewApplicationStatus === "pending"
           ? messages.applicationPending
           : availability === "full"
@@ -250,6 +255,9 @@ export function getQuestDetailPresentationFacts({
             : availability === "closed"
               ? messages.applicationsClosed
               : "";
+  const statusActionLabel = capabilities?.canRespondToEdit
+    ? messages.respondToEdit
+    : messages.openWorkHub;
   const statusIsUnavailable =
     !isJoinView &&
     !isPostView &&
@@ -367,6 +375,7 @@ export function getQuestDetailPresentationFacts({
     statusDescription,
     statusIsUnavailable,
     statusIcon,
+    statusActionLabel,
     statusIconColor,
     teamSheetTeam,
     teamDirectory,
@@ -429,6 +438,7 @@ export function buildQuestDetailBodyProps(
           history: facts.joinedStatus === "history",
           Icon: facts.statusIcon,
           iconColor: facts.statusIconColor,
+          actionLabel: facts.statusActionLabel,
         }
       : undefined,
     groupFcfs: facts.groupFcfs,
@@ -710,7 +720,13 @@ export function buildQuestDetailActionBar(
     canEditPost:
       facts.isPostView &&
       facts.isHirerView &&
-      facts.quest.status === QuestStatus.QUEST_DRAFT,
+      (facts.quest.status === QuestStatus.QUEST_DRAFT ||
+        (facts.quest.status === QuestStatus.QUEST_OPEN &&
+          facts.source.kind === "live-snapshot" &&
+          facts.liveSnapshot?.actor === QuestActor.HIRER &&
+          facts.liveSnapshot.assignments.length === 0 &&
+          facts.liveSnapshot.applications.length === 0 &&
+          facts.liveSnapshot.teams.length === 0)),
     canReview:
       facts.isPostView &&
       (facts.isHirerView || facts.liveSnapshot?.actor === QuestActor.WORKER) &&

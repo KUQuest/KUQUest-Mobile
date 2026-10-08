@@ -29657,7 +29657,7 @@ paths:
       tags: 
         - Quests v2
       summary: Get a v2 Quest detail
-      description: "Returns a Quest owned by the authenticated Hirer through the v2 contract. `dispute` and `moneyHold` are null unless the Quest is QUEST_FAILED. `dispute.canFile` is true while the 1-day self-file window is open and the Hirer has no case; a closed window answers 409 DISPUTE_CASE_WINDOW_EXPIRED. `moneyHold.releasesAt` is failedAt + 7 days; a Dispute Case never moves it, so there is no ON_DISPUTE_HOLD state. `heldSatang` is what the Funding Reservation still holds."
+      description: "Returns a Quest owned by the authenticated Hirer through the v2 contract. `dispute` and `moneyHold` are null unless the Quest is QUEST_FAILED. `dispute.canFile` is true while the 1-day self-file window is open and the Hirer has no case; a closed window answers 409 DISPUTE_CASE_WINDOW_EXPIRED. `moneyHold.releasesAt` is failedAt + 7 days; a Dispute Case never moves it, so there is no ON_DISPUTE_HOLD state. `heldSatang` is what the Funding Reservation still holds. `pendingEditRequest` names the unexpired EDIT_REQUEST_PENDING Quest Edit Request that waits for Active Worker responses, or is null; read it with getQuestV2EditRequest."
       operationId: getQuestV2Detail
       security: 
         - betterAuthSession: 
@@ -29953,6 +29953,22 @@ paths:
                                       - minimum: 0
                                         type: integer
                                   - type: "null"
+                          - type: "null"
+                      pendingEditRequest: 
+                        nullable: true
+                        anyOf: 
+                          - description: The Quest Edit Request that waits for the caller. Null unless an EDIT_REQUEST_PENDING request has not expired and the caller is the Hirer or an Active Worker who must respond to it. Read the request with getQuestV2EditRequest.
+                            type: object
+                            required: 
+                              - requestId
+                              - expiresAt
+                            properties: 
+                              requestId: 
+                                format: uuid
+                                type: string
+                              expiresAt: 
+                                format: date-time
+                                type: string
                           - type: "null"
         "400": 
           description: Response for status 400
@@ -32286,7 +32302,9 @@ paths:
         DISPUTE_CASE_WINDOW_EXPIRED. `moneyHold` is null unless the Quest is
         QUEST_FAILED; then `releasesAt` is failedAt + 7 days and a Dispute Case
         never moves it. Terminal Quests are read-only. Admin actions and Finance
-        internals are excluded.
+        internals are excluded. `pendingEditRequest` names the unexpired
+        EDIT_REQUEST_PENDING Quest Edit Request the caller, as an Active Worker,
+        must answer, or is null; read it with getQuestV2EditRequest.
       operationId: getQuestV2ParticipationDetail
       security:
         - betterAuthSession: []
@@ -32697,6 +32715,22 @@ paths:
                                       - minimum: 0
                                         type: integer
                                   - type: "null"
+                          - type: "null"
+                      pendingEditRequest:
+                        nullable: true
+                        anyOf:
+                          - description: The Quest Edit Request that waits for the caller. Null unless an EDIT_REQUEST_PENDING request has not expired and the caller is the Hirer or an Active Worker who must respond to it. Read the request with getQuestV2EditRequest.
+                            type: object
+                            required:
+                              - requestId
+                              - expiresAt
+                            properties:
+                              requestId:
+                                format: uuid
+                                type: string
+                              expiresAt:
+                                format: date-time
+                                type: string
                           - type: "null"
         "400":
           description: Response for status 400

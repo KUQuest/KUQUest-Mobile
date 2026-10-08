@@ -14,6 +14,7 @@ export function ChoiceGroup({
   options,
   variant,
   stacked,
+  disabled = false,
   onChange,
 }: {
   label: string;
@@ -21,6 +22,7 @@ export function ChoiceGroup({
   options: ChoiceOption[];
   variant: ChoiceVariant;
   stacked: boolean;
+  disabled?: boolean;
   onChange: (value: string) => void;
 }) {
   const { colors } = useAppTheme();
@@ -40,10 +42,12 @@ export function ChoiceGroup({
             key={option.value}
             accessibilityRole="radio"
             accessibilityLabel={`${label}: ${option.label}`}
-            accessibilityState={{ selected }}
+            accessibilityState={{ selected, disabled }}
+            disabled={disabled}
             onPress={() => onChange(option.value)}
             className={cn(
               isTile ? styles.choiceTile : styles.choiceRow,
+              disabled ? "opacity-60" : null,
               !isTile && index > 0 && styles.choiceRowDivider,
               selected &&
                 (isTile ? styles.choiceTileSelected : styles.choiceRowSelected)

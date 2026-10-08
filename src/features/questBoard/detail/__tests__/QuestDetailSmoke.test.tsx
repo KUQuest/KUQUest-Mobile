@@ -219,6 +219,7 @@ describe("QuestDetailScreen smoke", () => {
           history: false,
           Icon: CircleAlert,
           iconColor: "",
+          actionLabel: questBoardMessages.en.openWorkHub,
         }}
         onOpenWorkHub={openWorkHub}
         onOpenPartialConsent={jest.fn()}
@@ -277,6 +278,7 @@ describe("QuestDetailScreen smoke", () => {
         canDecideUnderfilled: false,
         canConsentUnderfilled: false,
         canRespondPartialStart: false,
+        canRespondToEdit: false,
         canMessageOwner: false,
       },
       liveSnapshot: null,
@@ -620,6 +622,72 @@ describe("QuestDetailScreen smoke", () => {
     expect(facts?.isHirerView).toBe(true);
     expect(facts?.groupFcfs).toBeUndefined();
   });
+
+  it.each([
+    ["join", true],
+    ["join", false],
+    ["preview", true],
+    ["preview", false],
+  ] as const)(
+    "points an accepted Worker at a pending Quest Edit (%s route, pending %s)",
+    (mode, canRespondToEdit) => {
+      const quest = questFixtureAdapter.listBoardQuests(
+        "student-001",
+        questFixtureAdapter.now
+      )[0];
+      if (!quest) throw new Error("Expected a Quest fixture");
+      const facts = getQuestDetailPresentationFacts({
+        read: {
+          quest,
+          projection: {
+            joinStatus: "accepted",
+            applicationStatus: "accepted",
+            availability: "full",
+            lifecycleState: "QUEST_ASSIGNED",
+            capabilities: { canRespondToEdit },
+            participants: [],
+            participantCount: 1,
+          },
+          source: {
+            kind: "live-snapshot",
+            snapshot: { actor: "WORKER", underfilled: null },
+          },
+          refreshing: false,
+        },
+        route: { mode, questId: quest.id },
+        locale: "en",
+        messages: questBoardMessages.en,
+        groupMessages: {} as never,
+        viewerId: "worker-1",
+        surface: {
+          localJoinedStatus: null,
+          leftQuest: false,
+          dismissedIntent: null,
+          manualConfirmationOpen: false,
+        },
+        teamDirectory: [],
+        tagCatalog: [],
+        colors: { textMuted: "", primary: "", dangerDark: "" },
+      } as never);
+
+      expect(facts?.statusTitle).not.toBe("");
+      if (canRespondToEdit) {
+        expect(facts?.statusTitle).toBe(
+          questBoardMessages.en.editResponsePending
+        );
+        expect(facts?.statusActionLabel).toBe(
+          questBoardMessages.en.respondToEdit
+        );
+      } else {
+        expect(facts?.statusTitle).not.toBe(
+          questBoardMessages.en.editResponsePending
+        );
+        expect(facts?.statusActionLabel).toBe(
+          questBoardMessages.en.openWorkHub
+        );
+      }
+    }
+  );
 
   it("keeps Group FCFS facts and Join visible without passive explanations", async () => {
     const fixture = questFixtureAdapter.listBoardQuests(

@@ -80,6 +80,7 @@ function makeFacts(): QuestDetailPresentationFacts {
     statusIsUnavailable: false,
     statusIcon: CircleAlert,
     statusIconColor: "",
+    statusActionLabel: "",
     teamSheetTeam: undefined,
     teamDirectory: [],
     liveTeamSheetTeam: null,

@@ -157,10 +157,12 @@ export interface QuestBoardMessages {
   notYet: string;
   applicationAccepted: string;
   participationConfirmed: string;
+  editResponsePending: string;
   applicationPending: string;
   applicationAcceptedDescription: string;
   applicationPendingDescription: string;
   openWorkHub: string;
+  respondToEdit: string;
   firstComeDescription: string;
   groupFcfsHeadcount: string;
   groupFcfsRequestedWorkers: (headcount: number) => string;
@@ -480,7 +482,7 @@ export const questBoardMessages: Record<SupportedLocale, QuestBoardMessages> = {
     team: "Team",
     applyNow: "Apply now",
     joinNow: "Join Quest",
-    editPost: "Edit post",
+    editPost: "Edit details",
     leaveQuest: "Leave Quest",
     leaveQuestDescription:
       "You will leave this Quest and lose your confirmed place.",
@@ -507,12 +509,14 @@ export const questBoardMessages: Record<SupportedLocale, QuestBoardMessages> = {
     notYet: "Not yet",
     applicationAccepted: "Application accepted",
     participationConfirmed: "Participation confirmed",
+    editResponsePending: "A Quest Edit waits for your response",
     applicationPending: "Application pending",
     applicationAcceptedDescription:
       "Your place is confirmed. Keep the Quest details handy.",
     applicationPendingDescription:
       "The Quest owner will review your application.",
     openWorkHub: "Open Work Hub",
+    respondToEdit: "Review Quest Edit",
     groupFcfsHeadcount: "Workers needed",
     groupFcfsRequestedWorkers: (headcount) =>
       `${headcount} ${headcount === 1 ? "worker" : "workers"}`,
@@ -952,7 +956,7 @@ export const questBoardMessages: Record<SupportedLocale, QuestBoardMessages> = {
     team: "ทีม",
     applyNow: "สมัครเลย",
     joinNow: "เข้าร่วมเควสต์",
-    editPost: "แก้ไขโพสต์",
+    editPost: "แก้ไขรายละเอียด",
     leaveQuest: "ออกจากเควสต์",
     leaveQuestDescription:
       "คุณจะออกจากเควสต์นี้และเสียสิทธิ์ที่ได้รับการยืนยันแล้ว",
@@ -978,11 +982,13 @@ export const questBoardMessages: Record<SupportedLocale, QuestBoardMessages> = {
     notYet: "ไว้ก่อน",
     applicationAccepted: "สมัครสำเร็จ",
     participationConfirmed: "ยืนยันการเข้าร่วมแล้ว",
+    editResponsePending: "มีการแก้ไขเควสต์รอการตอบกลับจากคุณ",
     applicationPending: "รอตรวจสอบการสมัคร",
     applicationAcceptedDescription:
       "คุณได้รับการยืนยันเข้าร่วมแล้ว เก็บรายละเอียดเควสต์นี้ไว้ดูภายหลัง",
     applicationPendingDescription: "เจ้าของเควสต์จะตรวจสอบใบสมัครของคุณ",
     openWorkHub: "เปิดศูนย์งาน",
+    respondToEdit: "ตรวจสอบการแก้ไขเควสต์",
     firstComeDescription: "เข้าร่วมได้ทันทีเมื่อยังมีที่ว่าง",
     groupFcfsHeadcount: "จำนวนผู้ทำงาน",
     groupFcfsRequestedWorkers: (headcount) => `${headcount} คน`,
