@@ -403,7 +403,7 @@ export function TeamAssembleView({
       !submissionReady ||
       isLocked ||
       submitting ||
-      (canonical && (!proposalText.trim() || proposalFiles.length === 0))
+      (canonical && !proposalText.trim())
     ) {
       return;
     }

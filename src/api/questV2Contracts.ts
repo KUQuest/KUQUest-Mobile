@@ -898,7 +898,6 @@ export const questV2TeamSubmitPayloadSchema = z
     text: questV2NonBlankString(1000),
     fileIds: z
       .array(questV2IdSchema)
-      .min(1)
       .refine((fileIds) => new Set(fileIds).size === fileIds.length, {
         message: "Expected unique file IDs",
       }),

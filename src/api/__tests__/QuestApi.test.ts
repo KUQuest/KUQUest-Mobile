@@ -798,7 +798,7 @@ describe("QuestApi", () => {
       api.submitCandidateTeam(
         "quest-1",
         "team-1",
-        { text: "Ready to work", fileIds: ["file-1"] },
+        { text: "Ready to work" },
         "team-submit-1"
       )
     ).resolves.toEqual(team);
@@ -856,7 +856,7 @@ describe("QuestApi", () => {
       "https://api.example.test/api/v2/quests/quest-1/teams/team-1/submit",
       expect.objectContaining({
         method: "POST",
-        body: JSON.stringify({ text: "Ready to work", fileIds: ["file-1"] }),
+        body: JSON.stringify({ text: "Ready to work", fileIds: [] }),
         headers: expect.objectContaining({
           "idempotency-key": "team-submit-1",
         }),
