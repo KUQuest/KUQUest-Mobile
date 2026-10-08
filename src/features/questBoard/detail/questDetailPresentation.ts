@@ -1,5 +1,4 @@
 import {
-  BriefcaseBusiness,
   Check,
   CircleAlert,
   LogOut,
@@ -229,7 +228,7 @@ export function getQuestDetailPresentationFacts({
       canApply);
   const canMessageOwner = Boolean(!isPostView && capabilities?.canMessageOwner);
   const statusTitle = isPostView
-    ? messages.postOwnerView
+    ? ""
     : isJoinView
       ? surface.leftQuest
         ? messages.leftQuest
@@ -268,11 +267,9 @@ export function getQuestDetailPresentationFacts({
     : "";
   const statusIcon = statusIsUnavailable
     ? CircleAlert
-    : isPostView
-      ? BriefcaseBusiness
-      : surface.leftQuest
-        ? LogOut
-        : Check;
+    : surface.leftQuest
+      ? LogOut
+      : Check;
   const statusIconColor = statusIsUnavailable
     ? colors.textMuted
     : surface.leftQuest
@@ -413,6 +410,7 @@ export function buildQuestDetailBodyProps(
       : undefined,
     messages: facts.messages,
     locale: facts.locale,
+    isOwnerPost: facts.isPostView && facts.isHirerView,
     onOpenWorkHub: navigation.openWorkHub,
     onRefresh: context.onRefresh,
     prototypeEntry: facts.activePrototypeState
@@ -433,7 +431,6 @@ export function buildQuestDetailBodyProps(
           title: facts.statusTitle,
           description: facts.statusDescription,
           unavailable: facts.statusIsUnavailable,
-          postView: facts.isPostView,
           leftQuest: surface.leftQuest,
           history: facts.joinedStatus === "history",
           Icon: facts.statusIcon,

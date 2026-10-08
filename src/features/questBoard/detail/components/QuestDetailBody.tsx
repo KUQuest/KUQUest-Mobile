@@ -357,6 +357,7 @@ export interface QuestDetailBodyProps {
   quest: QuestBoardQuest;
   locale: "en" | "th";
   messages: QuestBoardMessages;
+  isOwnerPost?: boolean;
   imageUris: string[];
   canonicalStatus?: string;
   refreshing: boolean;
@@ -372,7 +373,6 @@ export interface QuestDetailBodyProps {
     title: string;
     description: string;
     unavailable: boolean;
-    postView: boolean;
     leftQuest: boolean;
     history: boolean;
     Icon: LucideIcon;
@@ -413,6 +413,7 @@ export function QuestDetailBody({
   quest,
   locale,
   messages,
+  isOwnerPost = false,
   imageUris,
   canonicalStatus,
   refreshing,
@@ -468,9 +469,18 @@ export function QuestDetailBody({
           </View>
           <View className={styles.creatorCopy}>
             <Text className={styles.creatorLabel}>{messages.creator}</Text>
-            <Text className={styles.creatorValue} numberOfLines={1}>
-              {`${quest.creator.name}${quest.creator.faculty ? ` · ${localizeFacultyName(quest.creator.faculty, locale)}` : ""}`}
-            </Text>
+            <View className={styles.creatorIdentityRow}>
+              <Text className={styles.creatorValue} numberOfLines={1}>
+                {`${quest.creator.name}${quest.creator.faculty ? ` · ${localizeFacultyName(quest.creator.faculty, locale)}` : ""}`}
+              </Text>
+              {isOwnerPost ? (
+                <View accessibilityRole="text" className={styles.ownerBadge}>
+                  <Text className={styles.ownerBadgeText}>
+                    {messages.ownerPostLabel}
+                  </Text>
+                </View>
+              ) : null}
+            </View>
           </View>
         </View>
         <View accessibilityLabel={messages.tags} className={styles.tagRow}>
@@ -659,7 +669,6 @@ export function QuestDetailBody({
           className={cn(
             styles.statusCard,
             status.unavailable && styles.statusCardBlocked,
-            status.postView && styles.statusCardOwner,
             (status.leftQuest || status.history) && styles.statusCardMuted
           )}
         >
@@ -672,7 +681,7 @@ export function QuestDetailBody({
               {status.description}
             </Text>
           ) : null}
-          {!status.unavailable && !status.postView && !status.leftQuest ? (
+          {!status.unavailable && !status.leftQuest ? (
             <Pressable
               accessibilityRole="button"
               onPress={onOpenWorkHub}

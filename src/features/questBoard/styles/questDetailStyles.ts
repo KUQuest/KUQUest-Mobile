@@ -5,13 +5,17 @@ const styles = {
   tagRow: "flex-row flex-wrap gap-ku-xs mt-ku-12",
   tag: "bg-ku-surface-accent rounded-ku-pill px-ku-sm py-ku-xs text-ku-primary font-ku-medium text-ku-label",
   title: "text-ku-text-strong font-ku-bold text-ku-title-large mt-ku-xs",
+  ownerBadge: "bg-ku-surface-muted rounded-ku-pill px-ku-sm py-ku-xs",
+  ownerBadgeText: "text-ku-text-secondary font-ku-semibold text-ku-label",
   canonicalStatus: "text-ku-primary font-ku-semibold text-ku-label mt-ku-xs",
   creatorRow: "items-center flex-row mt-ku-12",
   creatorAvatar:
     "items-center bg-ku-surface-success rounded-ku-pill h-[32px] justify-center w-[32px]",
   creatorCopy: "flex-1 min-w-0 ml-ku-sm",
+  creatorIdentityRow: "items-center flex-row gap-ku-xs mt-ku-1",
   creatorLabel: "text-ku-text-muted font-ku-regular text-ku-label",
-  creatorValue: "text-ku-text-strong font-ku-medium text-ku-body-small mt-ku-1",
+  creatorValue:
+    "shrink min-w-0 text-ku-text-strong font-ku-medium text-ku-body-small",
   imageGallery: "gap-ku-sm mt-ku-18",
   imageThumbnailRow: "flex-row gap-ku-sm",
   questImage: "bg-ku-surface-image rounded-[16px] overflow-hidden",
