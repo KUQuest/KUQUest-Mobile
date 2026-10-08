@@ -1076,6 +1076,63 @@ describe("QuestDetailScreen smoke", () => {
     expect(
       cancelled.getByText(questBoardMessages.en.groupFcfsCancelledNextStep)
     ).toBeTruthy();
+    await cancelled.unmount();
+
+    // Mobile #287: the consent outcome describes the hand-off to QUEST_ASSIGNED.
+    // Once Work starts it is stale, and a finished Quest has no join step left.
+    const consentCompleted = {
+      ...underfilled,
+      state: "UNDERFILLED_COMPLETED" as const,
+      decision: {
+        status: "UNDERFILLED_DECISION_PROCEEDED" as const,
+        value: "PROCEED" as const,
+        expiresAt: null,
+      },
+      consent: {
+        status: "UNDERFILLED_CONSENT_COMPLETED" as const,
+        expiresAt: null,
+        totalCount: 2,
+        acceptedCount: 2,
+        declinedCount: 0,
+        pendingCount: 0,
+      },
+    };
+    const inProgress = await render(
+      <QuestDetailBody
+        {...common}
+        groupFcfs={{
+          activeWorkerCount: 2,
+          headcount: 4,
+          isJoined: true,
+          startTime: "2099-10-01T10:00:00.000Z",
+          state: "QUEST_IN_PROGRESS",
+          underfilled: consentCompleted,
+          canConsent: false,
+        }}
+      />
+    );
+    expect(
+      inProgress.queryByText(questBoardMessages.en.groupFcfsConsentComplete)
+    ).toBeNull();
+    expect(
+      inProgress.getByText(questBoardMessages.en.groupFcfsYouAreIn)
+    ).toBeTruthy();
+    await inProgress.unmount();
+    const finished = await render(
+      <QuestDetailBody
+        {...common}
+        groupFcfs={{
+          activeWorkerCount: 2,
+          headcount: 4,
+          isJoined: false,
+          startTime: "2099-10-01T10:00:00.000Z",
+          state: "QUEST_COMPLETED",
+          underfilled: consentCompleted,
+          canConsent: false,
+        }}
+      />
+    );
+    expect(finished.queryByTestId("group-fcfs-journey")).toBeNull();
   });
   it("confirms Group FCFS join with a clear spot-confirmed result", async () => {
     const liveActions = {

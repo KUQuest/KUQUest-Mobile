@@ -27,6 +27,7 @@ import { ImageViewerModal } from "@/components/ui/ImageViewerModal";
 import { Image, Pressable, ScrollView, Text, View } from "@/tw";
 import { cn } from "@/tw/cn";
 import { useAppTheme } from "@/features/workspace/AppThemeProvider";
+import { isTerminalStatus } from "@/domain/questLifecycle";
 import { formatSatang } from "@/domain/satang";
 import {
   groupQuestMessages,
@@ -248,7 +249,8 @@ function GroupFcfsJourneyCard({
       ? messages.groupFcfsUnderfillDecisionPending
       : underfilled?.state === QuestUnderfilledState.UNDERFILLED_CONSENT_PENDING
         ? messages.groupFcfsConsentRequired
-        : underfilled?.state === QuestUnderfilledState.UNDERFILLED_COMPLETED
+        : underfilled?.state === QuestUnderfilledState.UNDERFILLED_COMPLETED &&
+            groupFcfs.state === QuestStatus.QUEST_ASSIGNED
           ? messages.groupFcfsConsentComplete
           : underfilled?.state === QuestUnderfilledState.UNDERFILLED_CANCELLED
             ? cancellationReason
@@ -583,7 +585,12 @@ export function QuestDetailBody({
           title={messages.participants}
         />
       ) : null}
-      {groupFcfs ? (
+      {groupFcfs &&
+      // A finished Quest has no join or start step left to describe; only an
+      // underfilled cancellation still explains why the Quest ended.
+      (!isTerminalStatus(groupFcfs.state as QuestStatus) ||
+        groupFcfs.underfilled?.state ===
+          QuestUnderfilledState.UNDERFILLED_CANCELLED) ? (
         <GroupFcfsJourneyCard
           groupFcfs={groupFcfs}
           locale={locale}

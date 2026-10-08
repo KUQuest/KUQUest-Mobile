@@ -233,6 +233,14 @@ export const questV2ParticipationDetailSchema =
     pendingEditRequest: questV2PendingEditRequestSchema.nullable().optional(),
     /** Active Assignments with a Start Work time; names no one. */
     startedWorkerCount: z.number().int().nonnegative().optional(),
+    /**
+     * GROUP + FIRST_COME_FIRST_SERVED only: every Worker whose Assignment was not
+     * cancelled, in acceptance order, also after settlement. null otherwise.
+     */
+    workers: z
+      .array(z.object({ id: z.string(), displayName: z.string() }))
+      .nullable()
+      .optional(),
   });
 export type QuestV2ParticipationDetail = z.infer<
   typeof questV2ParticipationDetailSchema

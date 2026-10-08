@@ -32782,7 +32782,10 @@ paths:
         Assignment on it, in every Quest State and while the Quest is hidden,
         together with that Member's own Assignment. `activeWorkerCount` and
         `startedWorkerCount` count the Active Assignments and the ones that started
-        Work, without naming other Workers. `dispute` is null unless the Quest is
+        Work. On GROUP + FIRST_COME_FIRST_SERVED Quests, `workers` names every
+        Worker whose Assignment was not cancelled, the caller included, in
+        acceptance order and also after settlement; it is null for every other
+        Quest shape. `dispute` is null unless the Quest is
         QUEST_FAILED; then it tells the viewer whether they can still self-file
         (`canFile`, 1 day after failure, one Dispute Case per Member per Quest) and
         shows their own case. A closed window answers 409
@@ -32842,6 +32845,7 @@ paths:
                       - workerSettlement
                       - assignment
                       - startedWorkerCount
+                      - workers
                       - capabilities
                     properties:
                       id:
@@ -33087,7 +33091,7 @@ paths:
                         maximum: 20
                         description: How many Active Assignments on this Quest have a Start Work time.
                           Pair it with activeWorkerCount to show GROUP progress
-                          without a roster read; no Worker identity is exposed.
+                          this count names no Worker.
                         anyOf:
                           - format: integer
                             default: 0
@@ -33096,8 +33100,27 @@ paths:
                             maximum: 20
                             description: How many Active Assignments on this Quest have a Start Work time.
                               Pair it with activeWorkerCount to show GROUP progress
-                              without a roster read; no Worker identity is exposed.
+                              this count names no Worker.
                             type: integer
+                      workers:
+                        nullable: true
+                        description: "GROUP + FIRST_COME_FIRST_SERVED only: every Worker whose
+                          Assignment was not cancelled, the caller included, in
+                          acceptance order. It stays complete after settlement, so
+                          a finished Quest still names the Workers who worked it.
+                          null for every other Quest shape."
+                        type: array
+                        items:
+                          type: object
+                          required:
+                            - id
+                            - displayName
+                          properties:
+                            id:
+                              format: uuid
+                              type: string
+                            displayName:
+                              type: string
                       capabilities:
                         type: object
                         required:

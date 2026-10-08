@@ -15,6 +15,7 @@ import {
 import { Pressable, Text, View } from "@/tw";
 import type { TagItem } from "@/api/QuestApi";
 import { cn } from "@/tw/cn";
+import { isTerminalStatus } from "@/domain/questLifecycle";
 import { formatSatang, SATANG_PER_BAHT } from "@/domain/satang";
 import { useLocale } from "@/features/preferences/localeStore";
 import { useAppTheme } from "@/features/workspace/AppThemeProvider";
@@ -129,8 +130,13 @@ export default function QuestWorkStatusCard({
           active: progressQuest.activeWorkerCount,
         }
       : null;
+  // Settlement ends every Assignment, so a terminal Quest has no Start Work left
+  // to track and its counts read 0 of 0.
   const showGroupFcfsStartStatus =
-    snapshot.actor === "WORKER" && isGroup && !isCandidateMode;
+    snapshot.actor === "WORKER" &&
+    isGroup &&
+    !isCandidateMode &&
+    !isTerminalStatus(snapshot.state);
 
   const proofBadgeText = snapshot.proofRequired
     ? messages.proofRequiredBadge

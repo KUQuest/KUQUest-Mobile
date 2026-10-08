@@ -1,5 +1,6 @@
 import { resetServerClock, syncServerClock } from "@/api/serverClock";
 import { liveQuestService } from "../liveQuestService";
+import { getQuestDetailProjection } from "../../detail/questDetailProjection";
 import { ApiError } from "@/api/ApiClient";
 import { questApi } from "@/api/QuestApi";
 import { chatApi } from "@/api/ChatApi";
@@ -691,6 +692,87 @@ describe("LiveQuestService", () => {
     expect(fallbackSnapshot.participants).toEqual([
       { id: "worker-1", displayName: "worker-1" },
     ]);
+  });
+  // Mobile #287: settlement closes each early finisher's Work Chat membership, so a
+  // finished Group FCFS Quest must name its Workers from the Participation `workers`.
+  it("names every Worker of a finished FCFS group from Participation workers", async () => {
+    mockedQuestApi.getDetail.mockRejectedValue(new Error("not hirer"));
+    mockedQuestApi.getPublicDetail.mockRejectedValue(new Error("not open"));
+    mockedQuestApi.getParticipationDetail.mockResolvedValue({
+      id: "quest-team",
+      title: "Team Quest",
+      description: "Coordinate the work.",
+      condition: { items: [{ id: "condition-1", text: "Complete work." }] },
+      tag: null,
+      mode: "FIRST_COME_FIRST_SERVED",
+      participation: "GROUP",
+      state: "QUEST_COMPLETED",
+      questReward: 100,
+      headcount: 3,
+      activeWorkerCount: 0,
+      startTime: "2099-08-26T09:00:00+07:00",
+      dueAt: "2099-08-27T12:00:00+07:00",
+      proofRequired: false,
+      hirerName: "Hirer Alice",
+      locations: [],
+      images: [],
+      assignmentId: "assignment-worker-1",
+      assignmentStatus: "ASSIGNMENT_COMPLETED",
+      assignment: { status: "ASSIGNMENT_COMPLETED", startedAt: null },
+      capabilities: { canViewOnly: true },
+      workers: [
+        { id: "worker-1", displayName: "Worker One" },
+        { id: "worker-2", displayName: "Worker Two" },
+        { id: "worker-3", displayName: "Worker Three" },
+      ],
+    } as never);
+    mockedQuestApi.listQuestAssignments.mockResolvedValue([]);
+    mockedQuestApi.listApplications.mockResolvedValue([]);
+    mockedQuestApi.listCandidateTeams.mockResolvedValue([]);
+    mockedQuestApi.getUnderfilled.mockResolvedValue(null as never);
+    mockedQuestApi.listProofSubmissions.mockResolvedValue([]);
+    mockedChatApi.listConversations.mockResolvedValue({
+      items: [
+        {
+          id: "conversation-team",
+          type: "CONVERSATION_WORK",
+          quest: {
+            id: "quest-team",
+            title: "Team Quest",
+            status: "QUEST_COMPLETED",
+          },
+          latestMessage: null,
+          lastActivityAt: null,
+          archived: false,
+          readOnly: true,
+          unreadCount: 0,
+        },
+      ],
+      nextCursor: null,
+    } as never);
+    // Only the last finisher still holds a Work Chat membership.
+    mockedChatApi.listParticipants.mockResolvedValue([
+      {
+        id: "worker-3",
+        role: "WORKER",
+        displayName: "Worker Three",
+        avatar: null,
+      },
+    ]);
+
+    const snapshot = await liveQuestService.getLiveSnapshot(
+      "quest-team",
+      "worker-1"
+    );
+
+    expect(snapshot.participants).toEqual([
+      { id: "worker-1", displayName: "Worker One" },
+      { id: "worker-2", displayName: "Worker Two" },
+      { id: "worker-3", displayName: "Worker Three" },
+    ]);
+    const detail = getQuestDetailProjection(snapshot, "worker-1");
+    expect(detail.participantCount).toBe(3);
+    expect(detail.quest.acceptedParticipants).toBe(3);
   });
   describe("pending Quest Edit Request discovery", () => {
     const pendingEdit = {

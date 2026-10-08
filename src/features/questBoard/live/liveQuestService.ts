@@ -689,6 +689,42 @@ export class LiveQuestService {
     );
   }
 
+  private async loadGroupParticipants(
+    routeActor: LiveQuestActor,
+    quest: QuestV2Detail | QuestV2PublicDetail | QuestV2ParticipationDetail,
+    conversations: ServerChatConversation | null,
+    resolvedAssignments: readonly LiveQuestAssignment[],
+    options: LiveQuestSnapshotOptions
+  ): Promise<LiveQuestParticipant[]> {
+    return routeActor === QuestActor.PROSPECTIVE_WORKER &&
+      quest.mode === QuestMode.FIRST_COME_FIRST_SERVED &&
+      conversations
+      ? await chatApi
+          .listParticipants(conversations.id, options)
+          .then((conversationParticipants) =>
+            conversationParticipants.reduce<LiveQuestParticipant[]>(
+              (workers, participant) => {
+                if (participant.role !== "WORKER" || !participant.id)
+                  return workers;
+                workers.push({
+                  id: participant.id,
+                  displayName: participant.displayName,
+                  ...(participant.avatar?.url
+                    ? { avatarUrl: participant.avatar.url }
+                    : {}),
+                  ...(participant.avatar?.fileId
+                    ? { avatarFileId: participant.avatar.fileId }
+                    : {}),
+                });
+                return workers;
+              },
+              []
+            )
+          )
+          .catch(() => this.loadParticipantProfiles(resolvedAssignments))
+      : await this.loadParticipantProfiles(resolvedAssignments);
+  }
+
   async createCandidateInquiry(
     questId: string
   ): Promise<ServerCandidateInquiry> {
@@ -914,36 +950,25 @@ export class LiveQuestService {
       listedAssignment || !participationAssignment
         ? assignments
         : [...assignments, participationAssignment];
+    // Settlement closes each early finisher's Work Chat membership, so the
+    // Participation roster wins over the chat roster whenever the Server sends it.
+    const participationWorkers =
+      "workers" in quest && quest.workers ? quest.workers : null;
     const participants =
-      quest.participation === "GROUP"
-        ? routeActor === QuestActor.PROSPECTIVE_WORKER &&
-          quest.mode === QuestMode.FIRST_COME_FIRST_SERVED &&
-          conversations
-          ? await chatApi
-              .listParticipants(conversations.id, options)
-              .then((conversationParticipants) =>
-                conversationParticipants.reduce<LiveQuestParticipant[]>(
-                  (workers, participant) => {
-                    if (participant.role !== "WORKER" || !participant.id)
-                      return workers;
-                    workers.push({
-                      id: participant.id,
-                      displayName: participant.displayName,
-                      ...(participant.avatar?.url
-                        ? { avatarUrl: participant.avatar.url }
-                        : {}),
-                      ...(participant.avatar?.fileId
-                        ? { avatarFileId: participant.avatar.fileId }
-                        : {}),
-                    });
-                    return workers;
-                  },
-                  []
-                )
-              )
-              .catch(() => this.loadParticipantProfiles(resolvedAssignments))
-          : await this.loadParticipantProfiles(resolvedAssignments)
-        : [];
+      quest.participation !== "GROUP"
+        ? []
+        : participationWorkers
+          ? participationWorkers.map(({ id, displayName }) => ({
+              id,
+              displayName,
+            }))
+          : await this.loadGroupParticipants(
+              routeActor,
+              quest,
+              conversations,
+              resolvedAssignments,
+              options
+            );
     const application = ownApplication(applications, viewerId);
     const listedTeam = ownTeam(teams, viewerId);
     const team = listedTeam && withIssuedJoinCode(listedTeam);
