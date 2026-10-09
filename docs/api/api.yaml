@@ -28,6 +28,8 @@ tags:
     description: "Admin Trust and Safety Report Case queue, evidence, and decisions."
   - name: Admin Search
     description: Searches safe fields within a required Admin resource type.
+  - name: Quest Reward Allocation v2
+    description: Reads and submits the completed Candidate Team reward split.
 components: 
   securitySchemes: 
     betterAuthSession: 
@@ -24392,6 +24394,567 @@ paths:
                       message: 
                         type: string
                 additionalProperties: false
+  /api/v2/quests/{questId}/reward-allocation:
+    get:
+      tags:
+        - Quest Reward Allocation v2
+      summary: Read a completed Candidate Team Reward Allocation
+      description: A selected Candidate Team Member can read the pending or settled
+        Reward Allocation after the Quest completes. The response shows the
+        Worker Reward pool and each Member share, but no Platform Fee or Wallet
+        details.
+      operationId: getQuestV2RewardAllocation
+      security:
+        - betterAuthSession: []
+      parameters:
+        - name: questId
+          in: path
+          required: true
+          schema:
+            format: uuid
+            type: string
+      responses:
+        "200":
+          description: Response for status 200
+          content:
+            application/json:
+              schema:
+                type: object
+                required:
+                  - success
+                  - data
+                properties:
+                  success:
+                    const: true
+                    type: boolean
+                  data:
+                    type: object
+                    required:
+                      - status
+                      - leaderId
+                      - totalRewardSatang
+                      - deadlineAt
+                      - settledAt
+                      - viewerIsLeader
+                      - members
+                    properties:
+                      status:
+                        type: string
+                        enum:
+                          - PENDING
+                          - SUBMITTED
+                          - AUTO_EQUAL
+                      leaderId:
+                        format: uuid
+                        type: string
+                      totalRewardSatang:
+                        minimum: 1
+                        anyOf:
+                          - format: integer
+                            default: 0
+                            type: string
+                          - minimum: 1
+                            type: integer
+                      deadlineAt:
+                        format: date-time
+                        type: string
+                      settledAt:
+                        nullable: true
+                        anyOf:
+                          - format: date-time
+                            type: string
+                          - type: "null"
+                      viewerIsLeader:
+                        type: boolean
+                      members:
+                        type: array
+                        items:
+                          type: object
+                          required:
+                            - memberId
+                            - displayName
+                            - isLeader
+                            - percentageBasisPoints
+                            - rewardSatang
+                          properties:
+                            memberId:
+                              format: uuid
+                              type: string
+                            displayName:
+                              type: string
+                            isLeader:
+                              type: boolean
+                            percentageBasisPoints:
+                              nullable: true
+                              anyOf:
+                                - minimum: 0
+                                  maximum: 10000
+                                  anyOf:
+                                    - format: integer
+                                      default: 0
+                                      type: string
+                                    - minimum: 0
+                                      maximum: 10000
+                                      type: integer
+                                - type: "null"
+                            rewardSatang:
+                              nullable: true
+                              anyOf:
+                                - minimum: 0
+                                  anyOf:
+                                    - format: integer
+                                      default: 0
+                                      type: string
+                                    - minimum: 0
+                                      type: integer
+                                - type: "null"
+        "401":
+          description: Response for status 401
+          content:
+            application/json:
+              schema:
+                type: object
+                required:
+                  - success
+                  - error
+                properties:
+                  success:
+                    const: false
+                    type: boolean
+                  error:
+                    type: object
+                    required:
+                      - code
+                      - message
+                    properties:
+                      code:
+                        type: string
+                      message:
+                        type: string
+        "404":
+          description: Response for status 404
+          content:
+            application/json:
+              schema:
+                type: object
+                required:
+                  - success
+                  - error
+                properties:
+                  success:
+                    const: false
+                    type: boolean
+                  error:
+                    type: object
+                    required:
+                      - code
+                      - message
+                    properties:
+                      code:
+                        type: string
+                      message:
+                        type: string
+        "409":
+          description: Response for status 409
+          content:
+            application/json:
+              schema:
+                type: object
+                required:
+                  - success
+                  - error
+                properties:
+                  success:
+                    const: false
+                    type: boolean
+                  error:
+                    type: object
+                    required:
+                      - code
+                      - message
+                    properties:
+                      code:
+                        type: string
+                      message:
+                        type: string
+        "500":
+          description: Response for status 500
+          content:
+            application/json:
+              schema:
+                type: object
+                required:
+                  - success
+                  - error
+                properties:
+                  success:
+                    const: false
+                    type: boolean
+                  error:
+                    type: object
+                    required:
+                      - code
+                      - message
+                    properties:
+                      code:
+                        type: string
+                      message:
+                        type: string
+    post:
+      tags:
+        - Quest Reward Allocation v2
+      summary: Submit a Candidate Team Reward Allocation
+      description: Only the Team Leader can submit percentages for every teammate
+        within 24 hours after successful completion. The Leader receives the
+        remaining percentage and the Server settles the full Quest Reward pool
+        atomically.
+      operationId: submitQuestV2RewardAllocation
+      security:
+        - betterAuthSession: []
+      parameters:
+        - name: questId
+          in: path
+          required: true
+          schema:
+            format: uuid
+            type: string
+        - name: idempotency-key
+          in: header
+          required: true
+          schema:
+            minLength: 1
+            maxLength: 200
+            pattern: \S
+            type: string
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              additionalProperties: false
+              type: object
+              required:
+                - teammateShares
+              properties:
+                teammateShares:
+                  minItems: 1
+                  maxItems: 19
+                  type: array
+                  items:
+                    additionalProperties: false
+                    type: object
+                    required:
+                      - memberId
+                      - percentageBasisPoints
+                    properties:
+                      memberId:
+                        format: uuid
+                        type: string
+                      percentageBasisPoints:
+                        minimum: 0
+                        maximum: 10000
+                        anyOf:
+                          - format: integer
+                            default: 0
+                            type: string
+                          - minimum: 0
+                            maximum: 10000
+                            type: integer
+          application/x-www-form-urlencoded:
+            schema:
+              additionalProperties: false
+              type: object
+              required:
+                - teammateShares
+              properties:
+                teammateShares:
+                  minItems: 1
+                  maxItems: 19
+                  type: array
+                  items:
+                    additionalProperties: false
+                    type: object
+                    required:
+                      - memberId
+                      - percentageBasisPoints
+                    properties:
+                      memberId:
+                        format: uuid
+                        type: string
+                      percentageBasisPoints:
+                        minimum: 0
+                        maximum: 10000
+                        anyOf:
+                          - format: integer
+                            default: 0
+                            type: string
+                          - minimum: 0
+                            maximum: 10000
+                            type: integer
+          multipart/form-data:
+            schema:
+              additionalProperties: false
+              type: object
+              required:
+                - teammateShares
+              properties:
+                teammateShares:
+                  minItems: 1
+                  maxItems: 19
+                  type: array
+                  items:
+                    additionalProperties: false
+                    type: object
+                    required:
+                      - memberId
+                      - percentageBasisPoints
+                    properties:
+                      memberId:
+                        format: uuid
+                        type: string
+                      percentageBasisPoints:
+                        minimum: 0
+                        maximum: 10000
+                        anyOf:
+                          - format: integer
+                            default: 0
+                            type: string
+                          - minimum: 0
+                            maximum: 10000
+                            type: integer
+      responses:
+        "200":
+          description: Response for status 200
+          content:
+            application/json:
+              schema:
+                type: object
+                required:
+                  - success
+                  - data
+                properties:
+                  success:
+                    const: true
+                    type: boolean
+                  data:
+                    type: object
+                    required:
+                      - status
+                      - leaderId
+                      - totalRewardSatang
+                      - deadlineAt
+                      - settledAt
+                      - viewerIsLeader
+                      - members
+                    properties:
+                      status:
+                        type: string
+                        enum:
+                          - PENDING
+                          - SUBMITTED
+                          - AUTO_EQUAL
+                      leaderId:
+                        format: uuid
+                        type: string
+                      totalRewardSatang:
+                        minimum: 1
+                        anyOf:
+                          - format: integer
+                            default: 0
+                            type: string
+                          - minimum: 1
+                            type: integer
+                      deadlineAt:
+                        format: date-time
+                        type: string
+                      settledAt:
+                        nullable: true
+                        anyOf:
+                          - format: date-time
+                            type: string
+                          - type: "null"
+                      viewerIsLeader:
+                        type: boolean
+                      members:
+                        type: array
+                        items:
+                          type: object
+                          required:
+                            - memberId
+                            - displayName
+                            - isLeader
+                            - percentageBasisPoints
+                            - rewardSatang
+                          properties:
+                            memberId:
+                              format: uuid
+                              type: string
+                            displayName:
+                              type: string
+                            isLeader:
+                              type: boolean
+                            percentageBasisPoints:
+                              nullable: true
+                              anyOf:
+                                - minimum: 0
+                                  maximum: 10000
+                                  anyOf:
+                                    - format: integer
+                                      default: 0
+                                      type: string
+                                    - minimum: 0
+                                      maximum: 10000
+                                      type: integer
+                                - type: "null"
+                            rewardSatang:
+                              nullable: true
+                              anyOf:
+                                - minimum: 0
+                                  anyOf:
+                                    - format: integer
+                                      default: 0
+                                      type: string
+                                    - minimum: 0
+                                      type: integer
+                                - type: "null"
+        "400":
+          description: Response for status 400
+          content:
+            application/json:
+              schema:
+                type: object
+                required:
+                  - success
+                  - error
+                properties:
+                  success:
+                    const: false
+                    type: boolean
+                  error:
+                    type: object
+                    required:
+                      - code
+                      - message
+                    properties:
+                      code:
+                        type: string
+                      message:
+                        type: string
+        "401":
+          description: Response for status 401
+          content:
+            application/json:
+              schema:
+                type: object
+                required:
+                  - success
+                  - error
+                properties:
+                  success:
+                    const: false
+                    type: boolean
+                  error:
+                    type: object
+                    required:
+                      - code
+                      - message
+                    properties:
+                      code:
+                        type: string
+                      message:
+                        type: string
+        "403":
+          description: Response for status 403
+          content:
+            application/json:
+              schema:
+                type: object
+                required:
+                  - success
+                  - error
+                properties:
+                  success:
+                    const: false
+                    type: boolean
+                  error:
+                    type: object
+                    required:
+                      - code
+                      - message
+                    properties:
+                      code:
+                        type: string
+                      message:
+                        type: string
+        "404":
+          description: Response for status 404
+          content:
+            application/json:
+              schema:
+                type: object
+                required:
+                  - success
+                  - error
+                properties:
+                  success:
+                    const: false
+                    type: boolean
+                  error:
+                    type: object
+                    required:
+                      - code
+                      - message
+                    properties:
+                      code:
+                        type: string
+                      message:
+                        type: string
+        "409":
+          description: Response for status 409
+          content:
+            application/json:
+              schema:
+                type: object
+                required:
+                  - success
+                  - error
+                properties:
+                  success:
+                    const: false
+                    type: boolean
+                  error:
+                    type: object
+                    required:
+                      - code
+                      - message
+                    properties:
+                      code:
+                        type: string
+                      message:
+                        type: string
+        "503":
+          description: Response for status 503
+          content:
+            application/json:
+              schema:
+                type: object
+                required:
+                  - success
+                  - error
+                properties:
+                  success:
+                    const: false
+                    type: boolean
+                  error:
+                    type: object
+                    required:
+                      - code
+                      - message
+                    properties:
+                      code:
+                        type: string
+                      message:
+                        type: string
   "/api/v2/quests/{questId}/reviews": 
     get: 
       tags: 

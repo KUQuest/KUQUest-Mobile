@@ -44,6 +44,12 @@ _Avoid_: Candidate, Prospective Worker, Departed Worker.
 The Candidate who creates, manages, and explicitly submits a Candidate Team for a `GROUP + CANDIDATE` Quest. After Hirer selection, the Team Leader presses Start Work and submits/confirms the Team's proof of work.
 _Avoid_: Hirer, leader of an FCFS group.
 
+**Team Reward Allocation**:
+A post-completion percentage split of a successful `GROUP + CANDIDATE` Quest's
+Worker Reward pool. The Team Leader assigns teammate shares within 24 hours and
+receives the remainder; the Server equally splits the pool if the deadline passes.
+_Avoid_: Peer-to-Peer transfer or treating the full pool as the Leader's reward.
+
 **Candidate Team**:
 A forming or submitted group of Candidates for one `GROUP + CANDIDATE` Quest, formed using a Server-generated Join Code. Submitted at exact headcount; immutable once submitted.
 _Avoid_: Quest Team, Work Conversation, direct group.

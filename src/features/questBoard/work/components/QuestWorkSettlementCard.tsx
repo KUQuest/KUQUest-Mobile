@@ -57,6 +57,32 @@ export default function QuestWorkSettlementCard({
           </Text>
         </View>
       ) : null}
+      {snapshot.teamRewardAllocation?.status !== "PENDING" &&
+      snapshot.teamRewardAllocation
+        ? (() => {
+            const member = snapshot.teamRewardAllocation.members.find(
+              ({ memberId }) => memberId === snapshot.viewerId
+            );
+            return member ? (
+              <View className="gap-ku-xs">
+                {member.percentageBasisPoints !== null ? (
+                  <Text className="font-ku-medium text-ku-label text-ku-text-secondary">
+                    {messages.settlementTeamShare}:{" "}
+                    {(member.percentageBasisPoints / 100).toFixed(2)}%
+                  </Text>
+                ) : null}
+                {member.rewardSatang !== null ? (
+                  <Text
+                    className="font-ku-bold text-ku-title text-ku-primary-dark"
+                    testID="team-settlement-amount"
+                  >
+                    {formatSatang(member.rewardSatang, locale, "exact")}
+                  </Text>
+                ) : null}
+              </View>
+            ) : null;
+          })()
+        : null}
     </View>
   );
 }

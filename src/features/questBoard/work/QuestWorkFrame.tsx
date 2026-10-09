@@ -29,6 +29,10 @@ export interface TeamWorkScreenProps {
   statusCard: ReactNode;
   settlementCard: ReactNode;
   actionsCard: ReactNode;
+  onSubmitAllocation?: (
+    shares: { memberId: string; percentageBasisPoints: number }[]
+  ) => Promise<void>;
+  allocationSending?: boolean;
 }
 
 /** Chrome shared by every Work Hub screen: top bar, refresh, scroll area. */

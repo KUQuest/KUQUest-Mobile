@@ -246,6 +246,38 @@ export type QuestV2ParticipationDetail = z.infer<
   typeof questV2ParticipationDetailSchema
 >;
 
+export const questV2RewardAllocationSchema = z.object({
+  status: z.enum(["PENDING", "SUBMITTED", "AUTO_EQUAL"]),
+  leaderId: z.string().uuid(),
+  totalRewardSatang: z.number().int().positive(),
+  deadlineAt: z.string().datetime(),
+  settledAt: z.string().datetime().nullable(),
+  viewerIsLeader: z.boolean(),
+  members: z.array(
+    z.object({
+      memberId: z.string().uuid(),
+      displayName: z.string(),
+      isLeader: z.boolean(),
+      percentageBasisPoints: z.number().int().min(0).max(10_000).nullable(),
+      rewardSatang: z.number().int().nonnegative().nullable(),
+    })
+  ),
+});
+export type QuestV2RewardAllocation = z.infer<
+  typeof questV2RewardAllocationSchema
+>;
+export const questV2RewardAllocationPayloadSchema = z.object({
+  teammateShares: z
+    .array(
+      z.object({
+        memberId: z.string().uuid(),
+        percentageBasisPoints: z.number().int().min(0).max(10_000),
+      })
+    )
+    .min(1)
+    .max(19),
+});
+
 export const questV2ImagesDataSchema = z.object({
   images: z.array(questV2ImageSchema),
 });
