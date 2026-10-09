@@ -1580,4 +1580,71 @@ describe("QuestApi", () => {
       expect.objectContaining({ method: "GET" })
     );
   });
+
+  it("reads and submits a Candidate Team Reward Allocation with idempotency", async () => {
+    const allocation = {
+      status: "PENDING",
+      leaderId: "00000000-0000-4000-8000-000000000001",
+      totalRewardSatang: 100_000,
+      deadlineAt: "2026-10-07T12:00:00.000Z",
+      settledAt: null,
+      viewerIsLeader: true,
+      members: [
+        {
+          memberId: "00000000-0000-4000-8000-000000000001",
+          displayName: "Leader",
+          isLeader: true,
+          percentageBasisPoints: null,
+          rewardSatang: null,
+        },
+        {
+          memberId: "00000000-0000-4000-8000-000000000002",
+          displayName: "Member",
+          isLeader: false,
+          percentageBasisPoints: null,
+          rewardSatang: null,
+        },
+      ],
+    };
+    fetchMock.mockResolvedValue(okJson({ success: true, data: allocation }));
+
+    await expect(api.getTeamRewardAllocation("quest-1")).resolves.toEqual(
+      allocation
+    );
+    await expect(
+      api.submitTeamRewardAllocation(
+        "quest-1",
+        [
+          {
+            memberId: "00000000-0000-4000-8000-000000000002",
+            percentageBasisPoints: 2500,
+          },
+        ],
+        "allocation-submit-1"
+      )
+    ).resolves.toEqual(allocation);
+    expect(fetchMock).toHaveBeenNthCalledWith(
+      1,
+      "https://api.example.test/api/v2/quests/quest-1/reward-allocation",
+      expect.objectContaining({ method: "GET" })
+    );
+    expect(fetchMock).toHaveBeenNthCalledWith(
+      2,
+      "https://api.example.test/api/v2/quests/quest-1/reward-allocation",
+      expect.objectContaining({
+        method: "POST",
+        body: JSON.stringify({
+          teammateShares: [
+            {
+              memberId: "00000000-0000-4000-8000-000000000002",
+              percentageBasisPoints: 2500,
+            },
+          ],
+        }),
+        headers: expect.objectContaining({
+          "idempotency-key": "allocation-submit-1",
+        }),
+      })
+    );
+  });
 });

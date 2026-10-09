@@ -199,6 +199,7 @@ describe("Quest event subscription", () => {
       "PROOF_AUTO_APPROVED",
       "COMPLETION_CONFIRMED",
       "QUEST_COMPLETED",
+      "TEAM_REWARD_ALLOCATED",
       "QUEST_FAILED",
       "QUEST_CANCELLED",
       "QUEST_EDIT_UPDATED",

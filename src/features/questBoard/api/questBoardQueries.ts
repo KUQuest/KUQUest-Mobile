@@ -8,6 +8,7 @@ import {
 } from "@tanstack/react-query";
 import type { QueryClient, QueryKey } from "@tanstack/react-query";
 import { ApiError } from "@/api/ApiClient";
+import { questApi } from "@/api/QuestApi";
 import type { UploadAsset } from "@/api/fileUpload";
 import {
   conductReportApi,
@@ -1171,6 +1172,37 @@ export function useConfirmCompletionMutation() {
       viewerId: string;
       idempotencyKey?: string;
     }) => liveQuestService.confirmCompletion(questId, idempotencyKey),
+    onSuccess: async (_, variables) => {
+      await invalidateWorkerQuestReads(
+        queryClient,
+        variables.questId,
+        variables.viewerId
+      );
+      await invalidateWalletQueries(queryClient);
+    },
+  });
+}
+export function useSubmitTeamRewardAllocationMutation() {
+  const queryClient = useQueryClient();
+  return useMutation({
+    mutationFn: ({
+      questId,
+      teammateShares,
+      idempotencyKey,
+    }: {
+      questId: string;
+      viewerId: string;
+      teammateShares: {
+        memberId: string;
+        percentageBasisPoints: number;
+      }[];
+      idempotencyKey: string;
+    }) =>
+      questApi.submitTeamRewardAllocation(
+        questId,
+        teammateShares,
+        idempotencyKey
+      ),
     onSuccess: async (_, variables) => {
       await invalidateWorkerQuestReads(
         queryClient,

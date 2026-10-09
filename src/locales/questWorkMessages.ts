@@ -55,6 +55,7 @@ export interface QuestWorkMessages {
   settlementPending: string;
   settlementNone: string;
   settlementUnavailable: string;
+  settlementTeamShare: string;
   reward: string;
   location: string;
   modeCandidate: string;
@@ -77,6 +78,21 @@ export interface QuestWorkMessages {
   memberDutyWork: string;
   teamDutyReview: string;
   teamDutyDone: string;
+  allocationTitle: string;
+  allocationDescription: string;
+  allocationEqual: string;
+  allocationTotal: string;
+  allocationAvailable: (percent: string) => string;
+  allocationOverBudget: (percent: string) => string;
+  allocationPercent: string;
+  allocationEstimate: string;
+  allocationLeaderShare: string;
+  allocationDeadline: string;
+  allocationSubmit: string;
+  allocationCancel: string;
+  allocationSubmitting: string;
+  allocationSaved: string;
+  allocationInvalid: string;
   viewQuestDetails: string;
 }
 
@@ -146,6 +162,7 @@ export const questWorkMessages: Record<SupportedLocale, QuestWorkMessages> = {
     settlementPending: "Payment pending. Refresh to check the transfer.",
     settlementNone: "No payment for this Assignment.",
     settlementUnavailable: "Settlement details are not available yet.",
+    settlementTeamShare: "Your team reward share",
     reward: "Reward",
     location: "Location",
     modeCandidate: "Candidate",
@@ -176,6 +193,25 @@ export const questWorkMessages: Record<SupportedLocale, QuestWorkMessages> = {
     teamDutyReview:
       "The team's work was submitted. Waiting for the Hirer to review it.",
     teamDutyDone: "The Quest is complete.",
+    allocationTitle: "Split the team reward",
+    allocationDescription:
+      "Adjust teammate shares. Your share updates automatically.",
+    allocationEqual: "Split equally",
+    allocationTotal: "Total: 100% · entire reward allocated",
+    allocationAvailable: (percent) =>
+      `Available for this teammate: up to ${percent}%`,
+    allocationOverBudget: (percent) =>
+      `Over budget by ${percent}% · reduce a teammate’s share`,
+    allocationPercent: "Share (%)",
+    allocationEstimate: "Estimated reward",
+    allocationLeaderShare: "Your remaining share",
+    allocationDeadline: "Submit by",
+    allocationSubmit: "Submit split and pay the team",
+    allocationCancel: "Cancel",
+    allocationSubmitting: "Submitting…",
+    allocationSaved:
+      "The reward has been split and credited to each member’s Earnings Balance.",
+    allocationInvalid: "Enter valid percentages totalling no more than 100%.",
     viewQuestDetails: "View Quest details",
   },
   th: {
@@ -240,6 +276,7 @@ export const questWorkMessages: Record<SupportedLocale, QuestWorkMessages> = {
     settlementPending: "รอการโอนเงิน รีเฟรชเพื่อตรวจสอบสถานะ",
     settlementNone: "ไม่มีการชำระเงินสำหรับงานนี้",
     settlementUnavailable: "ยังไม่มีข้อมูลการชำระเงิน",
+    settlementTeamShare: "ส่วนแบ่งค่าตอบแทนของคุณ",
     reward: "ค่าตอบแทน",
     location: "สถานที่",
     modeCandidate: "คัดเลือกผู้สมัคร",
@@ -266,6 +303,22 @@ export const questWorkMessages: Record<SupportedLocale, QuestWorkMessages> = {
     memberDutyWork: "หัวหน้าทีมจะส่งงานแทนทั้งทีม คุณไม่ต้องส่งอะไร",
     teamDutyReview: "ส่งงานของทีมแล้ว กำลังรอผู้ว่าจ้างตรวจสอบ",
     teamDutyDone: "เควสต์เสร็จสิ้นแล้ว",
+    allocationTitle: "แบ่งค่าตอบแทนทีม",
+    allocationDescription:
+      "ปรับส่วนแบ่งของสมาชิก ส่วนแบ่งของคุณจะคำนวณให้อัตโนมัติ",
+    allocationEqual: "แบ่งเท่ากัน",
+    allocationTotal: "รวม 100% · แบ่งค่าตอบแทนครบแล้ว",
+    allocationAvailable: (percent) => `แบ่งให้สมาชิกคนนี้ได้สูงสุด ${percent}%`,
+    allocationOverBudget: (percent) => `เกิน ${percent}% · ลดส่วนแบ่งของสมาชิก`,
+    allocationPercent: "ส่วนแบ่ง (%)",
+    allocationEstimate: "ค่าตอบแทนโดยประมาณ",
+    allocationLeaderShare: "ส่วนแบ่งที่เหลือของคุณ",
+    allocationDeadline: "ส่งภายใน",
+    allocationSubmit: "ยืนยันการแบ่งและจ่ายเงินให้ทีม",
+    allocationCancel: "ยกเลิก",
+    allocationSubmitting: "กำลังส่ง…",
+    allocationSaved: "แบ่งค่าตอบแทนและโอนเข้ายอดรายได้ของสมาชิกแต่ละคนแล้ว",
+    allocationInvalid: "กรุณาระบุเปอร์เซ็นต์ที่ถูกต้อง รวมกันไม่เกิน 100%",
     viewQuestDetails: "ดูรายละเอียดเควสต์",
   },
 };

@@ -357,9 +357,8 @@ function deriveActor(
 }
 
 /**
- * The viewer's role on a `GROUP + CANDIDATE` Team. Only a readable Candidate
- * Team names the Team Leader, and the server hides Teams once the Quest leaves
- * QUEST_OPEN, so an Assigned or In Progress snapshot usually answers UNKNOWN.
+ * The viewer's role on a `GROUP + CANDIDATE` Team. The Server exposes the
+ * selected Team roster to its members through completion for reward settlement.
  */
 function deriveTeamRole(
   actor: LiveQuestActor,
@@ -980,6 +979,19 @@ export class LiveQuestService {
       team,
       viewerId
     );
+    const teamRewardAllocation =
+      quest.state === "QUEST_COMPLETED" &&
+      quest.mode === QuestMode.CANDIDATE &&
+      quest.participation === "GROUP" &&
+      teamRole !== null &&
+      teamRole !== "UNKNOWN"
+        ? await optionalResource(
+            () => questApi.getTeamRewardAllocation(questId, options),
+            null as Awaited<
+              ReturnType<typeof questApi.getTeamRewardAllocation>
+            > | null
+          )
+        : null;
     const capabilities = deriveCapabilities({
       viewerId,
       actor,
@@ -1028,6 +1040,7 @@ export class LiveQuestService {
       applications,
       team,
       teamRole,
+      teamRewardAllocation,
       teams,
       underfilled,
       editRequest,

@@ -16,6 +16,7 @@ import {
   useLiveQuestSnapshotQuery,
   useRespondToEditMutation,
   useStartWorkMutation,
+  useSubmitTeamRewardAllocationMutation,
 } from "../api/questBoardQueries";
 import { useFileDispute } from "../dispute/useFileDispute";
 import type { LiveQuestSnapshot } from "../live/liveQuestTypes";
@@ -64,6 +65,7 @@ export function useQuestWorkFeature({
   const startWorkMutation = useStartWorkMutation();
   const respondToEditMutation = useRespondToEditMutation();
   const confirmCompletionMutation = useConfirmCompletionMutation();
+  const submitAllocationMutation = useSubmitTeamRewardAllocationMutation();
   const snapshotPollingInterval = useCallback(
     (currentSnapshot: LiveQuestSnapshot | undefined): number | false => {
       if (
@@ -112,6 +114,7 @@ export function useQuestWorkFeature({
   );
   // Kept across a failed delivery so a retry replays the same command.
   const startWorkKeyRef = useRef<string | null>(null);
+  const allocationKeyRef = useRef<{ body: string; key: string } | null>(null);
   const [commandError, setCommandError] = useState<string | null>(null);
   const snapshotErrorText = snapshotQuery.error
     ? getLocalizedErrorMessage(snapshotQuery.error, locale, {
@@ -285,6 +288,74 @@ export function useQuestWorkFeature({
     resolvedViewerId,
   ]);
 
+  const submitTeamRewardAllocation = useCallback(
+    async (
+      teammateShares: { memberId: string; percentageBasisPoints: number }[]
+    ) => {
+      if (
+        !routeQuestId ||
+        !resolvedViewerId ||
+        !snapshot?.teamRewardAllocation?.viewerIsLeader
+      )
+        return;
+      setCommandError(null);
+      const body = JSON.stringify(teammateShares);
+      if (!allocationKeyRef.current || allocationKeyRef.current.body !== body) {
+        allocationKeyRef.current = { body, key: createQuestIdempotencyKey() };
+      }
+      try {
+        await submitAllocationMutation.mutateAsync({
+          questId: routeQuestId,
+          viewerId: resolvedViewerId,
+          teammateShares,
+          idempotencyKey: allocationKeyRef.current.key,
+        });
+      } catch (error) {
+        const refreshed = await refreshSnapshot().catch(() => null);
+        if (
+          refreshed?.teamRewardAllocation &&
+          refreshed.teamRewardAllocation.status !== "PENDING"
+        ) {
+          allocationKeyRef.current = null;
+          return;
+        }
+        setCommandError(
+          getLocalizedErrorMessage(error, locale, {
+            fallback: messages.serverError,
+          })
+        );
+        return;
+      }
+
+      try {
+        const refreshed = await refreshSnapshot();
+        if (
+          refreshed?.teamRewardAllocation &&
+          refreshed.teamRewardAllocation.status !== "PENDING"
+        ) {
+          allocationKeyRef.current = null;
+        } else {
+          setCommandError(messages.serverError);
+        }
+      } catch (error) {
+        setCommandError(
+          getLocalizedErrorMessage(error, locale, {
+            fallback: messages.serverError,
+          })
+        );
+      }
+    },
+    [
+      locale,
+      messages.serverError,
+      refreshSnapshot,
+      resolvedViewerId,
+      routeQuestId,
+      snapshot?.teamRewardAllocation?.viewerIsLeader,
+      submitAllocationMutation,
+    ]
+  );
+
   const { confirmFileDispute } = useFileDispute();
   const openDispute = useCallback(() => {
     if (routeQuestId) confirmFileDispute(routeQuestId);
@@ -334,5 +405,7 @@ export function useQuestWorkFeature({
     confirmCompletion,
     startWork,
     startWorkSending,
+    submitTeamRewardAllocation,
+    allocationSending: submitAllocationMutation.isPending,
   };
 }

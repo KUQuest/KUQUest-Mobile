@@ -9,6 +9,7 @@ import type {
   QuestV2ParticipationDetail,
   QuestV2ProofSubmission,
   QuestV2Team,
+  QuestV2RewardAllocation,
   QuestV2Underfilled,
   QuestV2EditRequest,
 } from "@/api/questV2Contracts";
@@ -89,6 +90,7 @@ export interface LiveQuestSnapshot {
   team: QuestV2Team | null;
   /** Viewer's role on a `GROUP + CANDIDATE` Team; null on every other Quest and for the Hirer. */
   teamRole: QuestTeamRole | null;
+  teamRewardAllocation?: QuestV2RewardAllocation | null;
   teams: QuestV2Team[];
   underfilled: QuestV2Underfilled | null;
   editRequest: QuestV2EditRequest | null;

@@ -24,7 +24,7 @@ Part of the [Quest and Work Chat Rulebook](quest-work-chat-rulebook.md). Defines
 
 ## Settlement and failure rules
 
-- The system transfers a Worker Reward immediately when that Assignment becomes `ASSIGNMENT_COMPLETED`.
+- The system transfers a Worker Reward immediately when that Assignment becomes `ASSIGNMENT_COMPLETED`, except successful `GROUP + CANDIDATE` Team work. For that mode, the pool remains in Quest Escrow until the Team Leader submits an allocation within 24 hours. Teammate shares use integer basis points (0.01% increments), total at most 100%, and the Leader receives the remainder. If the deadline passes, the Server splits the pool equally. Reward and fee satang are split deterministically and credited directly from Escrow to each member's Earnings Balance.
 - If a Reward transfer fails, the Assignment remains `ASSIGNMENT_COMPLETED`, the transfer remains `REWARD_TRANSFER_PENDING`, the system retries, and Hirer/Worker are notified. Retries reuse the same payment record and cannot create duplicate payments.
 - **On `QUEST_FAILED`**:
   - Unpaid Worker-slot funding returns to the Hirer. Already transferred Rewards are not reclaimed.

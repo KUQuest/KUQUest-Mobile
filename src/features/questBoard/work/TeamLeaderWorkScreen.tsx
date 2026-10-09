@@ -3,6 +3,7 @@ import type { ReactNode } from "react";
 import { QuestTeamRole } from "../domain/types";
 import { QuestWorkFrame, type TeamWorkScreenProps } from "./QuestWorkFrame";
 import TeamWorkRoleCard from "./components/TeamWorkRoleCard";
+import TeamRewardAllocationCard from "./components/TeamRewardAllocationCard";
 
 /**
  * Work Hub for the Team Leader of a `GROUP + CANDIDATE` Quest. The Leader alone
@@ -18,6 +19,8 @@ export default function TeamLeaderWorkScreen({
   settlementCard,
   proofForm,
   actionsCard,
+  onSubmitAllocation,
+  allocationSending = false,
 }: TeamWorkScreenProps & { proofForm: ReactNode }) {
   return (
     <QuestWorkFrame {...frame}>
@@ -29,6 +32,14 @@ export default function TeamLeaderWorkScreen({
       />
       {statusCard}
       {settlementCard}
+      {snapshot.teamRewardAllocation ? (
+        <TeamRewardAllocationCard
+          allocation={snapshot.teamRewardAllocation}
+          messages={messages}
+          submitting={allocationSending}
+          onSubmit={onSubmitAllocation ?? (async () => undefined)}
+        />
+      ) : null}
       {proofForm}
       {actionsCard}
     </QuestWorkFrame>
