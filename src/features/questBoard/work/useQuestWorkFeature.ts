@@ -330,7 +330,7 @@ export function useQuestWorkFeature({
       try {
         const refreshed = await refreshSnapshot();
         if (
-          refreshed.teamRewardAllocation &&
+          refreshed?.teamRewardAllocation &&
           refreshed.teamRewardAllocation.status !== "PENDING"
         ) {
           allocationKeyRef.current = null;

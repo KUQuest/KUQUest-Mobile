@@ -102,7 +102,7 @@ describe("Hirer Conduct Report", () => {
 
   it("lists only the Workers the Server returns for CONDUCT_ABANDONED", async () => {
     mockView = {
-      windowEndsAt: "2026-10-09T05:00:00.000Z",
+      windowEndsAt: "2099-10-09T05:00:00.000Z",
       reportable: [
         { memberId: "worker-2", reason: "CONDUCT_ABANDONED" },
         { memberId: "worker-1", reason: "CONDUCT_NO_SHOW" },
@@ -119,7 +119,7 @@ describe("Hirer Conduct Report", () => {
 
   it("files the selected Worker with trimmed details and shows the report number", async () => {
     mockView = {
-      windowEndsAt: "2026-10-09T05:00:00.000Z",
+      windowEndsAt: "2099-10-09T05:00:00.000Z",
       reportable: [
         { memberId: "worker-1", reason: "CONDUCT_ABANDONED" },
         { memberId: "worker-2", reason: "CONDUCT_ABANDONED" },
@@ -156,7 +156,7 @@ describe("Hirer Conduct Report", () => {
 
   it("shows the rule-specific message when the Worker was already reported", async () => {
     mockView = {
-      windowEndsAt: "2026-10-09T05:00:00.000Z",
+      windowEndsAt: "2099-10-09T05:00:00.000Z",
       reportable: [{ memberId: "worker-1", reason: "CONDUCT_ABANDONED" }],
       items: [],
     };
@@ -200,7 +200,7 @@ describe("Hirer Conduct Report", () => {
 
   it("shows the filed report with the Worker name and Admin status", async () => {
     mockView = {
-      windowEndsAt: "2026-10-09T05:00:00.000Z",
+      windowEndsAt: "2099-10-09T05:00:00.000Z",
       reportable: [],
       items: [pendingReport],
     };

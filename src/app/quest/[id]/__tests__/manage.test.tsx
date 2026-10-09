@@ -401,7 +401,7 @@ describe("HirerQuestManageRoute condition edit", () => {
       })
     );
     mockGetConductReports.mockResolvedValue({
-      windowEndsAt: "2026-10-09T05:00:00.000Z",
+      windowEndsAt: "2099-10-09T05:00:00.000Z",
       reportable: [{ memberId: "worker-1", reason: "CONDUCT_ABANDONED" }],
       items: [],
     });
