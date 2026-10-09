@@ -310,14 +310,34 @@ export function useQuestWorkFeature({
           teammateShares,
           idempotencyKey: allocationKeyRef.current.key,
         });
-        allocationKeyRef.current = null;
-        await refreshSnapshot();
       } catch (error) {
-        const refreshed = await refreshSnapshot().catch(() => undefined);
-        if (refreshed?.teamRewardAllocation?.status !== "PENDING") {
+        const refreshed = await refreshSnapshot().catch(() => null);
+        if (
+          refreshed?.teamRewardAllocation &&
+          refreshed.teamRewardAllocation.status !== "PENDING"
+        ) {
           allocationKeyRef.current = null;
           return;
         }
+        setCommandError(
+          getLocalizedErrorMessage(error, locale, {
+            fallback: messages.serverError,
+          })
+        );
+        return;
+      }
+
+      try {
+        const refreshed = await refreshSnapshot();
+        if (
+          refreshed.teamRewardAllocation &&
+          refreshed.teamRewardAllocation.status !== "PENDING"
+        ) {
+          allocationKeyRef.current = null;
+        } else {
+          setCommandError(messages.serverError);
+        }
+      } catch (error) {
         setCommandError(
           getLocalizedErrorMessage(error, locale, {
             fallback: messages.serverError,
