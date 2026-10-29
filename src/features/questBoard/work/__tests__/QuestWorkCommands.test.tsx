@@ -7,17 +7,19 @@ import {
   QuestEditResponseDecision,
   QuestStatus,
 } from "../../domain/types";
-import { liveQuestService } from "../../live/liveQuestService";
 import { workerHomeKeys } from "@/features/workerHome/api/workerHomeKeys";
 import { walletKeys } from "@/features/wallet/api/walletQueries";
 import {
+  questBoardKeys,
   useConfirmCompletionMutation,
   useRespondToEditMutation,
   useStartWorkMutation,
 } from "../../api/questBoardQueries";
+import { questApi } from "@/api/QuestApi";
 
-jest.mock("../../live/liveQuestService", () => ({
-  liveQuestService: {
+jest.mock("@/api/QuestApi", () => ({
+  ...jest.requireActual("@/api/QuestApi"),
+  questApi: {
     startWork: jest.fn(),
     respondToEditRequest: jest.fn(),
     confirmCompletion: jest.fn(),
@@ -50,7 +52,7 @@ describe("Work Hub command mutations", () => {
     const detailKey = workerHomeKeys.participationDetail("quest-1");
     queryClient.setQueryData(assignmentsKey, []);
     queryClient.setQueryData(detailKey, { state: QuestStatus.QUEST_ASSIGNED });
-    jest.mocked(liveQuestService.startWork).mockResolvedValue({} as never);
+    jest.mocked(questApi.startWork).mockResolvedValue({} as never);
     const { result } = await renderHook(() => useStartWorkMutation(), {
       wrapper: createWrapper(queryClient),
     });
@@ -70,13 +72,11 @@ describe("Work Hub command mutations", () => {
 
   it("responding to an edit refreshes Work Hub projections", async () => {
     const queryClient = createQueryClient();
-    const snapshotKey = workerHomeKeys.liveSnapshot("quest-1", "worker-1");
+    const snapshotKey = questBoardKeys.liveSnapshot("quest-1", "worker-1");
     queryClient.setQueryData(snapshotKey, {
       editRequest: { status: QuestEditRequestStatus.EDIT_REQUEST_PENDING },
     });
-    jest
-      .mocked(liveQuestService.respondToEditRequest)
-      .mockResolvedValue({} as never);
+    jest.mocked(questApi.respondToEditRequest).mockResolvedValue({} as never);
     const { result } = await renderHook(() => useRespondToEditMutation(), {
       wrapper: createWrapper(queryClient),
     });
@@ -102,9 +102,7 @@ describe("Work Hub command mutations", () => {
     queryClient.setQueryData(participationKey, {
       state: QuestStatus.QUEST_IN_PROGRESS,
     });
-    jest
-      .mocked(liveQuestService.confirmCompletion)
-      .mockResolvedValue({} as never);
+    jest.mocked(questApi.confirmCompletion).mockResolvedValue({} as never);
     const { result } = await renderHook(() => useConfirmCompletionMutation(), {
       wrapper: createWrapper(queryClient),
     });

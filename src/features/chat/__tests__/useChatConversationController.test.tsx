@@ -36,17 +36,13 @@ jest.mock("@/features/preferences/localeStore", () => ({
 jest.mock("@/features/questBoard/live/questEvents", () => ({
   subscribeToQuestEvents: jest.fn(),
 }));
-jest.mock("@/features/questBoard/live/liveQuestService", () => ({
-  liveQuestService: {
-    markCandidateInquiryRead: jest.fn(),
-    getCandidateInquiryAttachmentLink: jest.fn(),
-  },
-}));
 jest.mock("@/api/ChatApi", () => ({
   chatApi: {
     markRead: jest.fn(),
     getAttachmentLink: jest.fn(),
     uploadAttachment: jest.fn(),
+    markCandidateInquiryRead: jest.fn(),
+    getCandidateInquiryAttachmentLink: jest.fn(),
   },
 }));
 jest.mock("expo-image-picker", () => ({

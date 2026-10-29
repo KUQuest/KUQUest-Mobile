@@ -7,7 +7,6 @@ import { Avatar } from "@/components/ui/Avatar";
 import { cn } from "@/tw/cn";
 import { useAppTheme } from "@/features/workspace/AppThemeProvider";
 import { chatApi } from "@/api/ChatApi";
-import { liveQuestService } from "@/features/questBoard/live/liveQuestService";
 import type { ChatMessages } from "@/locales/chatMessages";
 import type { ChatConversation } from "../chatTypes";
 import { localizedText } from "./ChatConversationPresentation";
@@ -166,7 +165,7 @@ export function InlineImageAttachment({
 
     const fetcher = async () => {
       if (isCandidateInquiry) {
-        return liveQuestService.getCandidateInquiryAttachmentLink(
+        return chatApi.getCandidateInquiryAttachmentLink(
           conversationId,
           attachment.id
         );
@@ -240,7 +239,7 @@ export function InlineImageAttachment({
           attachmentLinkCache.delete(attachment.id);
           const fetcher = async () => {
             if (isCandidateInquiry) {
-              return liveQuestService.getCandidateInquiryAttachmentLink(
+              return chatApi.getCandidateInquiryAttachmentLink(
                 conversationId,
                 attachment.id
               );

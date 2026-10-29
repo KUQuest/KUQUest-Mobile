@@ -19,23 +19,6 @@ export interface QuestProgressStage {
   key: TimelineStageKey;
   state: TimelineStageState;
 }
-export interface LocalizedHirerCopy {
-  en: string;
-  th: string;
-}
-export interface HirerHomeQuestFixture {
-  id: string;
-  title: LocalizedHirerCopy;
-  status: CanonicalHirerQuestStatus;
-  worker: {
-    id: string;
-    displayName: LocalizedHirerCopy;
-    avatarUri?: string;
-    faculty?: LocalizedHirerCopy;
-  };
-  startTime: string;
-  dueAt: string;
-}
 export interface QuestMemberProfile {
   id: string;
   displayName: string;

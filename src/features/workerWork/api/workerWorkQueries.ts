@@ -1,10 +1,9 @@
 import { useMutation, useQueryClient } from "@tanstack/react-query";
 
 import { ApiError } from "@/api/ApiClient";
-import { createQuestIdempotencyKey } from "@/api/QuestApi";
+import { createQuestIdempotencyKey, questApi } from "@/api/QuestApi";
 import type { UploadAsset } from "@/api/fileUpload";
 import type { QuestV2ProofSubmission } from "@/api/questV2Contracts";
-import { liveQuestService } from "@/features/questBoard/live/liveQuestService";
 import { invalidateWorkerQuestReads } from "@/features/questBoard/api/questBoardQueries";
 import type { ProofSendPlan } from "../proofDraftPlan";
 import { QuestProofFileStatus } from "@/features/questBoard/domain/types";
@@ -58,7 +57,7 @@ async function uploadProofDraft(
   description: string | undefined
 ): Promise<QuestV2ProofSubmission> {
   if (plan.kind === "append") {
-    return liveQuestService.updateProofDraft(
+    return questApi.updateProofDraft(
       questId,
       plan.draftId,
       {
@@ -70,7 +69,7 @@ async function uploadProofDraft(
   }
   // Create first: API has no atomic replacement; failed create must not delete old draft.
   if (plan.kind === "create") {
-    const replacementDraft = await liveQuestService
+    const replacementDraft = await questApi
       .createProofDraft(
         questId,
         { assets: plan.files.map(toUploadAsset), description },
@@ -79,13 +78,13 @@ async function uploadProofDraft(
       .catch(asRejectedUpload(plan.files.length));
     if (!plan.replaceDraftId) return replacementDraft;
     try {
-      await liveQuestService.deleteProofDraft(
+      await questApi.deleteProofDraft(
         questId,
         plan.replaceDraftId,
         createQuestIdempotencyKey()
       );
     } catch (error) {
-      await liveQuestService
+      await questApi
         .deleteProofDraft(
           questId,
           replacementDraft.id,
@@ -98,7 +97,7 @@ async function uploadProofDraft(
   }
   let draft: QuestV2ProofSubmission | null = null;
   for (const { position, file } of plan.retries) {
-    draft = await liveQuestService
+    draft = await questApi
       .updateProofDraft(
         questId,
         plan.draftId,
@@ -127,7 +126,7 @@ export function useSubmitProofMutation() {
       description?: string;
     }) => {
       if (plan.kind === "existing") {
-        return liveQuestService.submitProofDraft(
+        return questApi.submitProofDraft(
           questId,
           plan.draftId,
           createQuestIdempotencyKey()
@@ -156,7 +155,7 @@ export function useSubmitProofMutation() {
       if (readyFileCount === 0) {
         throw new Error("At least one proof file must be ready before sending");
       }
-      return liveQuestService.submitProofDraft(
+      return questApi.submitProofDraft(
         questId,
         proofDraft.id,
         createQuestIdempotencyKey()
@@ -179,7 +178,7 @@ export function useRemoveProofFileMutation() {
       draftId,
       fileIds,
     }: WorkerMutationInput & { draftId: string; fileIds: string[] }) =>
-      liveQuestService.updateProofDraft(
+      questApi.updateProofDraft(
         questId,
         draftId,
         { fileIds },

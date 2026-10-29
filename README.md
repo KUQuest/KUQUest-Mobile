@@ -185,23 +185,7 @@ Development builds print API diagnostics to the Metro terminal through `debugLog
 
 Logs never include cookies, request or response bodies, or signed-URL query strings.
 
-## 3. Standalone Offline Demo Mode
-
-If you need to test the UI, Quest flows, or screen layouts without any backend connection, launch the app in seeded demo mode:
-
-```bash
-bun run demo:start
-```
-
-- **Features**: Includes Quest Board, Quest Details, My Quests, Team Assembly, and Chat with mock data and local SQLite/memory persistence.
-- **Switch Test Accounts on Android**:
-  ```bash
-  bun run demo:android:account
-  ```
-
----
-
-## 4. Code Quality & Testing
+## 3. Code Quality & Testing
 
 ### Verification Scripts
 

@@ -1,15 +1,14 @@
 import {
   MAX_QUEST_IMAGES,
-  QuestCandidateMode,
-  type QuestCandidateMode as QuestBoardCandidateMode,
   type QuestEscrowSummary,
   type QuestLocation,
   type QuestLocationMode as QuestBoardLocationMode,
   QuestMode,
   QuestParticipation,
-  type QuestParticipationMode as QuestBoardParticipationMode,
   type QuestPublishCheck,
+  QuestPublishCheckSource,
 } from "../../questBoard/domain/types";
+import { DEFAULT_PLATFORM_FEE_BASIS_POINTS } from "../../questBoard/domain/constants";
 
 import { formatDateTime } from "@/domain/datetime";
 import { createQuestMessages } from "@/locales/createQuestMessages";
@@ -181,8 +180,8 @@ export const initialDraft: QuestDraft = {
 };
 
 export interface QuestBoardModeValues {
-  candidateMode: QuestBoardCandidateMode;
-  participationMode: QuestBoardParticipationMode;
+  mode: QuestMode;
+  participation: QuestParticipation;
   locationMode: QuestBoardLocationMode;
 }
 
@@ -190,12 +189,8 @@ export function toQuestBoardModeValues(
   draft: Pick<QuestDraft, "candidateMode" | "participation" | "locationMode">
 ): QuestBoardModeValues {
   return {
-    candidateMode:
-      draft.candidateMode === QuestMode.CANDIDATE
-        ? QuestCandidateMode.CANDIDATE
-        : QuestCandidateMode.NO_CANDIDATE,
-    participationMode:
-      draft.participation === QuestParticipation.GROUP ? "team" : "single",
+    mode: draft.candidateMode,
+    participation: draft.participation,
     locationMode: draft.locationMode === "ONLINE" ? "online" : "on-campus",
   };
 }
@@ -215,7 +210,6 @@ export function isQuestDraftDirty(draft: QuestDraft): boolean {
 
 export const MAX_REWARD_THB = 700_000;
 export const MIN_REWARD_THB = 1;
-export const DEFAULT_PLATFORM_FEE_BASIS_POINTS = 500;
 
 export interface QuestDraftPayload {
   title: string;
@@ -228,10 +222,8 @@ export interface QuestDraftPayload {
   startTime: string;
   endTime: string;
   location: QuestLocation;
-  candidateMode:
-    | typeof QuestCandidateMode.NO_CANDIDATE
-    | typeof QuestCandidateMode.CANDIDATE;
-  participation: "SOLO" | typeof QuestParticipation.GROUP;
+  candidateMode: QuestMode;
+  participation: QuestParticipation;
   headcount: number;
   rewardSatang: number;
   imageUris: string[];
@@ -278,14 +270,8 @@ export function toQuestDraftPayload(draft: QuestDraft): QuestDraftPayload {
       label:
         draft.locationMode === "ONLINE" ? null : draft.location.trim() || null,
     },
-    candidateMode:
-      draft.candidateMode === QuestMode.CANDIDATE
-        ? QuestCandidateMode.CANDIDATE
-        : QuestCandidateMode.NO_CANDIDATE,
-    participation:
-      draft.participation === QuestParticipation.GROUP
-        ? QuestParticipation.GROUP
-        : "SOLO",
+    candidateMode: draft.candidateMode,
+    participation: draft.participation,
     headcount:
       draft.participation === QuestParticipation.SINGLE
         ? 1
@@ -386,6 +372,7 @@ export function getQuestPublishCheck(
       headcount ?? 0,
       feeRateBasisPoints
     ),
+    source: QuestPublishCheckSource.ESTIMATE,
   };
 }
 

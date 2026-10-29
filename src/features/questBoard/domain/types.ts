@@ -16,14 +16,6 @@ export const QuestParticipation = {
 export type QuestParticipation =
   (typeof QuestParticipation)[keyof typeof QuestParticipation];
 
-export const QuestCandidateMode = {
-  NO_CANDIDATE: "NO_CANDIDATE",
-  CANDIDATE: "CANDIDATE",
-} as const;
-export type CanonicalQuestCandidateMode =
-  (typeof QuestCandidateMode)[keyof typeof QuestCandidateMode];
-export type QuestCandidateMode = CanonicalQuestCandidateMode;
-
 export const QuestTeamStatus = {
   TEAM_FORMING: "TEAM_FORMING",
   TEAM_SUBMITTED: "TEAM_SUBMITTED",
@@ -77,7 +69,7 @@ export const QuestEditRequestStatus = {
   /** v2 terminal states: `APPLIED` after consent, `FAILED` on decline/timeout/leave. */
   EDIT_REQUEST_APPLIED: "EDIT_REQUEST_APPLIED",
   EDIT_REQUEST_FAILED: "EDIT_REQUEST_FAILED",
-  /** Legacy umbrella labels kept for the fixture adapter's consent vocabulary. */
+  /** Legacy umbrella labels; v2 emits APPLIED/FAILED. */
   EDIT_REQUEST_APPROVED: "EDIT_REQUEST_APPROVED",
   EDIT_REQUEST_REJECTED: "EDIT_REQUEST_REJECTED",
 } as const;
@@ -146,7 +138,6 @@ export type QuestProofDecision =
   (typeof QuestProofDecision)[keyof typeof QuestProofDecision];
 
 export type QuestLocationMode = "online" | "on-campus";
-export type QuestParticipationMode = "single" | "team";
 export type QuestBoardSort = "newest" | "deadline-soonest" | "reward-highest";
 export type QuestAvailability = "available" | "full" | "closed";
 
@@ -207,41 +198,6 @@ export interface QuestApplication {
   note?: string;
 }
 
-export interface QuestAssignment {
-  id: string;
-  questId: string;
-  workerId: string;
-  source: "DIRECT_JOIN" | "APPLICATION" | "TEAM";
-  status: QuestAssignmentStatus;
-  rewardSatang: number;
-  joinedAt: string;
-  startedAt?: string;
-  completedAt?: string;
-  applicationId?: string;
-  teamId?: string;
-}
-
-export interface QuestProof {
-  id: string;
-  questId: string;
-  ownerId: string;
-  teamId?: string;
-  status: QuestProofStatus;
-  imageUris: string[];
-  note?: string;
-  submittedAt?: string;
-  reviewedAt?: string;
-  reviewReason?: string;
-  reworkCount: number;
-  reworkLimit: number;
-}
-
-export interface QuestEditConsentResponse {
-  workerId: string;
-  status: QuestEditResponseStatus;
-  respondedAt: string;
-}
-
 export const QuestPartialStartConsentStatus = {
   PARTIAL_START_PENDING: "PARTIAL_START_PENDING",
   PARTIAL_START_APPROVED: "PARTIAL_START_APPROVED",
@@ -277,6 +233,37 @@ export const QuestTeamRole = {
 } as const;
 export type QuestTeamRole = (typeof QuestTeamRole)[keyof typeof QuestTeamRole];
 
+/** Boolean Quest permission matrix for the viewer; computed by `deriveQuestCapabilities`. */
+export interface QuestPermissionFlags {
+  canJoin: boolean;
+  canApply: boolean;
+  canWithdrawApplication: boolean;
+  canCreateTeam: boolean;
+  canJoinTeam: boolean;
+  canUpdateTeam: boolean;
+  canLeaveTeam: boolean;
+  canRemoveTeamMember: boolean;
+  canRegenerateTeamCode: boolean;
+  canSubmitTeam: boolean;
+  canSelectCandidate: boolean;
+  canSelectTeam: boolean;
+  canRejectCandidate: boolean;
+  canRejectTeam: boolean;
+  canDecideUnderfilled: boolean;
+  canConsentUnderfilled: boolean;
+  canRequestEdit: boolean;
+  canRespondToEdit: boolean;
+  canReadWorkChat: boolean;
+  canWriteWorkChat: boolean;
+  canSubmitProof: boolean;
+  /** Required starter with an Active Assignment who has not recorded Start Work; the startTime gate is checked against the clock. */
+  canStartWork: boolean;
+  canConfirmCompletion: boolean;
+  canCancel: boolean;
+  canReviewProof: boolean;
+  canCreateReview: boolean;
+}
+
 export function isHirerActor(actor: unknown): actor is typeof QuestActor.HIRER {
   return actor === QuestActor.HIRER;
 }
@@ -311,30 +298,6 @@ export interface QuestPartialStartConsent {
   responses: QuestPartialStartConsentResponse[];
 }
 
-export interface QuestEditConsent {
-  id: string;
-  questId: string;
-  previousStatus: QuestStatus;
-  status: QuestEditRequestStatus;
-  requestedChanges: Partial<
-    Pick<
-      QuestContract,
-      | "description"
-      | "completionCriteria"
-      | "startAt"
-      | "endAt"
-      | "deadlineAt"
-      | "location"
-      | "imageUris"
-    >
-  >;
-  requestedAt: string;
-  responseDeadlineAt: string;
-  requiredWorkerCount: number;
-  approvedWorkerCount: number;
-  responses: QuestEditConsentResponse[];
-}
-
 export type ConversationReadOnlyReason =
   "TERMINAL" | "INACTIVE_WORKER" | "NOT_A_MEMBER" | "NOT_STARTED";
 
@@ -344,36 +307,6 @@ export interface WorkConversationCapability {
   canWrite: boolean;
   readOnly: boolean;
   readOnlyReason?: ConversationReadOnlyReason;
-}
-
-export type QuestAction =
-  | "DIRECT_JOIN"
-  | "APPLY"
-  | "WITHDRAW_APPLICATION"
-  | "CREATE_TEAM"
-  | "INVITE_WORKER"
-  | "RESPOND_INVITATION"
-  | "SUBMIT_TEAM"
-  | "SELECT_CANDIDATE"
-  | "REJECT_CANDIDATE"
-  | "REJECT_TEAM"
-  | "REQUEST_EDIT"
-  | "VOTE_EDIT_CONSENT"
-  | "VOTE_PARTIAL_GROUP_START_CONSENT"
-  | "SUBMIT_PROOF"
-  | "REWORK_PROOF"
-  | "REVIEW_PROOF"
-  | "OPEN_DISPUTE"
-  | "RESOLVE_DISPUTE"
-  | "CONFIRM_COMPLETION"
-  | "COMPLETE"
-  | "CANCEL"
-  | "PUBLISH";
-
-export interface QuestCapabilities {
-  availableActions: QuestAction[];
-  canReadConversation: boolean;
-  canWriteConversation: boolean;
 }
 
 export interface QuestEditConsentCapabilities {
@@ -406,11 +339,20 @@ export interface QuestEscrowSummary {
   feeRateBasisPoints: number;
 }
 
+export const QuestPublishCheckSource = {
+  SERVER: "server",
+  ESTIMATE: "estimate",
+} as const;
+export type QuestPublishCheckSource =
+  (typeof QuestPublishCheckSource)[keyof typeof QuestPublishCheckSource];
+
 export interface QuestPublishCheck {
   canPublish: boolean;
   blockers: string[];
   warnings: string[];
   escrow: QuestEscrowSummary;
+  /** `ESTIMATE` when computed on the client from a draft; `SERVER` when it reflects the server check. */
+  source: QuestPublishCheckSource;
 }
 
 export interface QuestSettlementSummary {
@@ -423,70 +365,18 @@ export interface QuestSettlementSummary {
   fullRefund: boolean;
 }
 
-export interface QuestContract {
-  id: string;
-  status: QuestStatus;
-  title: string;
-  description: string;
-  completionCriteria: string;
-  proofRequired: "required" | "optional" | "none";
-  reward: QuestReward;
-  location: QuestLocation;
-  participation: QuestParticipation;
-  candidateMode: CanonicalQuestCandidateMode;
-  /** Requested capacity; retained as `headcount` for the existing API. */
-  headcount: number;
-  requestedHeadcount?: number;
-  tags: string[];
-  startAt: string;
-  endAt?: string;
-  deadlineAt: string;
-  postedAt: string;
-  imageUris: string[];
-  hirerId: string;
-  prototypeOnly?: boolean;
-  prototypeScenario?: QuestBoardQuest["prototypeScenario"];
-}
-
-export interface QuestDetailState {
-  quest: QuestContract;
-  /** All independent Quest Teams/proposals for GROUP + CANDIDATE. */
-  teams: QuestTeam[];
-  /** Candidate Proposal alias; `applications` remains for existing screens. */
-  proposals?: QuestApplication[];
-  /** @deprecated Use `teams`; retained as a read projection for the existing prototype UI. */
-  team?: QuestTeam;
-  invitations: QuestInvitation[];
-  applications: QuestApplication[];
-  assignments: QuestAssignment[];
-  /** Actual roster size; requested capacity remains `quest.headcount`. */
-  actualHeadcount?: number;
-  settlement?: QuestSettlementSummary;
-  proofs: QuestProof[];
-  partialStartConsent?: QuestPartialStartConsent;
-  editConsent?: QuestEditConsent;
-  conversation: WorkConversationCapability;
-  /** Server-provided membership projection; the client never derives conversation IDs. */
-  conversationMemberIds?: string[];
-  capabilities: QuestCapabilities;
-  publishCheck?: QuestPublishCheck;
-}
-
-export interface QuestBoardQuest {
+/** Fields every live Quest read carries: Board card, Hirer detail and public detail. */
+export interface QuestBoardSummary {
   id: string;
   title: string;
   /** Server tag identity used to select the current locale label. */
   tagId?: string;
   tags: string[];
-  description: string;
-  completionCriteria: string;
-  proofRequired: "required" | "optional" | "none";
   questFundingTotalSatang?: number | null;
   rewardPerPerson: number;
   /** Canonical integer amount, retained alongside the legacy board display field. */
   rewardSatang?: number;
   headcount: number;
-  acceptedParticipants: number;
   startDate: string;
   deadline: string;
   timeRange?: string;
@@ -495,22 +385,38 @@ export interface QuestBoardQuest {
   /** Canonical location projection; only `label` is server-owned. */
   locationDetails?: QuestLocation;
   locationMode: QuestLocationMode;
-  participationMode: QuestParticipationMode;
-  candidateMode: QuestCandidateMode;
+  /** Contract vocabulary: `SINGLE` or `GROUP`. */
+  participation: QuestParticipation;
+  /** Contract vocabulary: `FIRST_COME_FIRST_SERVED` or `CANDIDATE`. */
+  mode: QuestMode;
   creator: { name: string; faculty?: string; avatarUri?: string };
   imageUris?: string[];
-  studentInterestMatch: boolean;
-  ownerStudentId: string;
   hirerName?: string;
-  /** Prototype-only scenario fixtures remain route/test addressable but hidden from discovery. */
-  prototypeOnly?: boolean;
-  prototypeScenario?:
-    | "team-forming-demo"
-    | "team-selection-demo"
-    | "single-candidate-demo"
-    | "partial-group-start-demo";
-  /** Canonical state/capability fields are optional for legacy board consumers. */
+}
+
+/**
+ * One row of the Quest Board list (`GET /api/v2/quests/board`). A card carries
+ * no description, completion criteria or proof requirement; the Board lists
+ * Open Quests, so `status` is absent unless a caller supplies it.
+ */
+export interface QuestBoardCard extends QuestBoardSummary {
+  acceptedParticipants: number;
+  /** Hirer profile id; absent when the card has no `hirerProfile`. */
+  ownerStudentId?: string;
   status?: QuestStatus;
+}
+
+/**
+ * A Quest read for the detail screen. The Hirer's canonical read carries no
+ * Active Worker count, so `acceptedParticipants` is absent there; the detail
+ * projection supplies the roster-derived count.
+ */
+export interface QuestBoardQuest extends QuestBoardSummary {
+  acceptedParticipants?: number;
+  description: string;
+  completionCriteria: string;
+  proofRequired: "required" | "optional" | "none";
+  status: QuestStatus;
   conversation?: WorkConversationCapability;
   /** Viewer-specific participation projection from the public detail endpoint. */
   hasJoined?: boolean;

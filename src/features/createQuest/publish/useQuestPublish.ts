@@ -32,7 +32,6 @@ import type {
   Step,
 } from "../createQuestTypes";
 import type { PublishedQuestRefValue } from "../draft/useQuestPersistence";
-import { liveQuestService } from "../../questBoard/live/liveQuestService";
 import type { QuestPublishCheck } from "../../questBoard/domain/types";
 export function getPublishErrorMessage(
   error: unknown,
@@ -514,7 +513,7 @@ export function useQuestPublish({
           }
         }
 
-        const check = await liveQuestService.getPublishCheck(publishedQuestId);
+        const check = await questApi.getPublishCheck(publishedQuestId);
         if (!check.canPublish) {
           const [blocker] = check.blockingReasons;
           throw Object.assign(

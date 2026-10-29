@@ -83,8 +83,6 @@ export interface QuestBoardMessages {
   retrySuccess: string;
   loading: string;
   resultsLabel: string;
-  stateFull: string;
-  stateClosed: string;
   online: string;
   onCampus: string;
   today: string;
@@ -423,8 +421,6 @@ export const questBoardMessages: Record<SupportedLocale, QuestBoardMessages> = {
     retrySuccess: "Quest Board refreshed",
     loading: "Loading Quests",
     resultsLabel: "Quest Board results",
-    stateFull: "Quest full",
-    stateClosed: "Applications closed",
     online: "Online",
     onCampus: "On campus",
     today: "Today",
@@ -875,8 +871,6 @@ export const questBoardMessages: Record<SupportedLocale, QuestBoardMessages> = {
     retrySuccess: "รีเฟรชกระดานเควสต์แล้ว",
     loading: "กำลังโหลดเควสต์",
     resultsLabel: "ผลลัพธ์กระดานเควสต์",
-    stateFull: "เควสต์เต็มแล้ว",
-    stateClosed: "ปิดรับสมัครแล้ว",
     online: "ออนไลน์",
     onCampus: "ในมหาวิทยาลัย",
     today: "วันนี้",

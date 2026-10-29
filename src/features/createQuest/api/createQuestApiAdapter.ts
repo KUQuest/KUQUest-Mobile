@@ -3,7 +3,10 @@ import type {
   QuestV2Detail,
   QuestV2PublishCheck,
 } from "@/api/questV2Contracts";
-import type { QuestPublishCheck } from "@/features/questBoard/domain/types";
+import {
+  QuestPublishCheckSource,
+  type QuestPublishCheck,
+} from "@/features/questBoard/domain/types";
 
 import {
   getDraftRewardSatang,
@@ -151,5 +154,6 @@ export function adaptV2PublishCheck(
       platformFeeSatangPerWorker: serverCheck.platformFeeSatang,
       feeRateBasisPoints: serverCheck.platformFeeBps,
     },
+    source: QuestPublishCheckSource.SERVER,
   };
 }

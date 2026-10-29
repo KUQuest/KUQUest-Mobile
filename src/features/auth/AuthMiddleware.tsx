@@ -90,10 +90,6 @@ function AuthRouteCheck({
 }
 
 export default function AuthMiddleware({ children }: PropsWithChildren) {
-  useEffect(() => {
-    void authEnvironment.hydratePersona();
-  }, []);
-
   const segments = useSegments();
   const isDemo = authEnvironment.isDemoEnabled();
   const isPublicRoute = isDemo || isPublicAuthRoute(segments);

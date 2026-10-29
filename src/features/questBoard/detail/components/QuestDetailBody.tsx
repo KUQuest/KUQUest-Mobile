@@ -38,12 +38,12 @@ import type { QuestBoardMessages } from "@/locales/questBoardMessages";
 import { getQuestPriceSatang } from "../../presentation/questBoardViewData";
 import type { LiveQuestSnapshot } from "../../live/liveQuestService";
 import {
-  QuestCandidateMode,
+  QuestMode,
+  QuestParticipation,
   QuestStatus,
   QuestUnderfilledConsentDecision,
   QuestUnderfilledState,
   type QuestBoardQuest,
-  type QuestDetailState,
 } from "../../domain/types";
 import { localizeFacultyName } from "@/locales/academicUnits";
 import styles from "../../styles/questDetailStyles";
@@ -51,10 +51,7 @@ import {
   QuestParticipantRoster,
   type QuestParticipant,
 } from "./QuestParticipantRoster";
-import {
-  GroupQuestEntrySurfaces,
-  LiveEntrySurface,
-} from "./QuestDetailEntrySurfaces";
+import { LiveEntrySurface } from "./QuestDetailEntrySurfaces";
 
 function proofLabel(
   quest: QuestBoardQuest,
@@ -380,15 +377,6 @@ export interface QuestDetailBodyProps {
     actionLabel: string;
   };
   onOpenWorkHub: () => void;
-  prototypeEntry?: {
-    state: QuestDetailState;
-    viewerId: string;
-    isHirer: boolean;
-    messages: GroupQuestMessages;
-    onOpenTeam: () => void;
-    onOpenCandidateReview: () => void;
-    onOpenPartialConsent: () => void;
-  };
   liveEntry?: {
     snapshot: LiveQuestSnapshot;
     groupMessages: GroupQuestMessages;
@@ -427,7 +415,6 @@ export function QuestDetailBody({
   onOpenParticipantProfile,
   status,
   onOpenWorkHub,
-  prototypeEntry,
   liveEntry,
   groupFcfs,
   onOpenPartialConsent,
@@ -435,6 +422,7 @@ export function QuestDetailBody({
   const { colors } = useAppTheme();
   const [viewingImage, setViewingImage] = useState<number | null>(null);
   const StatusIcon = status?.Icon;
+  const acceptedParticipants = quest.acceptedParticipants ?? participantCount;
   const canJoin =
     canParticipate &&
     !(
@@ -547,7 +535,7 @@ export function QuestDetailBody({
           <View
             accessible
             accessibilityLabel={messages.participantsSummary(
-              quest.acceptedParticipants,
+              acceptedParticipants,
               quest.headcount
             )}
             className={styles.heroCount}
@@ -555,7 +543,7 @@ export function QuestDetailBody({
             <Text className={styles.heroLabel}>{messages.participants}</Text>
             <Text
               className={styles.heroCountValue}
-            >{`${quest.acceptedParticipants}/${quest.headcount}`}</Text>
+            >{`${acceptedParticipants}/${quest.headcount}`}</Text>
           </View>
         </View>
         <View className={styles.heroFacts}>
@@ -567,7 +555,7 @@ export function QuestDetailBody({
             value={
               groupFcfs
                 ? messages.groupFcfsRequestedWorkers(quest.headcount)
-                : quest.participationMode === "team"
+                : quest.participation === QuestParticipation.GROUP
                   ? messages.team
                   : messages.singlePerson
             }
@@ -576,14 +564,15 @@ export function QuestDetailBody({
             icon={UserRoundCheck}
             label={messages.candidateMode}
             value={
-              quest.candidateMode === QuestCandidateMode.NO_CANDIDATE
+              quest.mode === QuestMode.FIRST_COME_FIRST_SERVED
                 ? messages.firstCome
                 : messages.reviewCandidates
             }
           />
         </View>
       </View>
-      {quest.participationMode === "team" && onOpenParticipantProfile ? (
+      {quest.participation === QuestParticipation.GROUP &&
+      onOpenParticipantProfile ? (
         <QuestParticipantRoster
           countLabel={messages.participantsSummary(
             participantCount,
@@ -694,17 +683,6 @@ export function QuestDetailBody({
             </Pressable>
           ) : null}
         </View>
-      ) : null}
-      {prototypeEntry ? (
-        <GroupQuestEntrySurfaces
-          state={prototypeEntry.state}
-          viewerId={prototypeEntry.viewerId}
-          isHirer={prototypeEntry.isHirer}
-          messages={prototypeEntry.messages}
-          onOpenTeam={prototypeEntry.onOpenTeam}
-          onOpenCandidateReview={prototypeEntry.onOpenCandidateReview}
-          onOpenPartialConsent={prototypeEntry.onOpenPartialConsent}
-        />
       ) : null}
       {liveEntry ? (
         <LiveEntrySurface
