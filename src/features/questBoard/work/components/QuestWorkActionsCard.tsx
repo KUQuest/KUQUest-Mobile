@@ -23,6 +23,7 @@ import {
 import { disputeMessages } from "@/locales/disputeMessages";
 import type { LiveQuestSnapshot } from "../../live/liveQuestService";
 import { FailedQuestNotice } from "../../shared/FailedQuestNotice";
+import { QuestWorkConductReport } from "./QuestWorkConductReport";
 import {
   isWorkerActor,
   QuestEditRequestStatus,
@@ -351,6 +352,10 @@ export default function QuestWorkActionsCard({
             )}
           </Pressable>
         </View>
+      ) : null}
+
+      {isWorkerActor(snapshot.actor) ? (
+        <QuestWorkConductReport snapshot={snapshot} />
       ) : null}
 
       {canOpenChat ? (

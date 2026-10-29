@@ -41,7 +41,10 @@ import { getCancelTier } from "./cancelQuestGuardrail";
 import { useFileDispute } from "@/features/questBoard/dispute/useFileDispute";
 import { ConductReportSheet } from "@/features/questBoard/conductReport/ConductReportSheet";
 import { FiledConductReports } from "@/features/questBoard/conductReport/FiledConductReports";
-import { useHirerConductReport } from "@/features/questBoard/conductReport/useHirerConductReport";
+import {
+  ConductReportRole,
+  useConductReport,
+} from "@/features/questBoard/conductReport/useConductReport";
 import type { LiveQuestAssignment } from "@/features/questBoard/live/liveQuestService";
 import { FailedQuestNotice } from "@/features/questBoard/shared/FailedQuestNotice";
 import { useAppTheme } from "@/features/workspace/AppThemeProvider";
@@ -241,7 +244,8 @@ export default function HirerQuestManageScreen({
     submitConditionEdit,
   } = view;
   const { confirmFileDispute } = useFileDispute();
-  const conductReport = useHirerConductReport({
+  const conductReport = useConductReport({
+    role: ConductReportRole.HIRER,
     questId: questId ?? null,
     viewerId,
     assignments: snapshot?.assignments ?? NO_ASSIGNMENTS,
@@ -482,8 +486,8 @@ export default function HirerQuestManageScreen({
             {conductReport.canReport ? (
               <ActionRow
                 icon={Flag}
-                label={conductReport.messages.reportWorker}
-                description={conductReport.messages.reportWorkerHint}
+                label={conductReport.copy.entry}
+                description={conductReport.copy.entryHint}
                 onPress={conductReport.openReport}
                 testID="hirer-manage-conduct-report"
               />

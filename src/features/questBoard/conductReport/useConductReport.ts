@@ -1,7 +1,10 @@
 import { useEffect, useMemo, useRef, useState } from "react";
 
 import { ApiError } from "@/api/ApiClient";
-import type { ConductReport } from "@/api/ConductReportApi";
+import type {
+  ConductReport,
+  ConductReportReason,
+} from "@/api/ConductReportApi";
 import { createQuestIdempotencyKey } from "@/api/QuestApi";
 import { showSweetAlert, SweetAlertVariant } from "@/components/ui/SweetAlert";
 import {
@@ -19,31 +22,57 @@ import { getLocalizedErrorMessage } from "@/utils/error";
 
 const MAX_DETAIL_LENGTH = 1000;
 
-export type ConductReportTarget = { id: string; label: string };
-export type FiledConductReport = ConductReport & { workerName: string };
+export const ConductReportRole = {
+  HIRER: "HIRER",
+  WORKER: "WORKER",
+} as const;
+// eslint-disable-next-line @typescript-eslint/no-redeclare
+export type ConductReportRole =
+  (typeof ConductReportRole)[keyof typeof ConductReportRole];
 
-interface HirerConductReportInput {
+/** Reasons each role files (admin-conduct-report-contract.md, "Allowed reasons"). */
+const ROLE_REASONS: Record<ConductReportRole, readonly ConductReportReason[]> =
+  {
+    [ConductReportRole.HIRER]: ["CONDUCT_ABANDONED"],
+    [ConductReportRole.WORKER]: ["CONDUCT_OUT_OF_SCOPE", "CONDUCT_NO_SHOW"],
+  };
+
+export type ConductReportTarget = {
+  id: string;
+  label: string;
+  reason: ConductReportReason;
+};
+export type FiledConductReport = ConductReport & { memberName: string };
+
+interface ConductReportInput {
+  role: ConductReportRole;
   questId: string | null;
   viewerId: string;
   assignments: readonly LiveQuestAssignment[];
   participants?: readonly LiveQuestParticipant[];
+  /** Names the Hirer when a Worker reports them; the report list carries only ids. */
+  hirerName?: string;
   /** The Quest State; a change re-reads `reportable`, which the Server derives from it. */
   questState?: string;
 }
 
 /**
- * Hirer → Worker CONDUCT_ABANDONED filing. The Server decides who can be
- * reported (`reportable`); the app only names the Workers it returns.
+ * Conduct Report filing for the viewer's role. The Server decides who can be
+ * reported (`reportable`); the app only names the Members it returns for the
+ * reasons that role files.
  */
-export function useHirerConductReport({
+export function useConductReport({
+  role,
   questId,
   viewerId,
   assignments,
   participants,
+  hirerName,
   questState,
-}: HirerConductReportInput) {
+}: ConductReportInput) {
   const { locale } = useLocale();
   const messages = conductReportMessages[locale];
+  const copy = messages.copy[role];
   const reportsQuery = useConductReportsQuery(questId, viewerId || null);
   const fileMutation = useFileConductReportMutation();
   const keysRef = useRef<Record<string, string>>({});
@@ -61,7 +90,7 @@ export function useHirerConductReport({
     void refetch();
   }, [questState, refetch]);
 
-  const workerName = useMemo(() => {
+  const memberName = useMemo(() => {
     const names = new Map<string, string>();
     for (const participant of participants ?? []) {
       names.set(participant.id, participant.displayName);
@@ -73,23 +102,30 @@ export function useHirerConductReport({
         messages.workerFallback(index + 1);
       names.set(assignment.workerId, name);
     });
-    return (memberId: string) => names.get(memberId) ?? messages.workerLabel;
-  }, [assignments, messages, participants]);
+    return (memberId: string) =>
+      names.get(memberId) ??
+      (role === ConductReportRole.WORKER ? hirerName : undefined) ??
+      copy.targetLabel;
+  }, [assignments, copy, hirerName, messages, participants, role]);
 
   const targets = useMemo<ConductReportTarget[]>(
     () =>
       (reportsQuery.data?.reportable ?? [])
-        .filter(({ reason }) => reason === "CONDUCT_ABANDONED")
-        .map(({ memberId }) => ({ id: memberId, label: workerName(memberId) })),
-    [reportsQuery.data, workerName]
+        .filter(({ reason }) => ROLE_REASONS[role].includes(reason))
+        .map(({ memberId, reason }) => ({
+          id: memberId,
+          label: memberName(memberId),
+          reason,
+        })),
+    [memberName, reportsQuery.data, role]
   );
   const filedReports = useMemo<FiledConductReport[]>(
     () =>
       (reportsQuery.data?.items ?? []).map((report) => ({
         ...report,
-        workerName: workerName(report.reportedMemberId),
+        memberName: memberName(report.reportedMemberId),
       })),
-    [reportsQuery.data, workerName]
+    [memberName, reportsQuery.data]
   );
   const selectedTarget =
     targets.find((target) => target.id === selectedId) ?? targets[0] ?? null;
@@ -137,7 +173,7 @@ export function useHirerConductReport({
         viewerId,
         input: {
           reportedMemberId: selectedTarget.id,
-          reason: "CONDUCT_ABANDONED",
+          reason: selectedTarget.reason,
           ...(trimmedDetail ? { detail: trimmedDetail } : {}),
         },
         idempotencyKey,
@@ -159,6 +195,7 @@ export function useHirerConductReport({
 
   return {
     messages,
+    copy,
     canReport: windowOpen && targets.length > 0,
     refresh: () => void refetch(),
     filedReports,
