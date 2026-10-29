@@ -1,6 +1,5 @@
 import * as SecureStore from "expo-secure-store";
 
-import { liveQuestService } from "@/features/questBoard/live/liveQuestService";
 import { initialDraft, type QuestDraft } from "../domain/createQuestModel";
 import { toQuestV2Payload } from "../api/createQuestApiAdapter";
 import {
@@ -8,9 +7,11 @@ import {
   listQuestDrafts,
   persistQuestDraft,
 } from "../draft/createQuestPersistence";
+import { questApi } from "@/api/QuestApi";
 
-jest.mock("@/features/questBoard/live/liveQuestService", () => ({
-  liveQuestService: {
+jest.mock("@/api/QuestApi", () => ({
+  ...jest.requireActual("@/api/QuestApi"),
+  questApi: {
     createQuest: jest.fn(),
     getPublishCheck: jest.fn(),
     publishQuest: jest.fn(),
@@ -60,9 +61,9 @@ describe("Quest Creation and Draft Scenarios", () => {
         location: "Science Building 3",
       };
 
-      const mockCreate = liveQuestService.createQuest as jest.Mock;
-      const mockPublishCheck = liveQuestService.getPublishCheck as jest.Mock;
-      const mockPublish = liveQuestService.publishQuest as jest.Mock;
+      const mockCreate = questApi.createQuest as jest.Mock;
+      const mockPublishCheck = questApi.getPublishCheck as jest.Mock;
+      const mockPublish = questApi.publishQuest as jest.Mock;
 
       // Quest 1
       mockCreate.mockResolvedValueOnce({
@@ -96,14 +97,11 @@ describe("Quest Creation and Draft Scenarios", () => {
 
       // Execute Quest 1
       const payload1 = toQuestV2Payload(quest1Draft);
-      const created1 = await liveQuestService.createQuest(
-        payload1,
-        "idemp-create-1"
-      );
+      const created1 = await questApi.createQuest(payload1, "idemp-create-1");
       expect(created1.state).toBe("QUEST_DRAFT");
-      const check1 = await liveQuestService.getPublishCheck(created1.id);
+      const check1 = await questApi.getPublishCheck(created1.id);
       expect(check1.canPublish).toBe(true);
-      const published1 = await liveQuestService.publishQuest(
+      const published1 = await questApi.publishQuest(
         created1.id,
         "idemp-pub-1"
       );
@@ -111,14 +109,11 @@ describe("Quest Creation and Draft Scenarios", () => {
 
       // Execute Quest 2
       const payload2 = toQuestV2Payload(quest2Draft);
-      const created2 = await liveQuestService.createQuest(
-        payload2,
-        "idemp-create-2"
-      );
+      const created2 = await questApi.createQuest(payload2, "idemp-create-2");
       expect(created2.state).toBe("QUEST_DRAFT");
-      const check2 = await liveQuestService.getPublishCheck(created2.id);
+      const check2 = await questApi.getPublishCheck(created2.id);
       expect(check2.canPublish).toBe(true);
-      const published2 = await liveQuestService.publishQuest(
+      const published2 = await questApi.publishQuest(
         created2.id,
         "idemp-pub-2"
       );

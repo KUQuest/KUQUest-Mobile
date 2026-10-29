@@ -115,9 +115,9 @@ describe("Quest fixture adapter", () => {
     ).toEqual(
       expect.objectContaining({
         headcount: 3,
-        rewardPoolSatang: 37650,
-        platformFeeSatang: 1884,
-        totalRequiredSatang: 39534,
+        rewardPoolSatang: 35856,
+        platformFeeSatang: 1794,
+        totalRequiredSatang: 37650,
       })
     );
     expect(

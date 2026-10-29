@@ -321,8 +321,8 @@ export function useCandidateConversationQuery(
     ),
     queryFn: async ({ signal }) => {
       const [inquiry, participants] = await Promise.all([
-        liveQuestService.getCandidateInquiry(conversationId, { signal }),
-        liveQuestService.listCandidateInquiryParticipants(conversationId, {
+        chatApi.getCandidateInquiry(conversationId, { signal }),
+        chatApi.listCandidateInquiryParticipants(conversationId, {
           signal,
         }),
       ]);
@@ -368,7 +368,7 @@ export function useSendChatMessageMutation(socket: UseChatSocketResult) {
         });
       }
       return mode === "CANDIDATE_INQUIRY"
-        ? liveQuestService.sendCandidateInquiryMessage(
+        ? chatApi.sendCandidateInquiryMessage(
             conversationId,
             text,
             clientMessageId,
@@ -473,10 +473,7 @@ export function useUploadChatAttachmentMutation() {
       asset,
     }: UploadChatAttachmentVariables) =>
       mode === "CANDIDATE_INQUIRY"
-        ? liveQuestService.uploadCandidateInquiryAttachment(
-            conversationId,
-            asset
-          )
+        ? chatApi.uploadCandidateInquiryAttachment(conversationId, asset)
         : chatApi.uploadAttachment(conversationId, asset),
   });
 }

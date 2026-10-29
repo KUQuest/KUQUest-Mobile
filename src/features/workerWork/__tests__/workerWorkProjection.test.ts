@@ -2,6 +2,7 @@ import {
   QuestStatus,
   QuestTeamStatus,
 } from "@/features/questBoard/domain/types";
+import type { LiveQuestSnapshot } from "@/features/questBoard/live/liveQuestTypes";
 import { workerSnapshot } from "@/testing/workerSnapshotFixtures";
 import { projectWorkerWork } from "../workerWorkProjection";
 
@@ -56,6 +57,43 @@ describe("projectWorkerWork", () => {
             teamId: null,
             submittedByUserId: "worker-1",
             description: "Done",
+            status: "PROOF_PENDING",
+            submittedAt: "2026-10-01T10:00:00Z",
+            createdAt: "2026-10-01T09:30:00Z",
+            updatedAt: "2026-10-01T10:00:00Z",
+            visibility: "FULL",
+            fileIds: [],
+            files: [],
+          },
+        ],
+      }),
+    ]);
+
+    expect(projection.otherActive[0]).toEqual(
+      expect.objectContaining({ status: "proofPending", needsAction: false })
+    );
+  });
+
+  it("shows the Team Leader's GROUP CANDIDATE Team proof to every Team member", () => {
+    const projection = projectWorkerWork([
+      workerSnapshot({
+        id: "candidate-team",
+        title: "Candidate Team Quest",
+        mode: "CANDIDATE",
+        participation: "GROUP",
+        viewerId: "worker-1",
+        team: {
+          id: "team-1",
+          leaderId: "worker-2",
+        } as LiveQuestSnapshot["team"],
+        proofs: [
+          {
+            id: "team-proof",
+            questId: "candidate-team",
+            workerId: null,
+            teamId: "team-1",
+            submittedByUserId: "worker-2",
+            description: "Team done",
             status: "PROOF_PENDING",
             submittedAt: "2026-10-01T10:00:00Z",
             createdAt: "2026-10-01T09:30:00Z",

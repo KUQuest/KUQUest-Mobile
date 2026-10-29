@@ -9,7 +9,9 @@ import {
   QuestParticipation,
   type QuestParticipationMode as QuestBoardParticipationMode,
   type QuestPublishCheck,
+  QuestPublishCheckSource,
 } from "../../questBoard/domain/types";
+import { DEFAULT_PLATFORM_FEE_BASIS_POINTS } from "../../questBoard/domain/constants";
 
 import { formatDateTime } from "@/domain/datetime";
 import { createQuestMessages } from "@/locales/createQuestMessages";
@@ -215,7 +217,6 @@ export function isQuestDraftDirty(draft: QuestDraft): boolean {
 
 export const MAX_REWARD_THB = 700_000;
 export const MIN_REWARD_THB = 1;
-export const DEFAULT_PLATFORM_FEE_BASIS_POINTS = 500;
 
 export interface QuestDraftPayload {
   title: string;
@@ -386,6 +387,7 @@ export function getQuestPublishCheck(
       headcount ?? 0,
       feeRateBasisPoints
     ),
+    source: QuestPublishCheckSource.ESTIMATE,
   };
 }
 

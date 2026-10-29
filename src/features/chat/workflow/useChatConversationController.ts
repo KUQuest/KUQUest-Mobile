@@ -21,7 +21,6 @@ import {
 import { useSessionQuery } from "@/features/auth/sessionQueries";
 import { getRouteParam } from "@/utils/navigation";
 import { subscribeToQuestEvents } from "@/features/questBoard/live/questEvents";
-import { liveQuestService } from "@/features/questBoard/live/liveQuestService";
 import { useLocale } from "@/features/preferences/localeStore";
 import { chatMessages } from "@/locales/chatMessages";
 import type { ChatConversation, ChatRouteParams } from "../chatTypes";
@@ -216,10 +215,7 @@ export function useChatConversationController(
     lastReadMessageIdRef.current = lastMessage.id;
     const markRead =
       conversationType === "CANDIDATE_INQUIRY"
-        ? liveQuestService.markCandidateInquiryRead(
-            routeConversationId,
-            lastMessage.id
-          )
+        ? chatApi.markCandidateInquiryRead(routeConversationId, lastMessage.id)
         : chatApi.markRead(routeConversationId, lastMessage.id);
 
     void Promise.resolve(markRead)
@@ -721,7 +717,7 @@ export function useChatConversationController(
     try {
       const fetcher = async () => {
         if (conversationType === "CANDIDATE_INQUIRY") {
-          return liveQuestService.getCandidateInquiryAttachmentLink(
+          return chatApi.getCandidateInquiryAttachmentLink(
             conversation.id,
             attachment.id
           );

@@ -1,5 +1,6 @@
 import { isValidSatang } from "@/domain/satang";
 import { isTerminalStatus } from "@/domain/questLifecycle";
+import { calculateQuestEscrow } from "../../createQuest/domain/createQuestModel";
 import {
   DEFAULT_PLATFORM_FEE_BASIS_POINTS,
   PARTIAL_GROUP_START_CONSENT_WINDOW_MS,
@@ -22,9 +23,9 @@ import {
   type QuestContract,
   type QuestDetailState,
   type QuestEditConsent,
-  type QuestEscrowSummary,
   type QuestPartialStartConsent,
   type QuestPublishCheck,
+  QuestPublishCheckSource,
   type QuestSettlementSummary,
   type QuestStatus as QuestStatusValue,
   type QuestTeam,
@@ -662,28 +663,6 @@ function stateForViewer(
   return result;
 }
 
-export function calculateEscrow(
-  rewardSatang: number,
-  headcount: number,
-  feeRateBasisPoints = DEFAULT_PLATFORM_FEE_BASIS_POINTS
-): QuestEscrowSummary {
-  const validReward = isValidSatang(rewardSatang) ? rewardSatang : 0;
-  const validHeadcount =
-    Number.isSafeInteger(headcount) && headcount > 0 ? headcount : 0;
-  const perWorkerFee = Math.ceil((validReward * feeRateBasisPoints) / 10000);
-  const rewardPool = validReward * validHeadcount;
-  const platformFee = perWorkerFee * validHeadcount;
-  return {
-    rewardPoolSatang: rewardPool,
-    platformFeeSatang: platformFee,
-    totalRequiredSatang: rewardPool + platformFee,
-    headcount: validHeadcount,
-    rewardSatangPerWorker: validReward,
-    platformFeeSatangPerWorker: perWorkerFee,
-    feeRateBasisPoints,
-  };
-}
-
 export function calculatePublishCheck(
   quest: QuestContract,
   feeRateBasisPoints: number
@@ -713,11 +692,13 @@ export function calculatePublishCheck(
     canPublish: blockers.length === 0,
     blockers,
     warnings,
-    escrow: calculateEscrow(
+    escrow: calculateQuestEscrow(
       quest.reward.rewardSatang,
       quest.headcount,
       feeRateBasisPoints
     ),
+    // The fixture adapters stand in for the server publish check.
+    source: QuestPublishCheckSource.SERVER,
   };
 }
 

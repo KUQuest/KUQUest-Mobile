@@ -9,6 +9,7 @@ import { authService } from "@/features/auth/AuthService";
 import { liveQuestService } from "@/features/questBoard/live/liveQuestService";
 import type { LiveQuestSnapshot } from "@/features/questBoard/live/liveQuestService";
 import SelectRosterRoute from "../select-roster";
+import { questApi } from "@/api/QuestApi";
 const mockBack = jest.fn();
 const mockPush = jest.fn();
 const mockReplace = jest.fn();
@@ -44,13 +45,19 @@ jest.mock("@/features/questBoard/live/liveQuestService", () => {
     ...actual,
     liveQuestService: {
       getLiveSnapshot: jest.fn(),
-      selectApplication: jest.fn(),
-      rejectApplication: jest.fn(),
-      selectCandidateTeam: jest.fn(),
-      rejectCandidateTeam: jest.fn(),
     },
   };
 });
+
+jest.mock("@/api/QuestApi", () => ({
+  ...jest.requireActual("@/api/QuestApi"),
+  questApi: {
+    selectApplication: jest.fn(),
+    rejectCandidateApplication: jest.fn(),
+    selectCandidateTeam: jest.fn(),
+    rejectCandidateTeam: jest.fn(),
+  },
+}));
 
 function createSnapshot(
   overrides: Partial<LiveQuestSnapshot> = {}
@@ -175,11 +182,11 @@ describe("SelectRosterRoute", () => {
     expect(
       getByText(questBoardMessages.th.confirmSelectCandidateTitle)
     ).toBeTruthy();
-    expect(liveQuestService.selectApplication).not.toHaveBeenCalled();
+    expect(questApi.selectApplication).not.toHaveBeenCalled();
     await fireEvent.press(
       getByRole("button", { name: groupQuestMessages.th.cancel })
     );
-    expect(liveQuestService.selectApplication).not.toHaveBeenCalled();
+    expect(questApi.selectApplication).not.toHaveBeenCalled();
 
     await fireEvent.press(getByTestId("select-roster-candidate-app-1-select"));
     await fireEvent.press(
@@ -187,7 +194,7 @@ describe("SelectRosterRoute", () => {
     );
 
     await waitFor(() => {
-      expect(liveQuestService.selectApplication).toHaveBeenCalledWith(
+      expect(questApi.selectApplication).toHaveBeenCalledWith(
         "quest-1",
         "app-1",
         expect.any(String)
@@ -224,7 +231,7 @@ describe("SelectRosterRoute", () => {
       capabilities: { ...base.capabilities, canRejectTeam: true },
     });
     (liveQuestService.getLiveSnapshot as jest.Mock).mockResolvedValue(snapshot);
-    (liveQuestService.rejectCandidateTeam as jest.Mock).mockResolvedValue({});
+    (questApi.rejectCandidateTeam as jest.Mock).mockResolvedValue({});
     const { getByTestId, getByText, getByRole } = await renderWithQueryClient(
       <>
         <SelectRosterRoute />
@@ -240,18 +247,18 @@ describe("SelectRosterRoute", () => {
     expect(
       getByText(questBoardMessages.th.confirmRejectTeamTitle)
     ).toBeTruthy();
-    expect(liveQuestService.rejectCandidateTeam).not.toHaveBeenCalled();
+    expect(questApi.rejectCandidateTeam).not.toHaveBeenCalled();
     await fireEvent.press(
       getByRole("button", { name: groupQuestMessages.th.cancel })
     );
-    expect(liveQuestService.rejectCandidateTeam).not.toHaveBeenCalled();
+    expect(questApi.rejectCandidateTeam).not.toHaveBeenCalled();
     await fireEvent.press(getByTestId("select-roster-team-team-1-reject"));
     await fireEvent.press(
       getByRole("button", { name: groupQuestMessages.th.reject })
     );
 
     await waitFor(() => {
-      expect(liveQuestService.rejectCandidateTeam).toHaveBeenCalledWith(
+      expect(questApi.rejectCandidateTeam).toHaveBeenCalledWith(
         "quest-1",
         "team-1",
         expect.any(String)
@@ -286,7 +293,7 @@ describe("SelectRosterRoute", () => {
     });
     (liveQuestService.getLiveSnapshot as jest.Mock).mockResolvedValue(snapshot);
     const failureMessage = "The team could not be rejected";
-    (liveQuestService.rejectCandidateTeam as jest.Mock).mockRejectedValue(
+    (questApi.rejectCandidateTeam as jest.Mock).mockRejectedValue(
       new Error(failureMessage)
     );
     const { getByTestId, getByText, getByRole, queryByText } =
@@ -310,7 +317,7 @@ describe("SelectRosterRoute", () => {
     );
 
     await waitFor(() => {
-      expect(liveQuestService.rejectCandidateTeam).toHaveBeenCalledWith(
+      expect(questApi.rejectCandidateTeam).toHaveBeenCalledWith(
         "quest-1",
         "team-1",
         expect.any(String)

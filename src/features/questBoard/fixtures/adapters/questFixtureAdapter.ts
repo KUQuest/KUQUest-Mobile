@@ -10,11 +10,11 @@ import {
 import { seedStates } from "../questSeeds";
 import { DEFAULT_PROTOTYPE_VIEWER_ID, PROTOTYPE_NOW } from "../constants";
 import { DEFAULT_PLATFORM_FEE_BASIS_POINTS } from "../../domain/constants";
+import { calculateQuestEscrow } from "../../../createQuest/domain/createQuestModel";
 import { clone } from "../../domain/questStateUtils";
 import { createPayloadBlockers, safeDate } from "../questValidation";
 import type { QuestFixtureCreateInput } from "../questValidation";
 import {
-  calculateEscrow,
   calculatePublishCheck,
   conversationFor,
   formatConsentCountdown as formatConsentCountdownPure,
@@ -700,7 +700,7 @@ export function createQuestFixtureAdapter(
         : null;
     },
     getEscrowSummary: (rewardSatang, headcount) =>
-      calculateEscrow(rewardSatang, headcount, feeRateBasisPoints),
+      calculateQuestEscrow(rewardSatang, headcount, feeRateBasisPoints),
     getSettlement: (questId, now = baseNow) => {
       const state = getInternal(questId);
       return state

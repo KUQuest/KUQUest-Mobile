@@ -354,6 +354,39 @@ describe("Create Quest model", () => {
       });
     });
 
+    // reward-money-contract.md: the Platform Fee is carved out of the inclusive
+    // Quest Funding Total. The net Reward is the greatest amount whose
+    // ceil(reward x feeRate) still fits the total, so nothing is added on top.
+    test.each([
+      { fundingTotal: 1, headcount: 1, reward: 0, fee: 1 },
+      { fundingTotal: 2, headcount: 2, reward: 1, fee: 1 },
+      { fundingTotal: 25000, headcount: 1, reward: 23809, fee: 1191 },
+      { fundingTotal: 12550, headcount: 3, reward: 11952, fee: 598 },
+    ])(
+      "carves the Platform Fee out of a $fundingTotal satang funding total",
+      ({ fundingTotal, headcount, reward, fee }) => {
+        const escrow = calculateQuestEscrow(fundingTotal, headcount, 500);
+
+        expect(escrow).toMatchObject({
+          rewardSatangPerWorker: reward,
+          platformFeeSatangPerWorker: fee,
+          rewardPoolSatang: reward * headcount,
+          platformFeeSatang: fee * headcount,
+          totalRequiredSatang: fundingTotal * headcount,
+        });
+        expect(reward + fee).toBe(fundingTotal);
+        // The required fee is the ceiling; any rounding remainder stays in the fee.
+        expect(Math.ceil((reward * 500) / 10_000)).toBeLessThanOrEqual(fee);
+        expect(
+          reward + 1 + Math.ceil(((reward + 1) * 500) / 10_000)
+        ).toBeGreaterThan(fundingTotal);
+      }
+    );
+
+    test("tags a draft-derived publish check as a client estimate", () => {
+      expect(getQuestPublishCheck(initialDraft).source).toBe("estimate");
+    });
+
     test("allows an image-free publish with a warning when required fields are valid", () => {
       const check = getQuestPublishCheck({
         ...initialDraft,
@@ -432,6 +465,7 @@ describe("Create Quest model", () => {
           platformFeeSatangPerWorker: 1000,
           feeRateBasisPoints: 200,
         },
+        source: "server",
       });
     });
 

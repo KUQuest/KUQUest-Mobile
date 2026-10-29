@@ -29,6 +29,7 @@ import {
 import { groupQuestMessages } from "@/locales/groupQuestMessages";
 import { liveQuestService } from "@/features/questBoard/live/liveQuestService";
 import HirerQuestManageRoute from "../manage";
+import { questApi } from "@/api/QuestApi";
 
 interface GestureMockChain {
   onUpdate: () => GestureMockChain;
@@ -104,13 +105,19 @@ jest.mock("@/features/questBoard/live/liveQuestService", () => {
     ...actual,
     liveQuestService: {
       getLiveSnapshot: jest.fn(),
-      createEditRequest: jest.fn(),
-      cancelQuest: jest.fn(),
-      getCancelPreview: jest.fn(),
-      selectApplication: jest.fn(),
     },
   };
 });
+
+jest.mock("@/api/QuestApi", () => ({
+  ...jest.requireActual("@/api/QuestApi"),
+  questApi: {
+    createEditRequest: jest.fn(),
+    cancelQuest: jest.fn(),
+    getCancelPreview: jest.fn(),
+    selectApplication: jest.fn(),
+  },
+}));
 
 function createSnapshot(
   overrides: Partial<LiveQuestSnapshot> = {}
@@ -228,7 +235,7 @@ describe("HirerQuestManageRoute condition edit", () => {
       reportable: [],
       items: [],
     });
-    (liveQuestService.cancelQuest as jest.Mock).mockResolvedValue({
+    (questApi.cancelQuest as jest.Mock).mockResolvedValue({
       paidSatang: 0,
       refundedSatang: 0,
     });
@@ -268,7 +275,7 @@ describe("HirerQuestManageRoute condition edit", () => {
     (liveQuestService.getLiveSnapshot as jest.Mock)
       .mockResolvedValueOnce(createSnapshot())
       .mockResolvedValue(pendingSnapshot);
-    (liveQuestService.createEditRequest as jest.Mock).mockResolvedValue(
+    (questApi.createEditRequest as jest.Mock).mockResolvedValue(
       pendingSnapshot.editRequest
     );
 
@@ -282,7 +289,7 @@ describe("HirerQuestManageRoute condition edit", () => {
     );
     await fireEvent.press(view.getByTestId("quest-condition-submit"));
 
-    expect(liveQuestService.createEditRequest).toHaveBeenCalledWith(
+    expect(questApi.createEditRequest).toHaveBeenCalledWith(
       "quest-1",
       { condition: { items: ["Finish the mural in blue", "Clean the wall"] } },
       expect.any(String)
@@ -514,14 +521,14 @@ describe("HirerQuestManageRoute condition edit", () => {
       affectedWorkerCount: 0,
       computedAt: "2026-10-01T03:00:00.000Z",
     };
-    (liveQuestService.getCancelPreview as jest.Mock)
+    (questApi.getCancelPreview as jest.Mock)
       .mockResolvedValueOnce({ ...preview, previewVersion: "v1" })
       .mockResolvedValue({
         ...preview,
         refundedSatang: 9_000,
         previewVersion: "v2",
       });
-    (liveQuestService.cancelQuest as jest.Mock)
+    (questApi.cancelQuest as jest.Mock)
       .mockRejectedValueOnce(new ApiError(409, "CANCEL_PREVIEW_STALE", "stale"))
       .mockResolvedValue({ paidSatang: 0, refundedSatang: 9_000 });
     const view = await render(
@@ -540,19 +547,15 @@ describe("HirerQuestManageRoute condition edit", () => {
     await fireEvent.press(await waitFor(confirm));
 
     await waitFor(() => {
-      expect(liveQuestService.cancelQuest).toHaveBeenCalledTimes(1);
+      expect(questApi.cancelQuest).toHaveBeenCalledTimes(1);
     });
-    expect((liveQuestService.cancelQuest as jest.Mock).mock.calls[0]?.[2]).toBe(
-      "v1"
-    );
+    expect((questApi.cancelQuest as jest.Mock).mock.calls[0]?.[2]).toBe("v1");
     await view.findByText(new RegExp(myQuestMessages.en.cancelPreviewStale));
     await fireEvent.press(await waitFor(confirm));
     await waitFor(() => {
-      expect(liveQuestService.cancelQuest).toHaveBeenCalledTimes(2);
+      expect(questApi.cancelQuest).toHaveBeenCalledTimes(2);
     });
-    expect((liveQuestService.cancelQuest as jest.Mock).mock.calls[1]?.[2]).toBe(
-      "v2"
-    );
+    expect((questApi.cancelQuest as jest.Mock).mock.calls[1]?.[2]).toBe("v2");
   });
 
   it("shows dispute for Hirer or assigned Worker on FAILED, but not Candidate or unassigned Worker", async () => {
@@ -849,9 +852,7 @@ describe("HirerQuestManageRoute condition edit", () => {
     const pendingSelection = new Promise<void>((resolve) => {
       finishSelection = resolve;
     });
-    (liveQuestService.selectApplication as jest.Mock).mockReturnValue(
-      pendingSelection
-    );
+    (questApi.selectApplication as jest.Mock).mockReturnValue(pendingSelection);
     const view = await render(
       <>
         <HirerQuestManageRoute />
@@ -867,7 +868,7 @@ describe("HirerQuestManageRoute condition edit", () => {
     expect(
       await view.findByText(groupQuestMessages.en.selectProposal)
     ).toBeTruthy();
-    expect(liveQuestService.selectApplication).not.toHaveBeenCalled();
+    expect(questApi.selectApplication).not.toHaveBeenCalled();
     await fireEvent.press(
       view.getByRole("button", { name: groupQuestMessages.en.selectProposal })
     );
@@ -877,7 +878,7 @@ describe("HirerQuestManageRoute condition edit", () => {
     expect(
       view.queryByRole("button", { name: groupQuestMessages.en.selectProposal })
     ).toBeNull();
-    expect(liveQuestService.selectApplication).toHaveBeenCalledTimes(1);
+    expect(questApi.selectApplication).toHaveBeenCalledTimes(1);
     await act(async () => {
       finishSelection();
     });
@@ -890,7 +891,7 @@ describe("HirerQuestManageRoute condition edit", () => {
     (liveQuestService.getLiveSnapshot as jest.Mock).mockResolvedValue(
       createSnapshot()
     );
-    (liveQuestService.cancelQuest as jest.Mock)
+    (questApi.cancelQuest as jest.Mock)
       .mockRejectedValueOnce(new Error("network"))
       .mockResolvedValue({ paidSatang: 0, refundedSatang: 0 });
     const view = await render(
@@ -907,9 +908,9 @@ describe("HirerQuestManageRoute condition edit", () => {
     await fireEvent.press(await view.findByTestId("hirer-manage-cancel"));
     await fireEvent.press(await view.findByTestId("cancel-guardrail-confirm"));
     await waitFor(() => {
-      expect(liveQuestService.cancelQuest).toHaveBeenCalledTimes(2);
+      expect(questApi.cancelQuest).toHaveBeenCalledTimes(2);
     });
-    const calls = (liveQuestService.cancelQuest as jest.Mock).mock.calls;
+    const calls = (questApi.cancelQuest as jest.Mock).mock.calls;
     expect(calls[0]?.[1]).toEqual(expect.any(String));
     expect(calls[0]?.[1]).toBe(calls[1]?.[1]);
   });
@@ -918,7 +919,7 @@ describe("HirerQuestManageRoute condition edit", () => {
     (liveQuestService.getLiveSnapshot as jest.Mock)
       .mockResolvedValueOnce(createSnapshot())
       .mockResolvedValue(pendingSnapshot);
-    (liveQuestService.createEditRequest as jest.Mock).mockResolvedValue(
+    (questApi.createEditRequest as jest.Mock).mockResolvedValue(
       pendingSnapshot.editRequest
     );
     const queryClient = new QueryClient({
@@ -956,7 +957,7 @@ describe("HirerQuestManageRoute condition edit", () => {
     expect(
       await view.findByTestId("hirer-condition-edit-pending-title")
     ).toBeTruthy();
-    expect(liveQuestService.createEditRequest).toHaveBeenCalledTimes(1);
+    expect(questApi.createEditRequest).toHaveBeenCalledTimes(1);
   });
 
   it("shows Back, not Retry, when the Quest is not found", async () => {

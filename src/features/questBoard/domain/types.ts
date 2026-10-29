@@ -277,6 +277,37 @@ export const QuestTeamRole = {
 } as const;
 export type QuestTeamRole = (typeof QuestTeamRole)[keyof typeof QuestTeamRole];
 
+/** Boolean Quest permission matrix for the viewer; computed by `deriveQuestCapabilities`. */
+export interface QuestPermissionFlags {
+  canJoin: boolean;
+  canApply: boolean;
+  canWithdrawApplication: boolean;
+  canCreateTeam: boolean;
+  canJoinTeam: boolean;
+  canUpdateTeam: boolean;
+  canLeaveTeam: boolean;
+  canRemoveTeamMember: boolean;
+  canRegenerateTeamCode: boolean;
+  canSubmitTeam: boolean;
+  canSelectCandidate: boolean;
+  canSelectTeam: boolean;
+  canRejectCandidate: boolean;
+  canRejectTeam: boolean;
+  canDecideUnderfilled: boolean;
+  canConsentUnderfilled: boolean;
+  canRequestEdit: boolean;
+  canRespondToEdit: boolean;
+  canReadWorkChat: boolean;
+  canWriteWorkChat: boolean;
+  canSubmitProof: boolean;
+  /** Required starter with an Active Assignment who has not recorded Start Work; the startTime gate is checked against the clock. */
+  canStartWork: boolean;
+  canConfirmCompletion: boolean;
+  canCancel: boolean;
+  canReviewProof: boolean;
+  canCreateReview: boolean;
+}
+
 export function isHirerActor(actor: unknown): actor is typeof QuestActor.HIRER {
   return actor === QuestActor.HIRER;
 }
@@ -406,11 +437,20 @@ export interface QuestEscrowSummary {
   feeRateBasisPoints: number;
 }
 
+export const QuestPublishCheckSource = {
+  SERVER: "server",
+  ESTIMATE: "estimate",
+} as const;
+export type QuestPublishCheckSource =
+  (typeof QuestPublishCheckSource)[keyof typeof QuestPublishCheckSource];
+
 export interface QuestPublishCheck {
   canPublish: boolean;
   blockers: string[];
   warnings: string[];
   escrow: QuestEscrowSummary;
+  /** `ESTIMATE` when computed on the client from a draft; `SERVER` when it reflects the server check. */
+  source: QuestPublishCheckSource;
 }
 
 export interface QuestSettlementSummary {

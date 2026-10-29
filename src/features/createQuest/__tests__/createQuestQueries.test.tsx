@@ -19,16 +19,15 @@ import {
 
 jest.mock("@/api/QuestApi", () => ({
   questApi: {
+    createQuest: jest.fn(),
     deleteQuestImage: jest.fn(),
     editQuest: jest.fn(),
+    publishQuest: jest.fn(),
     uploadQuestImages: jest.fn(),
   },
 }));
 jest.mock("@/features/questBoard/live/liveQuestService", () => ({
   liveQuestService: {
-    createQuest: jest.fn(),
-    editQuest: jest.fn(),
-    publishQuest: jest.fn(),
     uploadImages: jest.fn(),
   },
 }));
@@ -59,7 +58,7 @@ describe("Create Quest cache invalidation", () => {
     const walletKey = walletKeys.detail();
     queryClient.setQueryData(boardKey, []);
     queryClient.setQueryData(walletKey, { balance: 100 });
-    jest.mocked(liveQuestService.publishQuest).mockResolvedValue({} as never);
+    jest.mocked(questApi.publishQuest).mockResolvedValue({} as never);
     const { result } = await renderHook(() => usePublishQuestMutation(), {
       wrapper: createWrapper(queryClient),
     });
@@ -80,7 +79,7 @@ describe("Create Quest cache invalidation", () => {
     const walletKey = walletKeys.detail();
     queryClient.setQueryData(boardKey, []);
     queryClient.setQueryData(walletKey, { balance: 100 });
-    jest.mocked(liveQuestService.editQuest).mockResolvedValue({} as never);
+    jest.mocked(questApi.editQuest).mockResolvedValue({} as never);
     const { result } = await renderHook(() => usePublishEditQuestMutation(), {
       wrapper: createWrapper(queryClient),
     });
@@ -104,7 +103,7 @@ describe("Create Quest cache invalidation", () => {
     queryClient.setQueryData(boardKey, []);
     queryClient.setQueryData(editSourceKey, { id: "quest-1" });
     jest
-      .mocked(liveQuestService.createQuest)
+      .mocked(questApi.createQuest)
       .mockResolvedValue({ id: "quest-1" } as never);
     jest.mocked(questApi.editQuest).mockResolvedValue({} as never);
     const create = await renderHook(() => useCreateQuestMutation(), {

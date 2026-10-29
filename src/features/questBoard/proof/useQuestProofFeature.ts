@@ -4,7 +4,7 @@ import { useCallback, useEffect, useMemo, useState } from "react";
 import { showConfirmModal } from "@/components/ui/SweetAlert";
 import { useLocalSearchParams, useRouter } from "expo-router";
 
-import { createQuestIdempotencyKey } from "@/api/QuestApi";
+import { createQuestIdempotencyKey, questApi } from "@/api/QuestApi";
 import type { UploadAsset } from "@/api/fileUpload";
 import type { QuestV2ProofSubmission } from "@/api/questV2Contracts";
 import { useSessionQuery } from "@/features/auth/sessionQueries";
@@ -15,7 +15,6 @@ import { formatRelativeRemaining, getRouteParam } from "@/utils";
 import { getLocalizedErrorMessage } from "@/utils/error";
 import { goBackOrReplace } from "@/utils/navigation";
 
-import { liveQuestService } from "../live/liveQuestService";
 import {
   useConfirmCompletionMutation,
   useLiveQuestSnapshotQuery,
@@ -28,6 +27,7 @@ import {
   QuestProofStatus,
   QuestStatus,
 } from "../domain/types";
+import { isOwnProofSubmission } from "../domain/proofOwnership";
 
 interface QuestProofFeatureOptions {
   questId?: string;
@@ -40,11 +40,13 @@ function ownProof(
   viewerId: string
 ): QuestV2ProofSubmission | null {
   return (
-    snapshot.proofs.find(
-      (proof) =>
-        proof.submittedByUserId === viewerId ||
-        proof.workerId === viewerId ||
-        (snapshot.team?.id !== undefined && proof.teamId === snapshot.team.id)
+    snapshot.proofs.find((proof) =>
+      isOwnProofSubmission(proof, {
+        viewerId,
+        mode: snapshot.mode,
+        participation: snapshot.participation,
+        team: snapshot.team,
+      })
     ) ?? null
   );
 }
@@ -184,7 +186,7 @@ export function useQuestProofFeature({
       const normalizedNote = note.trim();
       let submission: QuestV2ProofSubmission;
       if (proof && isDraft) {
-        submission = await liveQuestService.updateProofDraft(
+        submission = await questApi.updateProofDraft(
           resolvedQuestId,
           proof.id,
           assets.length > 0
@@ -197,7 +199,7 @@ export function useQuestProofFeature({
         );
       } else {
         const uploadAssets = toUploadAssets(assets);
-        submission = await liveQuestService.createProofDraft(
+        submission = await questApi.createProofDraft(
           resolvedQuestId,
           uploadAssets.length > 0
             ? { assets: uploadAssets, description: normalizedNote || undefined }
@@ -242,7 +244,7 @@ export function useQuestProofFeature({
       let submission = proof;
       const normalizedNote = pendingNote.trim();
       if (submission && isDraft) {
-        submission = await liveQuestService.updateProofDraft(
+        submission = await questApi.updateProofDraft(
           resolvedQuestId,
           submission.id,
           pendingAssets.length > 0
@@ -258,7 +260,7 @@ export function useQuestProofFeature({
         if (uploadAssets.length === 0 && !normalizedNote) {
           throw new Error(messages.proofContentRequired);
         }
-        submission = await liveQuestService.createProofDraft(
+        submission = await questApi.createProofDraft(
           resolvedQuestId,
           uploadAssets.length > 0
             ? { assets: uploadAssets, description: normalizedNote || undefined }
@@ -283,7 +285,7 @@ export function useQuestProofFeature({
         await refreshAuthoritatively();
         throw new Error(messages.proofFilesUploadFailed);
       }
-      await liveQuestService.submitProofDraft(
+      await questApi.submitProofDraft(
         resolvedQuestId,
         submission.id,
         createQuestIdempotencyKey()
@@ -320,7 +322,7 @@ export function useQuestProofFeature({
     ) {
       return;
     }
-    await liveQuestService.deleteProofDraft(
+    await questApi.deleteProofDraft(
       resolvedQuestId,
       proof.id,
       createQuestIdempotencyKey()
@@ -347,7 +349,7 @@ export function useQuestProofFeature({
       }
       const asset = retryAssets[position] ?? draftAssets[position];
       if (!asset) throw new Error(workMessages.retryFailedProofFile);
-      await liveQuestService.updateProofDraft(
+      await questApi.updateProofDraft(
         resolvedQuestId,
         proof.id,
         {
@@ -384,7 +386,7 @@ export function useQuestProofFeature({
       const fileIds = proof.files.flatMap((file) =>
         file.position !== position && file.fileId ? [file.fileId] : []
       );
-      await liveQuestService.updateProofDraft(
+      await questApi.updateProofDraft(
         resolvedQuestId,
         proof.id,
         { fileIds },

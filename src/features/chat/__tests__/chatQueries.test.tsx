@@ -7,7 +7,6 @@ import {
   type ServerChatMessage,
   type ServerChatMessagePage,
 } from "@/api/ChatApi";
-import { liveQuestService } from "@/features/questBoard/live/liveQuestService";
 import {
   chatKeys,
   useChatNotificationConversationsQuery,
@@ -266,7 +265,7 @@ describe("chat message transport", () => {
     const attachmentId = "b199ae67-3939-4da3-8c78-2fa1c282926d";
     const sendMessage = jest.fn().mockResolvedValue(acceptedMessage);
     const inquirySend = jest
-      .spyOn(liveQuestService, "sendCandidateInquiryMessage")
+      .spyOn(chatApi, "sendCandidateInquiryMessage")
       .mockResolvedValue(acceptedMessage);
     const { result } = await renderHook(
       () =>

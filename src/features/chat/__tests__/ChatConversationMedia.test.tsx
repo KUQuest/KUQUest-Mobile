@@ -80,6 +80,12 @@ jest.mock("@/api/ChatApi", () => {
       getAttachmentLink: jest.fn(),
       uploadAttachment: jest.fn(),
       sendMessage: jest.fn(),
+      getCandidateInquiry: jest.fn(),
+      listCandidateInquiryParticipants: jest.fn(),
+      markCandidateInquiryRead: jest.fn(),
+      getCandidateInquiryAttachmentLink: jest.fn(),
+      uploadCandidateInquiryAttachment: jest.fn(),
+      sendCandidateInquiryMessage: jest.fn(),
       getWorkConversationEventsPath: (conversationId: string) =>
         `/api/v1/chat/conversations/${conversationId}/events`,
       getCandidateInquiryEventsPath: (conversationId: string) =>
@@ -94,13 +100,7 @@ jest.mock("@/features/questBoard/live/questEvents", () => ({
 jest.mock("@/features/questBoard/live/liveQuestService", () => ({
   liveQuestService: {
     getLiveSnapshot: jest.fn(),
-    getCandidateInquiry: jest.fn(),
-    listCandidateInquiryParticipants: jest.fn(),
     getCandidateInquiryMessages: jest.fn(),
-    markCandidateInquiryRead: jest.fn(),
-    getCandidateInquiryAttachmentLink: jest.fn(),
-    uploadCandidateInquiryAttachment: jest.fn(),
-    sendCandidateInquiryMessage: jest.fn(),
   },
 }));
 
@@ -197,7 +197,7 @@ describe("ChatConversationMedia", () => {
 
     it("uses candidate inquiry service when isCandidateInquiry is true", async () => {
       const spy = jest
-        .spyOn(liveQuestService, "getCandidateInquiryAttachmentLink")
+        .spyOn(chatApi, "getCandidateInquiryAttachmentLink")
         .mockResolvedValue({
           attachmentId: "att-inquiry-1",
           url: "https://cdn.example.com/inquiry-resolved.png",

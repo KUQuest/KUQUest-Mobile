@@ -11,6 +11,7 @@ import {
 import type { QuestV2Detail } from "@/api/questV2Contracts";
 import { ApiError } from "@/api/ApiClient";
 import { renderWithQueryClient } from "@/testing/queryTestUtils";
+import { questApi } from "@/api/QuestApi";
 
 type BeforeRemoveEvent = {
   preventDefault: jest.Mock;
@@ -71,6 +72,12 @@ jest.mock("@/features/auth/AuthService", () => ({
 jest.mock("../../live/liveQuestService", () => ({
   liveQuestService: {
     getLiveSnapshot: jest.fn(),
+  },
+}));
+
+jest.mock("@/api/QuestApi", () => ({
+  ...jest.requireActual("@/api/QuestApi"),
+  questApi: {
     respondToEditRequest: jest.fn(),
     confirmCompletion: jest.fn(),
     startWork: jest.fn(),
@@ -91,15 +98,15 @@ const mockedGetSnapshot =
     typeof liveQuestService.getLiveSnapshot
   >;
 const mockedRespondToEdit =
-  liveQuestService.respondToEditRequest as jest.MockedFunction<
-    typeof liveQuestService.respondToEditRequest
+  questApi.respondToEditRequest as jest.MockedFunction<
+    typeof questApi.respondToEditRequest
   >;
 const mockedConfirmCompletion =
-  liveQuestService.confirmCompletion as jest.MockedFunction<
-    typeof liveQuestService.confirmCompletion
+  questApi.confirmCompletion as jest.MockedFunction<
+    typeof questApi.confirmCompletion
   >;
-const mockedStartWork = liveQuestService.startWork as jest.MockedFunction<
-  typeof liveQuestService.startWork
+const mockedStartWork = questApi.startWork as jest.MockedFunction<
+  typeof questApi.startWork
 >;
 
 type SnapshotOverrides = Omit<

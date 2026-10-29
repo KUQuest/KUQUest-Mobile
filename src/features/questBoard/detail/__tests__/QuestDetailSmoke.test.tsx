@@ -48,11 +48,17 @@ let mockExposeLiveSnapshot = false;
 jest.mock("../../live/liveQuestService", () => ({
   liveQuestService: {
     getQuestDetail: (...args: unknown[]) => mockGetQuestDetail(...args),
-    joinCandidateTeam: (...args: unknown[]) => mockJoinCandidateTeam(...args),
     joinQuest: (...args: unknown[]) => mockJoinQuest(...args),
     get getLiveSnapshot() {
       return mockExposeLiveSnapshot ? mockGetLiveSnapshot : undefined;
     },
+  },
+}));
+
+jest.mock("@/api/QuestApi", () => ({
+  ...jest.requireActual("@/api/QuestApi"),
+  questApi: {
+    joinCandidateTeam: (...args: unknown[]) => mockJoinCandidateTeam(...args),
   },
 }));
 

@@ -3,7 +3,7 @@ import { File } from "expo-file-system";
 import * as ImagePicker from "expo-image-picker";
 
 import { ApiError } from "@/api/ApiClient";
-import { liveQuestService } from "@/features/questBoard/live/liveQuestService";
+import { questApi } from "@/api/QuestApi";
 import { SweetAlertHost } from "@/components/ui/SweetAlert";
 import { renderWithQueryClient } from "@/testing/queryTestUtils";
 import { workerSnapshot } from "@/testing/workerSnapshotFixtures";
@@ -13,8 +13,9 @@ import { WorkerProofForm } from "../components/WorkerProofForm";
 jest.mock("@/features/preferences/localeStore", () => ({
   useLocale: () => ({ locale: "en" }),
 }));
-jest.mock("@/features/questBoard/live/liveQuestService", () => ({
-  liveQuestService: {
+jest.mock("@/api/QuestApi", () => ({
+  ...jest.requireActual("@/api/QuestApi"),
+  questApi: {
     createProofDraft: jest.fn(),
     updateProofDraft: jest.fn(),
     deleteProofDraft: jest.fn(),
@@ -49,7 +50,7 @@ jest.mock("expo-image-picker", () => ({
 }));
 
 const mockedFilePicker = jest.mocked(File.pickFileAsync);
-const mockedService = jest.mocked(liveQuestService);
+const mockedQuestApi = jest.mocked(questApi);
 const mockedPicker = jest.mocked(ImagePicker.launchImageLibraryAsync);
 
 const submittable = workerSnapshot({
@@ -178,11 +179,11 @@ describe("WorkerProofForm", () => {
         },
       ],
     });
-    mockedService.createProofDraft.mockResolvedValue({
+    mockedQuestApi.createProofDraft.mockResolvedValue({
       id: "draft-1",
       files: [{ uploadStatus: "PROOF_FILE_READY" }],
     } as never);
-    mockedService.submitProofDraft.mockResolvedValue({
+    mockedQuestApi.submitProofDraft.mockResolvedValue({
       id: "draft-1",
     } as never);
     const onSubmitted = jest.fn();
@@ -209,7 +210,7 @@ describe("WorkerProofForm", () => {
       screen.getByLabelText("Work description (optional)"),
       "  Printed and delivered.  "
     );
-    expect(mockedService.submitProofDraft).not.toHaveBeenCalled();
+    expect(mockedQuestApi.submitProofDraft).not.toHaveBeenCalled();
     await fireEvent.press(screen.getByRole("button", { name: "Submit proof" }));
     expect(screen.getByText("Send proof?")).toBeTruthy();
     expect(
@@ -217,12 +218,12 @@ describe("WorkerProofForm", () => {
     ).toBeTruthy();
     await fireEvent.press(screen.getByRole("button", { name: "Cancel" }));
     expect(screen.queryByText("Send proof?")).toBeNull();
-    expect(mockedService.submitProofDraft).not.toHaveBeenCalled();
+    expect(mockedQuestApi.submitProofDraft).not.toHaveBeenCalled();
     await fireEvent.press(screen.getByRole("button", { name: "Submit proof" }));
     await fireEvent.press(screen.getByRole("button", { name: "Confirm" }));
 
     await waitFor(() => expect(onSubmitted).toHaveBeenCalled());
-    expect(mockedService.createProofDraft).toHaveBeenCalledWith(
+    expect(mockedQuestApi.createProofDraft).toHaveBeenCalledWith(
       "quest-1",
       {
         assets: [
@@ -233,7 +234,7 @@ describe("WorkerProofForm", () => {
       },
       expect.any(String)
     );
-    expect(mockedService.submitProofDraft).toHaveBeenCalledWith(
+    expect(mockedQuestApi.submitProofDraft).toHaveBeenCalledWith(
       "quest-1",
       "draft-1",
       expect.any(String)
@@ -278,7 +279,7 @@ describe("WorkerProofForm", () => {
         },
       ],
     });
-    mockedService.createProofDraft.mockResolvedValue({
+    mockedQuestApi.createProofDraft.mockResolvedValue({
       id: "draft-1",
       files: [{ uploadStatus: "PROOF_FILE_FAILED" }],
     } as never);
@@ -305,7 +306,7 @@ describe("WorkerProofForm", () => {
         )
       ).toBeTruthy()
     );
-    expect(mockedService.submitProofDraft).not.toHaveBeenCalled();
+    expect(mockedQuestApi.submitProofDraft).not.toHaveBeenCalled();
     expect(onSubmitted).not.toHaveBeenCalled();
     expect(screen.getByDisplayValue("Done")).toBeTruthy();
   });
@@ -313,7 +314,7 @@ describe("WorkerProofForm", () => {
     [
       "rejects the upload",
       () =>
-        mockedService.createProofDraft.mockRejectedValue(
+        mockedQuestApi.createProofDraft.mockRejectedValue(
           new ApiError(
             415,
             "PROOF_FILE_TYPE_NOT_SUPPORTED",
@@ -324,7 +325,7 @@ describe("WorkerProofForm", () => {
     [
       "keeps a rejected file in the draft",
       () =>
-        mockedService.createProofDraft.mockResolvedValue({
+        mockedQuestApi.createProofDraft.mockResolvedValue({
           id: "draft-1",
           files: [
             {
@@ -361,7 +362,7 @@ describe("WorkerProofForm", () => {
     await waitFor(() =>
       expect(screen.getByText(workerWorkMessages.en.fileRejected)).toBeTruthy()
     );
-    expect(mockedService.submitProofDraft).not.toHaveBeenCalled();
+    expect(mockedQuestApi.submitProofDraft).not.toHaveBeenCalled();
     expect(screen.getByText("1/5 files")).toBeTruthy();
   });
   it("downscales a photo above 25 MP before uploading it", async () => {
@@ -379,11 +380,11 @@ describe("WorkerProofForm", () => {
         },
       ],
     });
-    mockedService.createProofDraft.mockResolvedValue({
+    mockedQuestApi.createProofDraft.mockResolvedValue({
       id: "draft-1",
       files: [{ fileId: "file-1", uploadStatus: "PROOF_FILE_READY" }],
     } as never);
-    mockedService.submitProofDraft.mockResolvedValue({
+    mockedQuestApi.submitProofDraft.mockResolvedValue({
       id: "draft-1",
     } as never);
 
@@ -396,12 +397,12 @@ describe("WorkerProofForm", () => {
     await fireEvent.press(screen.getByRole("button", { name: "Confirm" }));
 
     await waitFor(() =>
-      expect(mockedService.submitProofDraft).toHaveBeenCalled()
+      expect(mockedQuestApi.submitProofDraft).toHaveBeenCalled()
     );
     const [size] = mockResize.mock.calls[0];
     expect(size.width * size.height).toBeLessThanOrEqual(25_000_000);
     expect(size.width / size.height).toBeCloseTo(4592 / 8160, 3);
-    expect(mockedService.createProofDraft).toHaveBeenCalledWith(
+    expect(mockedQuestApi.createProofDraft).toHaveBeenCalledWith(
       "quest-1",
       {
         assets: [
@@ -451,13 +452,13 @@ describe("WorkerProofForm", () => {
         },
       ],
     });
-    mockedService.updateProofDraft.mockResolvedValue({
+    mockedQuestApi.updateProofDraft.mockResolvedValue({
       id: "draft-1",
       files: [
         { fileId: "file-1", position: 0, uploadStatus: "PROOF_FILE_READY" },
       ],
     } as never);
-    mockedService.submitProofDraft.mockResolvedValue({
+    mockedQuestApi.submitProofDraft.mockResolvedValue({
       id: "draft-1",
     } as never);
     const onSubmitted = jest.fn();
@@ -471,7 +472,7 @@ describe("WorkerProofForm", () => {
     await fireEvent.press(screen.getByRole("button", { name: "Confirm" }));
 
     await waitFor(() => expect(onSubmitted).toHaveBeenCalled());
-    expect(mockedService.updateProofDraft).toHaveBeenCalledWith(
+    expect(mockedQuestApi.updateProofDraft).toHaveBeenCalledWith(
       "quest-1",
       "draft-1",
       {
@@ -487,9 +488,9 @@ describe("WorkerProofForm", () => {
       },
       expect.any(String)
     );
-    expect(mockedService.createProofDraft).not.toHaveBeenCalled();
-    expect(mockedService.deleteProofDraft).not.toHaveBeenCalled();
-    expect(mockedService.submitProofDraft).toHaveBeenCalledWith(
+    expect(mockedQuestApi.createProofDraft).not.toHaveBeenCalled();
+    expect(mockedQuestApi.deleteProofDraft).not.toHaveBeenCalled();
+    expect(mockedQuestApi.submitProofDraft).toHaveBeenCalledWith(
       "quest-1",
       "draft-1",
       expect.any(String)
@@ -510,7 +511,7 @@ describe("WorkerProofForm", () => {
         },
       ],
     });
-    mockedService.createProofDraft.mockResolvedValue({
+    mockedQuestApi.createProofDraft.mockResolvedValue({
       id: "draft-1",
       files: [{ fileId: null, uploadStatus: "PROOF_FILE_READY" }],
     } as never);
@@ -526,7 +527,7 @@ describe("WorkerProofForm", () => {
     await waitFor(() =>
       expect(screen.getByTestId("worker-proof-notice")).toBeTruthy()
     );
-    expect(mockedService.submitProofDraft).not.toHaveBeenCalled();
+    expect(mockedQuestApi.submitProofDraft).not.toHaveBeenCalled();
   });
 
   it("renders nothing while the Worker cannot submit proof", async () => {
@@ -617,7 +618,7 @@ describe("WorkerProofForm", () => {
   });
 
   it("submits an existing ready draft without local file copies", async () => {
-    mockedService.submitProofDraft.mockResolvedValue({
+    mockedQuestApi.submitProofDraft.mockResolvedValue({
       id: "draft-ready",
     } as never);
     const onSubmitted = jest.fn();
@@ -661,13 +662,13 @@ describe("WorkerProofForm", () => {
     await fireEvent.press(screen.getByRole("button", { name: "Confirm" }));
 
     await waitFor(() => expect(onSubmitted).toHaveBeenCalled());
-    expect(mockedService.submitProofDraft).toHaveBeenCalledWith(
+    expect(mockedQuestApi.submitProofDraft).toHaveBeenCalledWith(
       "quest-1",
       "draft-ready",
       expect.any(String)
     );
-    expect(mockedService.createProofDraft).not.toHaveBeenCalled();
-    expect(mockedService.updateProofDraft).not.toHaveBeenCalled();
+    expect(mockedQuestApi.createProofDraft).not.toHaveBeenCalled();
+    expect(mockedQuestApi.updateProofDraft).not.toHaveBeenCalled();
   });
 
   it("removes an existing server proof file", async () => {
@@ -706,12 +707,12 @@ describe("WorkerProofForm", () => {
       }),
       onSubmitted
     );
-    mockedService.updateProofDraft.mockResolvedValue({} as never);
+    mockedQuestApi.updateProofDraft.mockResolvedValue({} as never);
 
     await fireEvent.press(screen.getByTestId("worker-proof-remove-server-0"));
 
     await waitFor(() =>
-      expect(mockedService.updateProofDraft).toHaveBeenCalledWith(
+      expect(mockedQuestApi.updateProofDraft).toHaveBeenCalledWith(
         "quest-1",
         "draft-ready",
         { fileIds: [] },
