@@ -61,18 +61,16 @@ reason to weaken either contract.
 - `src/app/(tabs)/chat.tsx` and `src/app/(tabs)/chat/[id].tsx` — Chat inbox and conversation.
 - `src/app/(tabs)/profile.tsx` — Student Profile.
 - `src/app/quest/[id].tsx` — Quest Detail.
-- `src/app/quest/[id]/manage.tsx` — Hirer quest management (cancel, chat, proof review, candidate/team selection fallback). Reached from My Quests (`MyQuestsScreen.openManageQuest`) and live Home Active Quest cards; fixture cards continue to open the Quest Detail preview.
+- `src/app/quest/[id]/manage.tsx` — Hirer quest management (cancel, chat, proof review, candidate/team selection fallback). Reached from My Quests (`MyQuestsScreen.openManageQuest`) and live Home Active Quest cards.
 - `src/app/quest/[id]/select-roster.tsx` — Hirer Quest roster: assigned Workers with profile access for every mode, plus Candidate/Candidate Team select and reject for a CANDIDATE-mode quest. Reached from Home's Worker banners and applicant items in Needs your attention.
 - `src/app/quest/[id]/work.tsx` — Worker Work Hub: one page per Quest for status, inline proof submission, completion, edit responses, conditions, and chat.
-- `src/app/quest/[id]/proof.tsx` — Hirer-side proof screen; in the Worker workspace it redirects to the Work Hub, where proof is submitted inline.
 - `src/app/quest/[id]/proof-review.tsx` — Hirer proof review list: one row per Assignment (or the selected Candidate Team for `GROUP + CANDIDATE`), `PROOF_PENDING` first; each pending Proof Submission opens the review Popup. Reached from Home and from Quest management.
 - `src/app/quest/[id]/inquiry/[conversationId].tsx` — Candidate Inquiry conversation detail.
 - `src/app/quest/[id]/team.tsx` — Worker Quest Team screen for a `GROUP + CANDIDATE` Quest: create, join by Join Code, rename, roster, leave/remove, proposal, and submit. Reached from the Quest Detail team card; reads the same live snapshot as Quest Detail, so Quest and Candidate roster WebSocket invalidations refresh it.
-- Quest Board implementation and deterministic local states: `src/features/questBoard/board/QuestBoardScreen.tsx` and `src/features/questBoard/fixtures/questBoardHarness.ts`.
+- Quest Board implementation: `src/features/questBoard/board/QuestBoardScreen.tsx`.
 - `src/app/profile/edit/index.tsx` and `src/app/profile/edit/[section].tsx` — Profile editing.
 - `src/app/settings.tsx` — Settings.
 - `src/app/report.tsx` — Report flow.
-- `src/app/dev/import-session.tsx` — development-only session import; never treat it as a production flow.
 
 The route tree currently has no dedicated route file for Sent Work, Wallet/Conversion/Payout, Rating Review action, or Admin operations. Verify code and fixtures before claiming one exists; the QA checklist records unverified surfaces as explicit gaps.
 
@@ -81,12 +79,10 @@ The route tree currently has no dedicated route file for Sent Work, Wallet/Conve
 `src/features/` owns vertical slices. Keep feature-local components, types, styles, adapters, and tests together.
 
 - `src/features/*/api/` — per-feature TanStack Query key factories and hooks; `src/features/wallet/api/walletQueries.ts` is the canonical example.
-- `src/features/questBoard/domain/` — pure Quest reducer and selectors with no I/O.
-- `src/features/questBoard/fixtures/` — demo and seed data consumed by `questFixtureAdapter.ts`.
-- `src/features/questBoard/store/` — Zustand/vanilla ownership of current Quest state (`questStore.ts`) and injectable clock state (`questClockStore.ts`).
+- `src/features/questBoard/domain/` — pure Quest types, capability rules, and proof ownership with no I/O.
 - `auth/` — Better Auth session, SecureStore, native Google Sign-In, auth gate, login, routing destination.
 - `onboarding/` — Academic Registration validation, steps, persistence coordinator, inputs/selects/checkbox/file-size modal.
-- `questBoard/` — Quest Board, Quest Detail, Quest lifecycle adapter, workflow projections, fixtures, prototype harness, proof/team/candidate/partial-consent sheets.
+- `questBoard/` — Quest Board, Quest Detail, live Quest service and snapshot projections, proof/team/candidate/partial-consent sheets.
 - `myQuests/` — Hirer My Quests projections, status views, funding summary integration, and the shared Worker snapshot query used by `workerWork/`.
 - `createQuest/` — the three-step Quest draft, publish, and server-edit flow.
   `domain/` owns draft rules; `api/` owns queries and Quest V2 DTO adapters;
@@ -98,11 +94,10 @@ The route tree currently has no dedicated route file for Sent Work, Wallet/Conve
 - `profileEdit/` — editable basics, Experience, Portfolio, Certificates, validation and save behavior.
 - `settings/` — account/settings/help/preferences surface.
 - `report/` — Report form, categories, validation and submit state.
-- `home/` — Hirer Workspace Home, including its loading state and Quest carousel. `api/homeQueries.ts` derives attention from all active Quests while the carousel stays capped at five; fixture cards open Quest Detail preview, not live-only actions.
+- `home/` — Hirer Workspace Home, including its loading state and Quest carousel. `api/homeQueries.ts` derives attention from all active Quests while the carousel stays capped at five.
 - `workerHome/` — Worker Workspace Home screen with real assignment and board endpoints, quick stats, and available quests feed.
 - `workerWork/` — Worker Work Management (the `my-quests` tab in the Worker workspace), which triages live Assignment snapshots into active/history and opens each Quest's Work Hub, plus the inline `WorkerProofForm` rendered by the Work Hub.
 - `wallet/` — Money tab (`WalletScreen`: balances, transaction history, Earnings transfer), Top-up quote and payment flow, `walletModule.ts` Top-up and Earnings Conversion rules. No in-app Payout surface exists (the Quest Board wallet overview and its Payout modal were removed); `WalletApi` still exposes the payout transport.
-- `roleplay/` — development-only Roleplay prototype screen, prototype persona switching, four quest fixture scenarios, mock view-model store, candidate/team/consent actions dispatched through the questBoard fixture adapter.
 - `preferences/` — locale preference store (`localeStore.ts`); owns the persisted `kuquest_user_locale` value.
 - `workspace/` — Hirer/Worker role workspace store (`roleWorkspaceStore.ts`); owns the persisted `kuquest_active_workspace` value.
 - `navigation/` — navigation chrome UI store (`navigationUiStore.ts`); owns bottom-nav compactness, profile top-bar visibility, and scroll accumulation. Scroll owners: `home/`, `questBoard/`, `chat/`, `profile/`, `workerHome/`, `workerWork/`, and `myQuests/screens/`.
@@ -132,20 +127,15 @@ For Quest behavior, follow the owning subfeature path instead of guessing:
 
 - `src/features/questBoard/domain/types.ts` owns Quest domain types and compatibility values; `src/features/questBoard/live/liveQuestTypes.ts` owns live transport snapshots and capabilities.
 - `src/features/questBoard/api/questBoardQueries.ts` and `src/features/questBoard/live/liveQuestService.ts` own production query/service boundaries.
-- `src/features/questBoard/fixtures/adapters/questFixtureAdapter.ts` is the deterministic local state/action adapter used by prototype flows and tests.
-- `src/features/questBoard/workflow/questWorkflow.ts` projects fixture state into Board, Detail, My Quests, settlement, conversation capability, and action surfaces.
-- `src/features/questBoard/fixtures/questBoardHarness.ts` exposes Board preview states: populated, loading, empty, error, pending, accepted, full, and closed.
-- `src/features/questBoard/fixtures/questFixtures.ts` owns seeded scenario data; it is test/prototype evidence, not proof that the production API supports every scenario.
-- `src/components/ui/prototypeMenuData.ts` and `PrototypeMenu.tsx` own the prototype scenario/persona menu.
 
-When a behavior exists only in fixtures, label it as prototype coverage. Do not present it as a production API guarantee.
+There is no client-side fixture lifecycle: the former `fixtures/` adapter, `workflow/` projections, Board/Detail `previewState`, prototype scenario menu, and dev Roleplay simulator were removed on 2026-10-29. Every Quest surface reads the live snapshot or public detail; tests build state with inline builders, live snapshots, or mocked `questApi` calls.
 
 ## Compatibility and rulebook drift already present
 
 The rulebook is canonical, but current source contains compatibility/legacy values. Preserve them while tracing callsites and tests; migrate deliberately rather than deleting them because they look non-canonical.
 
 - `QuestStatus` contains legacy/sub-state values such as `QUEST_AWAITING_*`, `QUEST_SUBMITTED`, `QUEST_APPROVED`, `QUEST_REWORK`, `QUEST_DISPUTED`, and `QUEST_HIDDEN`; the target Quest lifecycle still has exactly seven canonical states.
-- `QuestCandidateMode.NO_CANDIDATE` remains in source and fixtures; the target domain term is `FIRST_COME_FIRST_SERVED`.
+- `NO_CANDIDATE` is gone from source: `QuestBoardQuest` carries the contract values `mode` (`QuestMode`: `FIRST_COME_FIRST_SERVED | CANDIDATE`) and `participation` (`QuestParticipation`: `SINGLE | GROUP`) unchanged from the transport. Only the mirrored `docs/api/api.yaml` and rulebook text still quote `NO_CANDIDATE`. Board list rows are `QuestBoardCard` (no description, criteria, proof requirement, or status); detail reads are `QuestBoardQuest`, whose `acceptedParticipants` is absent on the Hirer's canonical read and supplied by the detail projection from the roster.
 - `QuestProofStatus.PROOF_REJECTED` and `PROOF_AUTO_APPROVED`, plus `REWORK_PROOF` and `DEFAULT_REWORK_LIMIT`, remain in the adapter/types while the target contract uses `PROOF_NOT_APPROVED`, server auto-approval, and no rework cycle.
 - `EDIT_CONSENT_WINDOW_MS` and `PARTIAL_GROUP_START_CONSENT_WINDOW_MS` are currently five minutes in the adapter, while the rulebook/spec target is ten minutes. This is a contract discrepancy requiring focused diagnosis and tests; do not silently rewrite or remove the existing tests.
 

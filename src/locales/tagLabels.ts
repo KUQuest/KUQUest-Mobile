@@ -1,5 +1,5 @@
 import type { TagItem } from "@/api/QuestApi";
-import type { QuestBoardQuest } from "@/features/questBoard/domain/types";
+import type { QuestBoardSummary } from "@/features/questBoard/domain/types";
 import type { SupportedLocale } from "./locale";
 
 export function getTagLabel(
@@ -19,11 +19,11 @@ export function getTagLabelById(
   return tag ? getTagLabel(tag, locale) : fallback;
 }
 
-export function localizeQuestBoardQuest(
-  quest: QuestBoardQuest,
+export function localizeQuestBoardQuest<T extends QuestBoardSummary>(
+  quest: T,
   tags: readonly TagItem[],
   locale: SupportedLocale
-): QuestBoardQuest {
+): T {
   if (quest.tags.length === 0) return quest;
   const localizedTag = getTagLabelById(
     tags,

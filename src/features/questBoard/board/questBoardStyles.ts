@@ -4,9 +4,6 @@ const styles = {
   boardIntro: "pb-ku-md pt-ku-sm",
   boardIntroRow: "items-start flex-row justify-between",
   boardIntroActions: "items-center flex-row ml-ku-sm",
-  roleplayShortcut:
-    "items-center bg-ku-surface-accent border-ku-border-accent border min-h-[44px] justify-center mr-ku-sm px-ku-10 rounded-ku-pill",
-  roleplayShortcutText: "font-ku-semibold text-ku-label text-ku-primary",
   boardIntroCopy: "flex-1 min-w-0 pr-ku-sm",
   boardTitle: "text-ku-text-strong font-ku-bold text-ku-title",
   searchField:

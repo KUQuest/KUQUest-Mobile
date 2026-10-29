@@ -1,40 +1,24 @@
 {
-  "total": 227,
+  "total": 120,
   "top": [
     {
+      "file": "src/features/questBoard/domain/questCapabilities.ts",
+      "count": 38
+    },
+    {
       "file": "src/features/questBoard/live/liveQuestService.ts",
-      "count": 65
-    },
-    {
-      "file": "src/features/questBoard/fixtures/questReducer.ts",
-      "count": 40
-    },
-    {
-      "file": "src/features/questBoard/fixtures/questFixtures.ts",
-      "count": 25
+      "count": 23
     },
     {
       "file": "src/domain/questLifecycle.ts",
       "count": 16
     },
     {
-      "file": "src/features/questBoard/fixtures/adapters/questFixtureAdapter.ts",
-      "count": 9
-    },
-    {
-      "file": "src/features/questBoard/fixtures/questSeeds.ts",
-      "count": 9
-    },
-    {
-      "file": "src/api/QuestApi.ts",
-      "count": 7
-    },
-    {
-      "file": "src/features/questBoard/fixtures/questValidation.ts",
-      "count": 7
-    },
-    {
       "file": "src/testing/workerSnapshotFixtures.ts",
+      "count": 6
+    },
+    {
+      "file": "src/utils/error.ts",
       "count": 6
     },
     {
@@ -46,20 +30,36 @@
       "count": 4
     },
     {
-      "file": "src/features/questBoard/api/questBoardQueries.ts",
-      "count": 4
-    },
-    {
-      "file": "src/features/questBoard/workflow/questWorkflow.ts",
-      "count": 4
-    },
-    {
-      "file": "src/features/roleplay/RoleplayScreen.tsx",
-      "count": 4
-    },
-    {
       "file": "src/features/questBoard/detail/questDetailActions.ts",
       "count": 3
+    },
+    {
+      "file": "src/features/home/api/homeQueries.ts",
+      "count": 2
+    },
+    {
+      "file": "src/features/questBoard/domain/proofOwnership.ts",
+      "count": 2
+    },
+    {
+      "file": "src/features/questBoard/review/components/ProofReviewPanel.tsx",
+      "count": 2
+    },
+    {
+      "file": "src/features/questBoard/teamAssemble/components/CandidateReviewSheet.tsx",
+      "count": 2
+    },
+    {
+      "file": "src/features/workerWork/api/workerWorkQueries.ts",
+      "count": 2
+    },
+    {
+      "file": "src/features/questBoard/api/questBoardQueries.ts",
+      "count": 1
+    },
+    {
+      "file": "src/features/questBoard/board/components/QuestCard.tsx",
+      "count": 1
     }
   ]
 }

@@ -1,6 +1,7 @@
 import {
   QuestActor,
-  QuestCandidateMode,
+  QuestMode,
+  QuestParticipation,
   QuestStatus,
   type QuestBoardQuest,
 } from "../../domain/types";
@@ -29,11 +30,9 @@ function makeQuest(status: QuestStatus): QuestBoardQuest {
     postedAt: "2026-09-20T09:00:00.000Z",
     location: "KU Library",
     locationMode: "on-campus",
-    participationMode: "single",
-    candidateMode: QuestCandidateMode.NO_CANDIDATE,
+    participation: QuestParticipation.SINGLE,
+    mode: QuestMode.FIRST_COME_FIRST_SERVED,
     creator: { name: "Hirer" },
-    studentInterestMatch: false,
-    ownerStudentId: "hirer-1",
     status,
   };
 }

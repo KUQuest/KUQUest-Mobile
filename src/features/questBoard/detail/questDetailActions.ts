@@ -3,7 +3,6 @@ import type { QuestBoardMessages } from "@/locales/questBoardMessages";
 import type { QuestDetailProjectionCapabilities } from "./questDetailProjection";
 import type { LiveQuestSnapshot } from "../live/liveQuestService";
 import type { QuestBoardQuest } from "../domain/types";
-import type { QuestActionResult } from "../fixtures/adapters/questFixtureAdapter";
 import type { QuestDetailSurfaceTransitions } from "./useQuestDetailSurfaceState";
 export interface QuestDetailLiveActionContext {
   questId?: string;
@@ -15,13 +14,6 @@ export interface QuestDetailLiveActionContext {
   liveSnapshot: LiveQuestSnapshot | null;
 }
 
-export interface QuestDetailPreviewActionContext {
-  questId?: string;
-  viewerId: string;
-  messages: QuestBoardMessages;
-  transitions: QuestDetailSurfaceTransitions;
-  candidateGroup: boolean;
-}
 export function getQuestDetailLiveTeam(
   snapshot: LiveQuestSnapshot | null
 ): NonNullable<LiveQuestSnapshot["team"]> | null {
@@ -52,25 +44,4 @@ export interface QuestDetailLiveActions {
     name: string;
     sizeBytes?: number;
   }>;
-}
-
-export interface QuestDetailPreviewActions {
-  directJoin: () => QuestActionResult;
-  apply: () => QuestActionResult;
-  withdraw: () => QuestActionResult;
-  createTeam: () => QuestActionResult;
-  inviteMembers: (memberIds: string[]) => QuestActionResult | undefined;
-  submitTeam: (teamId: string) => QuestActionResult;
-  respondInvitation: (
-    invitationId: string,
-    accept: boolean
-  ) => QuestActionResult;
-  votePartialStart: (approve: boolean) => QuestActionResult;
-  selectProposal: (proposalId: string) => QuestActionResult;
-  rejectProposal: (proposalId: string) => QuestActionResult;
-  searchMembers: (
-    questId: string,
-    query: string,
-    leaderId: string
-  ) => { id: string; workerId: string; displayName: string }[];
 }

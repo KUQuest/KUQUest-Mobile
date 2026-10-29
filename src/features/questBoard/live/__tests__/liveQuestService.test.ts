@@ -1,5 +1,10 @@
 import { resetServerClock, syncServerClock } from "@/api/serverClock";
-import { liveQuestService } from "../liveQuestService";
+import {
+  canonicalToQuestBoardQuest,
+  cardToQuestBoardCard,
+  liveQuestService,
+  publicDetailToQuestBoardQuest,
+} from "../liveQuestService";
 import { getQuestDetailProjection } from "../../detail/questDetailProjection";
 import { ApiError } from "@/api/ApiClient";
 import { questApi } from "@/api/QuestApi";
@@ -76,7 +81,7 @@ describe("LiveQuestService", () => {
   beforeEach(() => {
     jest.clearAllMocks();
   });
-  it("maps Board Hirer profile ids to ownerStudentId and leaves absent profiles empty", async () => {
+  it("maps Board Hirer profile ids to ownerStudentId and leaves absent profiles undefined", async () => {
     const cards: QuestV2BoardCard[] = [
       {
         id: "quest-1",
@@ -127,8 +132,112 @@ describe("LiveQuestService", () => {
 
     expect(quests.map((quest) => quest.ownerStudentId)).toEqual([
       "00000000-0000-4000-8000-000000000001",
-      "",
+      undefined,
     ]);
+  });
+
+  it("maps Board cards without inventing detail-only fields or a status", () => {
+    const card: QuestV2BoardCard = {
+      id: "quest-card-1",
+      title: "Group review Quest",
+      questReward: 80,
+      tag: null,
+      mode: "CANDIDATE",
+      participation: "GROUP",
+      headcount: 4,
+      activeWorkerCount: 2,
+      startTime: "2026-09-16T10:00:00+07:00",
+      dueAt: null,
+      hirerName: "Hirer One",
+      location: null,
+    };
+
+    const mapped = cardToQuestBoardCard(card);
+
+    expect(mapped).toMatchObject({
+      mode: "CANDIDATE",
+      participation: "GROUP",
+      acceptedParticipants: 2,
+      creator: { name: "Hirer One" },
+    });
+    for (const key of [
+      "description",
+      "completionCriteria",
+      "proofRequired",
+      "status",
+      "ownerStudentId",
+      "studentInterestMatch",
+    ]) {
+      expect(mapped).not.toHaveProperty(key);
+    }
+  });
+
+  describe("detail mappers and acceptedParticipants", () => {
+    const canonical = {
+      id: "quest-owner-1",
+      version: 3,
+      hiddenAt: null,
+      title: "Owner Quest",
+      description: "Do it",
+      condition: { items: [{ position: 0, text: "Done" }] },
+      tag: null,
+      mode: "FIRST_COME_FIRST_SERVED",
+      participation: "GROUP",
+      state: "QUEST_COMPLETED",
+      questFundingTotal: 300,
+      questReward: 100,
+      headcount: 3,
+      startTime: "2099-08-26T09:00:00+07:00",
+      dueAt: "2099-08-27T12:00:00+07:00",
+      proofRequired: false,
+      locations: [],
+      createdAt: "2099-08-01T00:00:00Z",
+      updatedAt: "2099-08-01T00:00:00Z",
+      images: [],
+    } as never;
+
+    it("does not report a participant count the Hirer read does not carry", () => {
+      const mapped = canonicalToQuestBoardQuest(canonical);
+
+      expect(mapped).not.toHaveProperty("acceptedParticipants");
+      expect(mapped).not.toHaveProperty("ownerStudentId");
+      expect(mapped).toMatchObject({
+        mode: "FIRST_COME_FIRST_SERVED",
+        participation: "GROUP",
+        status: "QUEST_COMPLETED",
+      });
+    });
+
+    it("takes the roster-derived count the caller supplies", () => {
+      expect(
+        canonicalToQuestBoardQuest(canonical, { acceptedParticipants: 3 })
+          .acceptedParticipants
+      ).toBe(3);
+      expect(
+        publicDetailToQuestBoardQuest(
+          {
+            id: "quest-public-2",
+            title: "Public",
+            description: null,
+            condition: { items: [] },
+            tag: null,
+            mode: "FIRST_COME_FIRST_SERVED",
+            participation: "GROUP",
+            state: "QUEST_COMPLETED",
+            questReward: 100,
+            headcount: 3,
+            activeWorkerCount: 0,
+            startTime: "2099-08-26T09:00:00+07:00",
+            dueAt: null,
+            proofRequired: false,
+            hirerName: "Hirer",
+            locations: [],
+            images: [],
+          } as never,
+          { acceptedParticipants: 3 }
+        ).acceptedParticipants
+      ).toBe(3);
+    });
   });
 
   it("returns the Quest's reviews to the caller", async () => {
@@ -778,7 +887,7 @@ describe("LiveQuestService", () => {
       { id: "worker-2", displayName: "Worker Two" },
       { id: "worker-3", displayName: "Worker Three" },
     ]);
-    const detail = getQuestDetailProjection(snapshot, "worker-1");
+    const detail = getQuestDetailProjection(snapshot);
     expect(detail.participantCount).toBe(3);
     expect(detail.quest.acceptedParticipants).toBe(3);
   });

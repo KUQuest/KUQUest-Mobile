@@ -10,7 +10,6 @@ import { AlertCircle, Plus } from "lucide-react-native";
 import { ScreenLayout } from "@/components/layout/ScreenLayout";
 
 import { handleNavigationScroll } from "@/features/navigation/navigationUiStore";
-import { isPrototypeDemoEnabled } from "@/features/auth/authEnvironment";
 import { useLocale } from "@/features/preferences/localeStore";
 import { useAppTheme } from "@/features/workspace/AppThemeProvider";
 import { getAppChromeMetrics, getBottomNavigationInset } from "@/theme/layout";
@@ -26,14 +25,7 @@ import {
   HirerShortcutsSection,
   type HirerShortcutRoute,
 } from "./components/HirerHomeSections";
-import {
-  type HirerAttentionItem,
-  hirerHomeQuestFixtures,
-} from "./hirerHomeData";
-import {
-  QuestMode,
-  QuestParticipation,
-} from "@/features/questBoard/domain/types";
+import type { HirerAttentionItem } from "./hirerHomeData";
 import { hirerHomeMessages } from "@/locales/hirerHomeMessages";
 import { hirerHomeStyles as styles } from "./hirerHomeStyles";
 export default function HomeScreen() {
@@ -57,46 +49,12 @@ export default function HomeScreen() {
   const activeQuestCount = homeData?.activeQuestCount ?? 0;
   const draftCount = homeData?.draftCount ?? 0;
   const completedCount = homeData?.completedCount ?? 0;
-  const isPrototypeDemo = isPrototypeDemoEnabled();
-  const usesDemoQuests = liveQuests.length === 0 && isPrototypeDemo;
-  const displayQuests =
-    liveQuests.length > 0
-      ? liveQuests
-      : usesDemoQuests
-        ? hirerHomeQuestFixtures.map((f) => ({
-            id: f.id,
-            title: f.title[locale],
-            status: f.status,
-            mode: QuestMode.FIRST_COME_FIRST_SERVED,
-            participation: QuestParticipation.SINGLE,
-            headcount: 1,
-            startTime: f.startTime,
-            dueAt: f.dueAt,
-            assignedWorkers: [
-              {
-                id: f.worker.id,
-                displayName: f.worker.displayName[locale],
-                avatarUri: f.worker.avatarUri,
-                faculty: f.worker.faculty?.[locale],
-              },
-            ],
-            applicants: [],
-            proofPending: false,
-          }))
-        : [];
   const displayedActiveQuestCount =
-    liveQuests.length > 0 ? activeQuestCount : displayQuests.length;
+    liveQuests.length > 0 ? activeQuestCount : 0;
 
   const cardWidth = Math.min(width - 32, 640);
   const handleOpenQuest = useCallback(
-    (questId: string, preview: boolean) => {
-      if (preview) {
-        router.push({
-          pathname: "/quest/[id]",
-          params: { id: questId, preview: "populated" },
-        });
-        return;
-      }
+    (questId: string) => {
       router.push({
         pathname: "/quest/[id]/manage",
         params: { id: questId },
@@ -160,7 +118,7 @@ export default function HomeScreen() {
     );
   }
 
-  if (isError && !isPrototypeDemo) {
+  if (isError) {
     return (
       <ScreenLayout
         edges={["top", "left", "right"]}
@@ -254,7 +212,7 @@ export default function HomeScreen() {
             onOpenItem={handleOpenAttentionItem}
           />
 
-          {displayQuests.length > 0 ? (
+          {liveQuests.length > 0 ? (
             <View className={styles.section}>
               <View className={styles.sectionHeaderRow}>
                 <Text
@@ -264,7 +222,7 @@ export default function HomeScreen() {
                   {messages.activeQuestTitle}
                 </Text>
                 <View className="flex-row items-center gap-ku-sm">
-                  {displayQuests.length > 1 ? (
+                  {liveQuests.length > 1 ? (
                     <Chip
                       className={styles.sectionCounterBadge}
                       label={messages.activeQuestCounter(
@@ -276,7 +234,7 @@ export default function HomeScreen() {
                       tone="accent"
                     />
                   ) : null}
-                  {displayedActiveQuestCount > displayQuests.length ? (
+                  {displayedActiveQuestCount > liveQuests.length ? (
                     <Pressable
                       accessibilityLabel={messages.viewAllActive}
                       accessibilityRole="button"
@@ -303,7 +261,7 @@ export default function HomeScreen() {
                       offsetX / (cardWidth + spacing.px12)
                     );
                     setActiveCardIndex(
-                      Math.max(0, Math.min(nextIndex, displayQuests.length - 1))
+                      Math.max(0, Math.min(nextIndex, liveQuests.length - 1))
                     );
                   }}
                   pagingEnabled
@@ -312,22 +270,14 @@ export default function HomeScreen() {
                   snapToInterval={cardWidth + spacing.px12}
                   testID="hirer-quest-carousel"
                 >
-                  {displayQuests.map((item) => (
+                  {liveQuests.map((item) => (
                     <View key={item.id} style={{ width: cardWidth }}>
                       <HirerQuestProgressCard
                         startTime={item.startTime}
                         dueAt={item.dueAt}
-                        onOpenDetails={() =>
-                          handleOpenQuest(item.id, usesDemoQuests)
-                        }
-                        onOpenWorkerProfile={
-                          usesDemoQuests ? undefined : handleOpenWorkerProfile
-                        }
-                        onViewRoster={
-                          usesDemoQuests
-                            ? undefined
-                            : () => handleOpenRoster(item.id)
-                        }
+                        onOpenDetails={() => handleOpenQuest(item.id)}
+                        onOpenWorkerProfile={handleOpenWorkerProfile}
+                        onViewRoster={() => handleOpenRoster(item.id)}
                         questId={item.id}
                         status={item.status}
                         title={item.title}
@@ -341,22 +291,22 @@ export default function HomeScreen() {
                   ))}
                 </ScrollView>
 
-                {displayQuests.length > 1 ? (
+                {liveQuests.length > 1 ? (
                   <View
                     accessibilityLabel={messages.activeQuestCounter(
                       activeCardIndex + 1,
-                      displayQuests.length
+                      liveQuests.length
                     )}
                     accessibilityRole="progressbar"
                     accessibilityValue={{
                       min: 1,
-                      max: displayQuests.length,
+                      max: liveQuests.length,
                       now: activeCardIndex + 1,
                     }}
                     className={styles.carouselPagination}
                     testID="hirer-quest-carousel-dots"
                   >
-                    {displayQuests.map((item, index) => (
+                    {liveQuests.map((item, index) => (
                       <View
                         className={`${styles.paginationDot} ${
                           index === activeCardIndex

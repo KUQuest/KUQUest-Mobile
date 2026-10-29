@@ -1,13 +1,10 @@
 import {
   MAX_QUEST_IMAGES,
-  QuestCandidateMode,
-  type QuestCandidateMode as QuestBoardCandidateMode,
   type QuestEscrowSummary,
   type QuestLocation,
   type QuestLocationMode as QuestBoardLocationMode,
   QuestMode,
   QuestParticipation,
-  type QuestParticipationMode as QuestBoardParticipationMode,
   type QuestPublishCheck,
   QuestPublishCheckSource,
 } from "../../questBoard/domain/types";
@@ -183,8 +180,8 @@ export const initialDraft: QuestDraft = {
 };
 
 export interface QuestBoardModeValues {
-  candidateMode: QuestBoardCandidateMode;
-  participationMode: QuestBoardParticipationMode;
+  mode: QuestMode;
+  participation: QuestParticipation;
   locationMode: QuestBoardLocationMode;
 }
 
@@ -192,12 +189,8 @@ export function toQuestBoardModeValues(
   draft: Pick<QuestDraft, "candidateMode" | "participation" | "locationMode">
 ): QuestBoardModeValues {
   return {
-    candidateMode:
-      draft.candidateMode === QuestMode.CANDIDATE
-        ? QuestCandidateMode.CANDIDATE
-        : QuestCandidateMode.NO_CANDIDATE,
-    participationMode:
-      draft.participation === QuestParticipation.GROUP ? "team" : "single",
+    mode: draft.candidateMode,
+    participation: draft.participation,
     locationMode: draft.locationMode === "ONLINE" ? "online" : "on-campus",
   };
 }
@@ -229,10 +222,8 @@ export interface QuestDraftPayload {
   startTime: string;
   endTime: string;
   location: QuestLocation;
-  candidateMode:
-    | typeof QuestCandidateMode.NO_CANDIDATE
-    | typeof QuestCandidateMode.CANDIDATE;
-  participation: "SOLO" | typeof QuestParticipation.GROUP;
+  candidateMode: QuestMode;
+  participation: QuestParticipation;
   headcount: number;
   rewardSatang: number;
   imageUris: string[];
@@ -279,14 +270,8 @@ export function toQuestDraftPayload(draft: QuestDraft): QuestDraftPayload {
       label:
         draft.locationMode === "ONLINE" ? null : draft.location.trim() || null,
     },
-    candidateMode:
-      draft.candidateMode === QuestMode.CANDIDATE
-        ? QuestCandidateMode.CANDIDATE
-        : QuestCandidateMode.NO_CANDIDATE,
-    participation:
-      draft.participation === QuestParticipation.GROUP
-        ? QuestParticipation.GROUP
-        : "SOLO",
+    candidateMode: draft.candidateMode,
+    participation: draft.participation,
     headcount:
       draft.participation === QuestParticipation.SINGLE
         ? 1

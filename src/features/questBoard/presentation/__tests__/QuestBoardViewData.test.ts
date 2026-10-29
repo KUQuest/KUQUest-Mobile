@@ -9,24 +9,18 @@ import {
 } from "../questBoardViewData";
 import {
   emptyQuestBoardFilter,
+  QuestMode,
+  QuestParticipation,
   QuestStatus,
   type QuestBoardFilter,
-  type QuestBoardQuest,
+  type QuestBoardCard,
 } from "../../domain/types";
-import {
-  getLocalizedQuest,
-  getLocalizedTag,
-} from "../../fixtures/questFixtureLocalization";
-import { questFixtures } from "../../fixtures/questFixtures";
 
-const quests: QuestBoardQuest[] = [
+const quests: QuestBoardCard[] = [
   {
     id: "design-match",
     title: "Design a faculty event poster",
     tags: ["Design & creative", "Campus life"],
-    description: "Create a poster for the faculty event.",
-    completionCriteria: "A final PNG poster is approved.",
-    proofRequired: "required",
     rewardPerPerson: 700,
     headcount: 2,
     acceptedParticipants: 1,
@@ -36,19 +30,15 @@ const quests: QuestBoardQuest[] = [
     postedAt: "2026-08-10T09:00:00.000Z",
     location: "On campus",
     locationMode: "on-campus",
-    participationMode: "single",
-    candidateMode: "CANDIDATE",
+    participation: QuestParticipation.SINGLE,
+    mode: QuestMode.CANDIDATE,
     creator: { name: "Nicha", faculty: "Architecture" },
-    studentInterestMatch: true,
     ownerStudentId: "creator-1",
   },
   {
     id: "tech-soon",
     title: "Fix a small React bug",
     tags: ["Technology"],
-    description: "Resolve a small UI issue.",
-    completionCriteria: "The fix passes review.",
-    proofRequired: "optional",
     rewardPerPerson: 450,
     headcount: 1,
     acceptedParticipants: 0,
@@ -58,19 +48,15 @@ const quests: QuestBoardQuest[] = [
     postedAt: "2026-08-11T09:00:00.000Z",
     location: "Online",
     locationMode: "online",
-    participationMode: "single",
-    candidateMode: "NO_CANDIDATE",
+    participation: QuestParticipation.SINGLE,
+    mode: QuestMode.FIRST_COME_FIRST_SERVED,
     creator: { name: "Ploy", faculty: "Engineering" },
-    studentInterestMatch: false,
     ownerStudentId: "creator-2",
   },
   {
     id: "campus-full",
     title: "Welcome desk helper",
     tags: ["Campus life"],
-    description: "Help visitors find their way.",
-    completionCriteria: "Attend the full shift.",
-    proofRequired: "none",
     rewardPerPerson: 300,
     headcount: 1,
     acceptedParticipants: 1,
@@ -80,19 +66,15 @@ const quests: QuestBoardQuest[] = [
     postedAt: "2026-08-09T09:00:00.000Z",
     location: "On campus",
     locationMode: "on-campus",
-    participationMode: "single",
-    candidateMode: "NO_CANDIDATE",
+    participation: QuestParticipation.SINGLE,
+    mode: QuestMode.FIRST_COME_FIRST_SERVED,
     creator: { name: "Beam", faculty: "Education" },
-    studentInterestMatch: false,
     ownerStudentId: "creator-3",
   },
   {
     id: "own-quest",
     title: "My own quest",
     tags: ["Technology"],
-    description: "Created by the current Student.",
-    completionCriteria: "Complete it.",
-    proofRequired: "none",
     rewardPerPerson: 1000,
     headcount: 1,
     acceptedParticipants: 0,
@@ -102,10 +84,9 @@ const quests: QuestBoardQuest[] = [
     postedAt: "2026-08-12T09:00:00.000Z",
     location: "Online",
     locationMode: "online",
-    participationMode: "single",
-    candidateMode: "CANDIDATE",
+    participation: QuestParticipation.SINGLE,
+    mode: QuestMode.CANDIDATE,
     creator: { name: "Current Student", faculty: "Engineering" },
-    studentInterestMatch: true,
     ownerStudentId: "current-student",
   },
 ];
@@ -251,28 +232,5 @@ describe("Quest Board view data", () => {
     expect(
       getQuestAvailability(quests[0], new Date("2026-08-12T09:00:00.000Z"))
     ).toBe("available");
-  });
-
-  it("localizes Quest content and tags for Thai without changing English", () => {
-    expect(getLocalizedTag("moving", "th")).toBe("ยกของ");
-    expect(
-      getLocalizedQuest(
-        { ...quests[0], id: "move-boxes", tags: ["moving"] },
-        "th"
-      )
-    ).toMatchObject({
-      title: "ช่วยยกกล่องไปหอพัก",
-      tags: ["ยกของ"],
-      description: "ช่วยขนกล่องที่ติดป้ายจากลานจอดรถไปยังหอพัก 13",
-    });
-    expect(getLocalizedQuest(quests[0], "en")).toBe(quests[0]);
-  });
-
-  it("localizes every Quest fixture for Thai", () => {
-    questFixtures.forEach((quest) => {
-      const localized = getLocalizedQuest(quest, "th");
-      expect(localized).not.toBe(quest);
-      expect(localized.tags).not.toEqual(quest.tags);
-    });
   });
 });

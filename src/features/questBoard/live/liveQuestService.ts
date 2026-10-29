@@ -36,6 +36,7 @@ import {
   QuestMode,
   QuestParticipation,
   QuestTeamRole,
+  type QuestBoardCard,
   type QuestBoardQuest,
   type QuestStatus,
 } from "../domain/types";
@@ -71,7 +72,7 @@ function timeRange(startTime: string, dueAt: string): string | undefined {
   return start && end ? `${start}–${end}` : undefined;
 }
 
-export function cardToQuestBoardQuest(card: QuestV2BoardCard): QuestBoardQuest {
+export function cardToQuestBoardCard(card: QuestV2BoardCard): QuestBoardCard {
   const startDate = card.startTime.slice(0, 10);
   const deadline = card.dueAt ? card.dueAt.slice(0, 10) : startDate;
   const rewardSatang = Math.round(card.questReward * 100);
@@ -82,9 +83,6 @@ export function cardToQuestBoardQuest(card: QuestV2BoardCard): QuestBoardQuest {
     ...(card.tag
       ? { tagId: card.tag.id, tags: [card.tag.name] }
       : { tags: [] }),
-    description: "",
-    completionCriteria: "",
-    proofRequired: "none",
     rewardPerPerson: card.questReward,
     rewardSatang,
     questFundingTotalSatang:
@@ -100,19 +98,18 @@ export function cardToQuestBoardQuest(card: QuestV2BoardCard): QuestBoardQuest {
     location: card.location ?? "Online",
     locationDetails: { label: card.location },
     locationMode: card.location === null ? "online" : "on-campus",
-    participationMode: card.participation === "GROUP" ? "team" : "single",
-    candidateMode: card.mode === "CANDIDATE" ? "CANDIDATE" : "NO_CANDIDATE",
+    participation: card.participation,
+    mode: card.mode,
     creator: { name: card.hirerName },
     hirerName: card.hirerName,
-    studentInterestMatch: false,
-    ownerStudentId: card.hirerProfile?.id ?? "",
-    status: "QUEST_OPEN",
+    ...(card.hirerProfile ? { ownerStudentId: card.hirerProfile.id } : {}),
   };
 }
 export function canonicalToQuestBoardQuest(
   q: QuestV2CanonicalQuest | QuestV2Detail,
-  creatorName = "Me"
+  options: { creatorName?: string; acceptedParticipants?: number } = {}
 ): QuestBoardQuest {
+  const { creatorName = "Me", acceptedParticipants } = options;
   const rewardSatang = Math.round((q.questReward ?? 0) * 100);
   const startDate = q.startTime.slice(0, 10);
   const deadline = q.dueAt ? q.dueAt.slice(0, 10) : startDate;
@@ -134,7 +131,7 @@ export function canonicalToQuestBoardQuest(
         ? Math.round(q.questFundingTotal * 100)
         : null,
     headcount: q.headcount,
-    acceptedParticipants: 0,
+    ...(acceptedParticipants === undefined ? {} : { acceptedParticipants }),
     startDate,
     deadline,
     timeRange: q.dueAt ? timeRange(q.startTime, q.dueAt) : undefined,
@@ -142,19 +139,18 @@ export function canonicalToQuestBoardQuest(
     location: q.locations[0]?.label ?? "Online",
     locationDetails: { label: q.locations[0]?.label ?? null },
     locationMode: q.locations.length > 0 ? "on-campus" : "online",
-    participationMode: q.participation === "GROUP" ? "team" : "single",
-    candidateMode: q.mode === "CANDIDATE" ? "CANDIDATE" : "NO_CANDIDATE",
+    participation: q.participation,
+    mode: q.mode,
     creator: { name: creatorName },
     imageUris:
       "images" in q ? q.images.map((img: QuestV2Image) => img.url) : [],
-    studentInterestMatch: false,
-    ownerStudentId: "",
     status: q.state as QuestStatus,
   };
 }
 
 export function publicDetailToQuestBoardQuest(
-  d: QuestV2PublicDetail | QuestV2ParticipationDetail
+  d: QuestV2PublicDetail | QuestV2ParticipationDetail,
+  options: { acceptedParticipants?: number } = {}
 ): QuestBoardQuest {
   const startDate = d.startTime.slice(0, 10);
   const deadline = d.dueAt ? d.dueAt.slice(0, 10) : startDate;
@@ -178,7 +174,7 @@ export function publicDetailToQuestBoardQuest(
         ? Math.round(d.questFundingTotal * 100)
         : null,
     headcount: d.headcount,
-    acceptedParticipants: d.activeWorkerCount,
+    acceptedParticipants: options.acceptedParticipants ?? d.activeWorkerCount,
     startDate,
     deadline,
     timeRange: d.dueAt ? timeRange(d.startTime, d.dueAt) : undefined,
@@ -186,13 +182,11 @@ export function publicDetailToQuestBoardQuest(
     location: d.locations[0]?.label ?? "Online",
     locationDetails: { label: d.locations[0]?.label ?? null },
     locationMode: d.locations.length > 0 ? "on-campus" : "online",
-    participationMode: d.participation === "GROUP" ? "team" : "single",
-    candidateMode: d.mode === "CANDIDATE" ? "CANDIDATE" : "NO_CANDIDATE",
+    participation: d.participation,
+    mode: d.mode,
     creator: { name: d.hirerName },
     hirerName: d.hirerName,
     imageUris: d.images?.map((img: QuestV2PublicImage) => img.url) ?? [],
-    studentInterestMatch: false,
-    ownerStudentId: "",
     status: d.state as QuestStatus,
     hasJoined: d.hasJoined,
     assignmentId: d.assignmentId,
@@ -473,8 +467,8 @@ export class LiveQuestService {
     return chatApi.getCandidateInquiryMessages(conversationId, params, options);
   }
 
-  async listBoardQuests(options?: RequestOptions): Promise<QuestBoardQuest[]> {
-    const items: QuestBoardQuest[] = [];
+  async listBoardQuests(options?: RequestOptions): Promise<QuestBoardCard[]> {
+    const items: QuestBoardCard[] = [];
     const seenCursors = new Set<string>();
     let cursor: string | undefined;
 
@@ -483,7 +477,7 @@ export class LiveQuestService {
         cursor ? { cursor, limit: 50 } : { limit: 50 },
         options
       );
-      items.push(...result.items.map(cardToQuestBoardQuest));
+      items.push(...result.items.map(cardToQuestBoardCard));
       if (!result.nextCursor || seenCursors.has(result.nextCursor)) break;
       seenCursors.add(result.nextCursor);
       cursor = result.nextCursor;
@@ -496,7 +490,7 @@ export class LiveQuestService {
     options?: RequestOptions
   ): Promise<QuestBoardQuest[]> {
     const result = await questApi.listMine({}, options);
-    return result.items.map((q) => canonicalToQuestBoardQuest(q, "Me"));
+    return result.items.map((q) => canonicalToQuestBoardQuest(q));
   }
   async listMyWorkerAssignments(
     status?: QuestV2AssignmentMineStatus,

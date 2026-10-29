@@ -1,5 +1,5 @@
 {
-  "total": 45,
+  "total": 44,
   "top": [
     {
       "file": "src/features/createQuest/presentation/createQuestPresentation.ts",
@@ -43,10 +43,6 @@
     },
     {
       "file": "src/features/myQuests/myQuestService.ts",
-      "count": 1
-    },
-    {
-      "file": "src/features/questBoard/proof/components/ProofSubmissionSheet.tsx",
       "count": 1
     }
   ]

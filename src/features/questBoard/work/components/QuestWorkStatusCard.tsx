@@ -20,7 +20,7 @@ import { formatSatang, SATANG_PER_BAHT } from "@/domain/satang";
 import { useLocale } from "@/features/preferences/localeStore";
 import { useAppTheme } from "@/features/workspace/AppThemeProvider";
 import {
-  QuestCandidateMode,
+  QuestMode,
   QuestParticipation,
   QuestStatus,
 } from "@/features/questBoard/domain/types";
@@ -111,7 +111,7 @@ export default function QuestWorkStatusCard({
         ? palette.success
         : palette.textSecondary;
 
-  const isCandidateMode = snapshot.mode === QuestCandidateMode.CANDIDATE;
+  const isCandidateMode = snapshot.mode === QuestMode.CANDIDATE;
   const modeLabel = isCandidateMode
     ? messages.modeCandidate
     : messages.modeFcfs;

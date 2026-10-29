@@ -148,8 +148,8 @@ describe("Create Quest model", () => {
           locationMode: "ONLINE",
         })
       ).toEqual({
-        candidateMode: "CANDIDATE",
-        participationMode: "team",
+        mode: "CANDIDATE",
+        participation: "GROUP",
         locationMode: "online",
       });
     });

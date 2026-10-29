@@ -1,5 +1,9 @@
 import type { TagItem } from "@/api/QuestApi";
-import type { QuestBoardQuest } from "@/features/questBoard/domain/types";
+import {
+  QuestMode,
+  QuestParticipation,
+  type QuestBoardCard,
+} from "@/features/questBoard/domain/types";
 import {
   getTagLabel,
   getTagLabelById,
@@ -16,9 +20,6 @@ const quest = {
   title: "Design a poster",
   tagId: "tag-design",
   tags: ["Design"],
-  description: "Create a poster.",
-  completionCriteria: "Poster is approved.",
-  proofRequired: "required",
   rewardPerPerson: 100,
   headcount: 1,
   acceptedParticipants: 0,
@@ -27,12 +28,11 @@ const quest = {
   postedAt: "2026-09-30",
   location: "Campus",
   locationMode: "on-campus",
-  participationMode: "single",
-  candidateMode: "NO_CANDIDATE",
+  participation: QuestParticipation.SINGLE,
+  mode: QuestMode.FIRST_COME_FIRST_SERVED,
   creator: { name: "Hirer" },
-  studentInterestMatch: false,
   ownerStudentId: "hirer-1",
-} satisfies QuestBoardQuest;
+} satisfies QuestBoardCard;
 
 describe("tag locale labels", () => {
   it("selects Thai names and falls back to English when Thai is absent", () => {

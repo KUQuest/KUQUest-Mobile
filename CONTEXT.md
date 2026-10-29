@@ -288,7 +288,7 @@ A user-visible, route-backed Android/iOS screen or flow that can be verified by 
 Deterministic local Quest, profile, chat, or finance data used to exercise a UI and its state transitions. A Prototype Fixture demonstrates client behavior only; it does not prove that the production API or backend contract is implemented.
 
 **Canonical Adapter**:
-The client boundary that maps fixture/API data and actions into the canonical Quest, Assignment, proof, conversation, and settlement vocabulary used by the UI. Compatibility values may remain inside this boundary while migration is incomplete.
+The client boundary that maps API data and actions into the canonical Quest, Assignment, proof, conversation, and settlement vocabulary used by the UI. Compatibility values may remain inside this boundary while migration is incomplete.
 
 **Compatibility Value**:
 A legacy enum, field, or transport name retained so existing fixtures, API payloads, or tests continue to work while the canonical rulebook vocabulary is adopted. It is not automatically a new domain state and must not be removed without tracing callers and tests.

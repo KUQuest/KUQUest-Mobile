@@ -1,5 +1,4 @@
 import { useCallback } from "react";
-import { useFocusEffect } from "expo-router";
 
 import { useAppTheme } from "@/features/workspace/AppThemeProvider";
 import { useLocale } from "@/features/preferences/localeStore";
@@ -33,14 +32,7 @@ import { useQuestDetailReadSource } from "./useQuestDetailReadSource";
 import { useQuestTagsQuery } from "../api/questTagsQueries";
 import { useQuestDetailSurfaceState } from "./useQuestDetailSurfaceState";
 import { useQuestDetailLiveActions } from "./useQuestDetailLiveActions";
-import {
-  getQuestDetailPreviewTeamDirectory,
-  useQuestDetailPreviewActions,
-} from "./useQuestDetailPreviewActions";
-import type {
-  QuestDetailLiveActionContext,
-  QuestDetailPreviewActionContext,
-} from "./questDetailActions";
+import type { QuestDetailLiveActionContext } from "./questDetailActions";
 import { useQuestDetailNavigation } from "./useQuestDetailNavigation";
 import { useQuestDetailParticipation } from "./useQuestDetailParticipation";
 import { useQuestDetailCandidateActions } from "./useQuestDetailCandidateActions";
@@ -80,25 +72,14 @@ export function useQuestDetailFeature({
   const sessionStudentId = parseSingleRouteParam(sessionQuery.data?.user.id);
   const viewerId = explicitStudentId ?? sessionStudentId ?? "";
   const sessionReady = Boolean(explicitStudentId) || !sessionQuery.isPending;
-  const explicitPreview = screenProps.previewState !== undefined;
-  const tagQuery = useQuestTagsQuery(!explicitPreview);
+  const tagQuery = useQuestTagsQuery();
   const tagCatalog = tagQuery.data ?? [];
   const read = useQuestDetailReadSource({
     questId: route.questId,
     viewerId,
-    previewState: route.previewState,
-    explicitPreview,
     sessionReady,
   });
   const surface = useQuestDetailSurfaceState();
-  const { markFixtureChanged } = surface.transitions;
-  // Preview fixtures are module state; another route (the Quest Team screen)
-  // may change them while this screen is covered, so re-read on focus.
-  useFocusEffect(
-    useCallback(() => {
-      if (explicitPreview) markFixtureChanged();
-    }, [explicitPreview, markFixtureChanged])
-  );
   const liveActionContext: QuestDetailLiveActionContext = {
     questId: route.questId,
     viewerId,
@@ -110,36 +91,14 @@ export function useQuestDetailFeature({
     transitions: surface.transitions,
   };
   const liveActions = useQuestDetailLiveActions(liveActionContext);
-  const previewActionContext: QuestDetailPreviewActionContext = {
-    questId: route.questId,
-    viewerId,
-    messages,
-    transitions: surface.transitions,
-    candidateGroup: Boolean(
-      read.quest &&
-      read.quest.candidateMode !== "NO_CANDIDATE" &&
-      read.quest.participationMode === "team"
-    ),
-  };
-  const previewActions = useQuestDetailPreviewActions(previewActionContext);
-  const previewTeamDirectory = getQuestDetailPreviewTeamDirectory({
-    state: read.source.kind === "preview" ? read.source.state : null,
-    questId: route.questId,
-    query: surface.state.teamSearchQuery,
-    viewerId,
-    isHirer: Boolean(read.projection?.isOwner),
-  });
   const navigation = useQuestDetailNavigation({
     quest: read.quest,
-    projection: read.projection,
-    source: read.source,
     viewerId,
     messages,
     canMessageOwner: Boolean(
       route.mode !== "post" && read.projection?.capabilities.canMessageOwner
     ),
     createCandidateInquiry: liveActions.createCandidateInquiry,
-    previewState: route.previewState,
     studentId: explicitStudentId,
   });
   const facts = getQuestDetailPresentationFacts({
@@ -150,7 +109,6 @@ export function useQuestDetailFeature({
     groupMessages,
     viewerId,
     surface: surface.state,
-    teamDirectory: previewTeamDirectory,
     tagCatalog,
     colors,
   });
@@ -164,23 +122,16 @@ export function useQuestDetailFeature({
   const participation = useQuestDetailParticipation({
     facts,
     liveActions,
-    previewActions,
     navigation,
     transitions: surface.transitions,
   });
   const candidate = useQuestDetailCandidateActions({
     facts,
     liveActions,
-    previewActions,
     navigation,
     transitions: surface.transitions,
   });
-  const team = useQuestDetailTeamActions({
-    facts,
-    liveActions,
-    previewActions,
-    transitions: surface.transitions,
-  });
+  const team = useQuestDetailTeamActions({ liveActions });
 
   const presentationContext: QuestDetailPresentationContext | null = facts
     ? {
@@ -203,11 +154,6 @@ export function useQuestDetailFeature({
         liveRegenerateTeamCode: team.liveRegenerateTeamCode,
         liveUpdateTeamName: team.liveUpdateTeamName,
         liveSubmitTeam: team.liveSubmitTeam,
-        fixtureCreateTeam: team.fixtureCreateTeam,
-        fixtureInviteMembers: team.fixtureInviteMembers,
-        fixtureSubmitTeam: team.fixtureSubmitTeam,
-        fixtureRespondInvitation: team.fixtureRespondInvitation,
-        fixturePartialStartVote: team.fixturePartialStartVote,
         uploadTeamFile: liveActions.uploadTeamFile,
       }
     : null;

@@ -13,7 +13,11 @@ import { liveQuestService } from "../../live/liveQuestService";
 import { authService } from "@/features/auth/AuthService";
 import { groupQuestMessages } from "@/locales/groupQuestMessages";
 import type { LiveQuestSnapshot } from "../../live/liveQuestService";
-import type { QuestBoardQuest } from "../../domain/types";
+import {
+  QuestMode,
+  QuestParticipation,
+  type QuestBoardCard,
+} from "../../domain/types";
 import { chatApi } from "@/api/ChatApi";
 import { questApi } from "@/api/QuestApi";
 
@@ -94,13 +98,10 @@ jest.mock("@/api/ChatApi", () => ({
   },
 }));
 
-const mockQuestItem: QuestBoardQuest = {
+const mockQuestItem: QuestBoardCard = {
   id: "quest-fcfs-1",
   title: "Deliver documents across campus",
   tags: ["Delivery"],
-  description: "Pick up envelopes from building A and take to building B.",
-  completionCriteria: "Documents delivered safely.",
-  proofRequired: "none",
   rewardPerPerson: 150,
   rewardSatang: 15000,
   headcount: 2,
@@ -112,11 +113,9 @@ const mockQuestItem: QuestBoardQuest = {
   location: "Main Campus",
   locationMode: "on-campus",
 
-  participationMode: "single",
-  candidateMode: "NO_CANDIDATE", // FCFS
+  participation: QuestParticipation.SINGLE,
+  mode: QuestMode.FIRST_COME_FIRST_SERVED, // FCFS
   creator: { name: "Prof Oak", faculty: "Science" },
-  ownerStudentId: "",
-  studentInterestMatch: false,
   status: "QUEST_OPEN",
 };
 function createLiveSnapshot(
@@ -322,8 +321,8 @@ describe("QuestBoardScreen - Owner Profile and Card Actions", () => {
       expect(liveQuestService.listBoardQuests).toHaveBeenCalledTimes(1)
     );
 
-    let resolveRefresh!: (items: QuestBoardQuest[]) => void;
-    const pendingRefresh = new Promise<QuestBoardQuest[]>((resolve) => {
+    let resolveRefresh!: (items: QuestBoardCard[]) => void;
+    const pendingRefresh = new Promise<QuestBoardCard[]>((resolve) => {
       resolveRefresh = resolve;
     });
     (liveQuestService.listBoardQuests as jest.Mock).mockReturnValueOnce(
