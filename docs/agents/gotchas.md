@@ -11,6 +11,14 @@ Mistakes agents made in this repo and the rules they produced, so the same failu
 
 ## Entries
 
+### 2026-10-29 — Isolated agent worktrees can start from an older commit than HEAD
+
+**What happened**: Three worktree agents refactored code from commit `88aac67` while the branch was at `2184916`; one copied a function that predated the #292 fix and would have reverted it.
+
+**Root cause**: `isolation: "worktree"` branches from a base that is not necessarily the current branch HEAD, and Jest in the main checkout also collects the test copies under `.claude/worktrees/`, so a full run reports phantom failures.
+
+**Rule**: Before delegating to a worktree agent, tell it to confirm `git merge-base --is-ancestor HEAD` of the main checkout is true in its worktree, or rebase onto that commit first. Run Jest in the main checkout with `--testPathIgnorePatterns '.claude/worktrees'` while worktrees exist.
+
 ### 2026-10-02 — Candidate Team and application reads 404 after the Quest leaves OPEN
 
 **What happened**: A `GROUP + CANDIDATE` Team Leader had no Start Work button, and Hirer Home showed a permanent partial-load banner for started Candidate Quests.
