@@ -85,11 +85,24 @@ export default function QuestWorkActionsCard({
   const isFailedWorker =
     snapshot.state === QuestStatus.QUEST_FAILED &&
     isWorkerActor(snapshot.actor);
+  const serverDispute =
+    "dispute" in snapshot.quest ? snapshot.quest.dispute : undefined;
   const disputeQuery = useMyDisputeCaseQuery(
     snapshot.quest.id,
     viewerId,
-    isFailedWorker
+    isFailedWorker && serverDispute === undefined
   );
+  const pendingDisputeStatus =
+    isFailedWorker && serverDispute === undefined && disputeQuery.isPending;
+  const disputeStatusError =
+    isFailedWorker && serverDispute === undefined && disputeQuery.isError;
+  const filedDispute =
+    serverDispute?.myCase ?? (isFailedWorker ? disputeQuery.data?.case : null);
+  const canFileDispute =
+    serverDispute?.canFile ??
+    (isFailedWorker &&
+      disputeQuery.isSuccess &&
+      disputeQuery.data.case === null);
   const filingDispute =
     useIsMutating({
       mutationKey: questBoardKeys.disputeFiling(),
@@ -166,10 +179,10 @@ export default function QuestWorkActionsCard({
         </View>
       ) : null}
 
-      {isFailedWorker && !disputeQuery.isPending ? (
+      {isFailedWorker && !pendingDisputeStatus ? (
         <View className={styles.mutedCard}>
           <FailedQuestNotice quest={snapshot.quest} />
-          {disputeQuery.isError ? (
+          {disputeStatusError ? (
             <View className="gap-ku-xs">
               <Text className={styles.bodyText}>{disputeCopy.statusError}</Text>
               <Pressable
@@ -185,17 +198,11 @@ export default function QuestWorkActionsCard({
                 </Text>
               </Pressable>
             </View>
-          ) : disputeQuery.isSuccess && disputeQuery.data.case ? (
+          ) : filedDispute ? (
             <Text accessibilityRole="text" className={styles.bodyText}>
               {disputeCopy.filedStatus}
             </Text>
-          ) : disputeQuery.isSuccess &&
-            disputeQuery.data.case === null &&
-            onFileDispute &&
-            !(
-              "dispute" in snapshot.quest &&
-              snapshot.quest.dispute?.canFile === false
-            ) ? (
+          ) : canFileDispute && onFileDispute ? (
             <Pressable
               accessibilityRole="button"
               accessibilityLabel={messages.fileDispute}

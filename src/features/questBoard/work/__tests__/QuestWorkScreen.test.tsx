@@ -502,6 +502,43 @@ describe("QuestWorkScreen", () => {
     expect(view.queryByRole("button", { name: "File Dispute" })).toBeNull();
   });
 
+  it("lets a Worker file a Dispute from the failed-Quest snapshot while the legacy status query is pending", async () => {
+    mockMineDisputeQuery.mockReturnValue({
+      isPending: true,
+      isError: false,
+      isSuccess: false,
+      isFetching: true,
+      data: undefined,
+      refetch: jest.fn(),
+    });
+    mockedGetSnapshot.mockResolvedValue(
+      makeSnapshot({
+        state: "QUEST_FAILED",
+        quest: {
+          state: "QUEST_FAILED",
+          dispute: {
+            canFile: true,
+            windowEndsAt: "2099-01-02T18:00:00+07:00",
+            myCase: null,
+          },
+        },
+        assignment: {
+          ...defaultAssignment,
+          state: "ASSIGNMENT_INCOMPLETE",
+          questState: "QUEST_FAILED",
+        },
+      })
+    );
+
+    const view = await renderWithQueryClient(
+      <QuestWorkScreen questId="quest-work-1" viewerId="worker-1" />
+    );
+
+    expect(
+      await view.findByRole("button", { name: "File Dispute" })
+    ).toBeTruthy();
+  });
+
   it("renders an assigned wait state with canonical conditions and due countdown", async () => {
     mockedGetSnapshot.mockResolvedValue(makeSnapshot());
     const view = await renderWithQueryClient(
