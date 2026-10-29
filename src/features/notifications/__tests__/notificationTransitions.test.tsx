@@ -283,6 +283,53 @@ describe("notification transitions", () => {
       },
     ]);
   });
+  it("tells a Worker whose work was not completed that the Quest failed, once, and points at the Work Hub", () => {
+    const failed = {
+      ...makeWorkerAssignment("UNDERFILLED_COMPLETED", "QUEST_FAILED"),
+      state: "ASSIGNMENT_INCOMPLETE" as const,
+    };
+    expect(detectWorkerQuestTransitions(null, [failed])).toEqual([]);
+    const transition = {
+      questId: "quest-1",
+      kind: "FAILED",
+      cancellationReason: null,
+      href: "/quest/[id]/work" as const,
+    };
+    expect(
+      detectWorkerQuestTransitions(new Map([["quest-1", null]]), [failed])
+    ).toEqual([transition]);
+    expect(
+      detectWorkerQuestTransitions(
+        new Map<string, WorkerQuestNoticeKind | null>([["quest-1", "FAILED"]]),
+        [failed]
+      )
+    ).toEqual([]);
+    expect(
+      shouldSuppressWorkerQuestNotice(
+        "/quest/quest-1/work",
+        "quest-1",
+        transition.href
+      )
+    ).toBe(true);
+    expect(
+      shouldSuppressWorkerQuestNotice(
+        "/quest/quest-1",
+        "quest-1",
+        transition.href
+      )
+    ).toBe(false);
+  });
+
+  it("does not announce a failure to a Worker who completed their Assignment", () => {
+    const completed = {
+      ...makeWorkerAssignment("UNDERFILLED_COMPLETED", "QUEST_FAILED"),
+      state: "ASSIGNMENT_COMPLETED" as const,
+    };
+    expect(
+      detectWorkerQuestTransitions(new Map([["quest-1", null]]), [completed])
+    ).toEqual([]);
+  });
+
   const rejectedApplication = {
     ...appliedApplication,
     state: "APPLICATION_REJECTED",

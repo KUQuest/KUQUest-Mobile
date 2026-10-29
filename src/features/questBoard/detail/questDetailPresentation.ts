@@ -535,6 +535,9 @@ export interface QuestDetailActionBarModel {
   canReview: boolean;
   canReviewProof: boolean;
   onReviewProof: () => void;
+  /** A Worker's way back to the Work Hub, where a failed Quest's Dispute Case is filed. */
+  canOpenWorkHub: boolean;
+  onOpenWorkHub: () => void;
   canMessageOwner: boolean;
   onMessageOwner: () => void;
   canShowWithdraw: boolean;
@@ -572,6 +575,10 @@ export function buildQuestDetailActionBar(
       facts.isHirerView &&
       facts.liveSnapshot?.capabilities.canReviewProof === true,
     onReviewProof: navigation.openProofReview,
+    canOpenWorkHub:
+      facts.liveSnapshot?.actor === QuestActor.WORKER &&
+      facts.quest.status === QuestStatus.QUEST_FAILED,
+    onOpenWorkHub: navigation.openWorkHub,
     canMessageOwner: facts.canMessageOwner,
     onMessageOwner: navigation.openMessageOwner,
     canShowWithdraw: facts.canShowWithdraw,

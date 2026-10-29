@@ -154,6 +154,8 @@ describe("QuestDetailScreen smoke", () => {
           canReview: true,
           canReviewProof: true,
           onReviewProof: navigation.result.current.openProofReview,
+          canOpenWorkHub: false,
+          onOpenWorkHub: jest.fn(),
           canMessageOwner: false,
           onMessageOwner: jest.fn(),
           canShowWithdraw: false,

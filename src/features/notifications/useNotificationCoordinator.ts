@@ -267,6 +267,7 @@ export function useNotificationCoordinator() {
         RESPONSE_REQUIRED: copy.underfilledConsentRequired(),
         DECISION_PENDING: copy.underfilledDecisionPending(),
         FULL_OR_ASSIGNED: copy.questFullOrAssigned(),
+        FAILED: copy.questFailed(),
         CANCELLED: copy.underfilledCancelled(transition.cancellationReason),
       }[transition.kind];
       enqueue(copy.questUpdate, message, {
