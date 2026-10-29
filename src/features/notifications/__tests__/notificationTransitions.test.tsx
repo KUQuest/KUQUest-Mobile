@@ -320,6 +320,23 @@ describe("notification transitions", () => {
     ).toBe(false);
   });
 
+  it("also tells a Worker the Server left ASSIGNMENT_ACTIVE on the failed Quest", () => {
+    const stillActive = makeWorkerAssignment(
+      "UNDERFILLED_COMPLETED",
+      "QUEST_FAILED"
+    );
+    expect(
+      detectWorkerQuestTransitions(new Map([["quest-1", null]]), [stillActive])
+    ).toEqual([
+      {
+        questId: "quest-1",
+        kind: "FAILED",
+        cancellationReason: null,
+        href: "/quest/[id]/work",
+      },
+    ]);
+  });
+
   it("does not announce a failure to a Worker who completed their Assignment", () => {
     const completed = {
       ...makeWorkerAssignment("UNDERFILLED_COMPLETED", "QUEST_FAILED"),

@@ -53,10 +53,13 @@ export function getWorkerAssignmentNoticeKind(
     return "CANCELLED";
   }
   // The one-day Dispute window opens at failure; a Worker whose work was not
-  // completed would otherwise learn of it only by opening History.
+  // completed would otherwise learn of it only by opening History. The Server
+  // leaves a Worker who never got to submit `ASSIGNMENT_ACTIVE` on a failed
+  // Quest (staging, 2026-10-30), and that Worker can dispute too.
   if (
     assignment.questState === QuestStatus.QUEST_FAILED &&
-    assignment.state === QuestAssignmentStatus.ASSIGNMENT_INCOMPLETE
+    (assignment.state === QuestAssignmentStatus.ASSIGNMENT_INCOMPLETE ||
+      assignment.state === QuestAssignmentStatus.ASSIGNMENT_ACTIVE)
   ) {
     return "FAILED";
   }
