@@ -252,12 +252,11 @@ describe("chat message transport", () => {
       { limit: 50, before: "cursor-older" },
       expect.anything()
     );
-    expect(result.current.messages.data?.map((message) => message.id)).toEqual([
-      "message-1",
-      "message-2",
-      "message-3",
-      "message-4",
-    ]);
+    await waitFor(() =>
+      expect(
+        result.current.messages.data?.map((message) => message.id)
+      ).toEqual(["message-1", "message-2", "message-3", "message-4"])
+    );
     expect(result.current.older.hasOlderMessages).toBe(false);
 
     await act(async () => {

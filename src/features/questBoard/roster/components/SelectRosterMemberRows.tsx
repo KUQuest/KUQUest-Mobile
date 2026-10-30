@@ -58,6 +58,7 @@ function MemberIdentity({
         className={styles.avatar}
         name={name}
         textClassName={styles.avatarText}
+        cacheKey={identity?.avatarCacheKey}
         uri={identity?.avatarUri}
       />
       <View className={styles.memberText}>

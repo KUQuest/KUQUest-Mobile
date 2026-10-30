@@ -11,7 +11,6 @@ import { QuestStatus, isTerminalStatus } from "@/domain/questLifecycle";
 import { liveQuestService } from "@/features/questBoard/live/liveQuestService";
 import { QuestActor } from "@/features/questBoard/domain/types";
 import { ConversationMode, type ChatConversation } from "../chatTypes";
-import { enrichChatConversation } from "./chatProfile";
 import {
   mergeDisplayMessages,
   type DisplayChatMessage,
@@ -142,7 +141,7 @@ export function useListConversationsQuery(
             const otherParticipant =
               participants.find((participant) => participant.id !== viewerId) ??
               participants[0];
-            return enrichChatConversation({
+            return {
               ...converted,
               ...(otherParticipant?.id
                 ? { participantId: otherParticipant.id }
@@ -158,7 +157,7 @@ export function useListConversationsQuery(
               )
                 .slice(0, 2)
                 .toUpperCase(),
-            });
+            };
           } catch {
             return converted;
           }
@@ -182,12 +181,8 @@ export function useListCandidateInquiriesQuery(
         { limit: 20 },
         { signal }
       );
-      return Promise.all(
-        page.items.map((inquiry) =>
-          enrichChatConversation(
-            candidateInquiryToConversation(inquiry, viewerId)
-          )
-        )
+      return page.items.map((inquiry) =>
+        candidateInquiryToConversation(inquiry, viewerId)
       );
     },
   });
@@ -307,14 +302,19 @@ export function useOlderMessages(
         limit: MESSAGE_PAGE_SIZE,
         before: cursor,
       }),
-    onSuccess: (page) => {
-      queryClient.setQueryData<DisplayChatMessage[]>(
-        chatKeys.messages(conversationId, viewerId, mode),
-        (current) =>
-          mergeDisplayMessages(
-            current ?? [],
-            page.items.map((message) => toDisplayMessage(message, viewerId))
-          )
+    onSuccess: async (page) => {
+      const messagesKey = chatKeys.messages(conversationId, viewerId, mode);
+      // A newest-page fetch in flight would commit over this merge and drop
+      // the older page; let it land first.
+      await queryClient
+        .getQueryCache()
+        .find({ queryKey: messagesKey })
+        ?.promise?.catch(() => undefined);
+      queryClient.setQueryData<DisplayChatMessage[]>(messagesKey, (current) =>
+        mergeDisplayMessages(
+          current ?? [],
+          page.items.map((message) => toDisplayMessage(message, viewerId))
+        )
       );
       queryClient.setQueryData<MessageHistory>(historyKey, {
         before: page.hasMore ? page.nextCursor : null,
@@ -377,13 +377,15 @@ export function useWorkConversationQuery(
         liveSnapshot.capabilities.canWriteWorkChat && !workConversation.readOnly
       );
       const terminal = isTerminalStatus(liveSnapshot.state);
-      return enrichChatConversation({
+      return {
         ...converted,
         ...(otherParticipant?.id ? { participantId: otherParticipant.id } : {}),
         participantName:
           otherParticipant?.displayName ?? converted.participantName,
         participantRole:
-          otherParticipant?.role === QuestActor.HIRER ? "owner" : "member",
+          otherParticipant?.role === QuestActor.HIRER
+            ? ("owner" as const)
+            : ("member" as const),
         initials: (otherParticipant?.displayName ?? converted.participantName)
           .slice(0, 2)
           .toUpperCase(),
@@ -394,7 +396,7 @@ export function useWorkConversationQuery(
           readOnly: !canWrite,
           ...(terminal ? { readOnlyReason: "TERMINAL" as const } : {}),
         },
-      });
+      };
     },
   });
 }
@@ -426,8 +428,9 @@ export function useCandidateConversationQuery(
       ) {
         return null;
       }
-      return enrichChatConversation(
-        candidateInquiryToConversation({ ...inquiry, participants }, viewerId)
+      return candidateInquiryToConversation(
+        { ...inquiry, participants },
+        viewerId
       );
     },
   });

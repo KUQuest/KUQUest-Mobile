@@ -310,8 +310,6 @@ export default function ChatConversationScreen({
               color={conversation.avatarColor}
               name={conversation.participantName}
               profileId={conversation.participantId}
-              avatarUrl={conversation.participantAvatarUrl}
-              avatarFileId={conversation.participantAvatarFileId}
               onPress={openParticipantProfile}
             />
             <View className={styles.identityCopy}>
