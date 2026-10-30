@@ -1225,6 +1225,29 @@ export function useSubmitTeamRewardAllocationMutation() {
     },
   });
 }
+export function useSubmitTeamDisputeSplitMutation() {
+  const queryClient = useQueryClient();
+  return useMutation({
+    mutationFn: ({
+      questId,
+      shares,
+      idempotencyKey,
+    }: {
+      questId: string;
+      viewerId: string;
+      shares: { memberId: string; percentageBasisPoints: number }[];
+      idempotencyKey: string;
+    }) => disputeApi.submitTeamSplit(questId, shares, idempotencyKey),
+    onSuccess: async (_, variables) => {
+      await invalidateWorkerQuestReads(
+        queryClient,
+        variables.questId,
+        variables.viewerId
+      );
+      await invalidateWalletQueries(queryClient);
+    },
+  });
+}
 export function useCreateEditRequestMutation() {
   const queryClient = useQueryClient();
   return useMutation({

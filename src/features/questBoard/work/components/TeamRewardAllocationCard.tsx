@@ -16,10 +16,14 @@ export default function TeamRewardAllocationCard({
   messages,
   submitting,
   onSubmit,
+  title = messages.allocationTitle,
+  description = messages.allocationDescription,
 }: {
   allocation: QuestV2RewardAllocation;
   messages: QuestWorkMessages;
   submitting: boolean;
+  title?: string;
+  description?: string;
   onSubmit: (
     shares: { memberId: string; percentageBasisPoints: number }[]
   ) => Promise<void>;
@@ -78,7 +82,7 @@ export default function TeamRewardAllocationCard({
       percentageBasisPoints: basisPoints,
     }));
     showConfirmModal({
-      title: messages.allocationTitle,
+      title,
       message: allocation.members
         .map(
           (member, index) =>
@@ -100,10 +104,10 @@ export default function TeamRewardAllocationCard({
         accessibilityRole="header"
         className="font-ku-bold text-ku-title-small text-ku-text-strong"
       >
-        {messages.allocationTitle}
+        {title}
       </Text>
       <Text className="font-ku-regular text-ku-body-small text-ku-text-secondary">
-        {messages.allocationDescription}
+        {description}
       </Text>
       {pending ? (
         <>

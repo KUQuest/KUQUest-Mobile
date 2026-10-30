@@ -16,6 +16,7 @@ import {
   useLiveQuestSnapshotQuery,
   useRespondToEditMutation,
   useStartWorkMutation,
+  useSubmitTeamDisputeSplitMutation,
   useSubmitTeamRewardAllocationMutation,
 } from "../api/questBoardQueries";
 import { useFileDispute } from "../dispute/useFileDispute";
@@ -66,6 +67,7 @@ export function useQuestWorkFeature({
   const respondToEditMutation = useRespondToEditMutation();
   const confirmCompletionMutation = useConfirmCompletionMutation();
   const submitAllocationMutation = useSubmitTeamRewardAllocationMutation();
+  const submitDisputeSplitMutation = useSubmitTeamDisputeSplitMutation();
   const snapshotPollingInterval = useCallback(
     (currentSnapshot: LiveQuestSnapshot | undefined): number | false => {
       if (
@@ -115,6 +117,7 @@ export function useQuestWorkFeature({
   // Kept across a failed delivery so a retry replays the same command.
   const startWorkKeyRef = useRef<string | null>(null);
   const allocationKeyRef = useRef<{ body: string; key: string } | null>(null);
+  const disputeSplitKeyRef = useRef<{ body: string; key: string } | null>(null);
   const [commandError, setCommandError] = useState<string | null>(null);
   const snapshotErrorText = snapshotQuery.error
     ? getLocalizedErrorMessage(snapshotQuery.error, locale, {
@@ -356,6 +359,43 @@ export function useQuestWorkFeature({
     ]
   );
 
+  const submitTeamDisputeSplit = useCallback(
+    async (shares: { memberId: string; percentageBasisPoints: number }[]) => {
+      if (!routeQuestId || !resolvedViewerId) return;
+      setCommandError(null);
+      const body = JSON.stringify(shares);
+      if (
+        !disputeSplitKeyRef.current ||
+        disputeSplitKeyRef.current.body !== body
+      ) {
+        disputeSplitKeyRef.current = { body, key: createQuestIdempotencyKey() };
+      }
+      try {
+        await submitDisputeSplitMutation.mutateAsync({
+          questId: routeQuestId,
+          viewerId: resolvedViewerId,
+          shares,
+          idempotencyKey: disputeSplitKeyRef.current.key,
+        });
+        disputeSplitKeyRef.current = null;
+      } catch (error) {
+        setCommandError(
+          getLocalizedErrorMessage(error, locale, {
+            fallback: messages.serverError,
+          })
+        );
+      }
+      await refreshSnapshot().catch(() => null);
+    },
+    [
+      locale,
+      messages.serverError,
+      refreshSnapshot,
+      resolvedViewerId,
+      routeQuestId,
+      submitDisputeSplitMutation,
+    ]
+  );
   const { confirmFileDispute } = useFileDispute();
   const openDispute = useCallback(() => {
     if (routeQuestId) confirmFileDispute(routeQuestId);
@@ -407,5 +447,7 @@ export function useQuestWorkFeature({
     startWorkSending,
     submitTeamRewardAllocation,
     allocationSending: submitAllocationMutation.isPending,
+    submitTeamDisputeSplit,
+    disputeSplitSending: submitDisputeSplitMutation.isPending,
   };
 }

@@ -1,3 +1,4 @@
+import TeamDisputeSplitCard from "./TeamDisputeSplitCard";
 import React from "react";
 import {
   AlertTriangle,
@@ -60,6 +61,10 @@ export interface QuestWorkActionsCardProps {
   ) => void | Promise<void>;
   onConfirmCompletion: () => void | Promise<void>;
   onFileDispute?: () => void;
+  onSubmitDisputeSplit: (
+    shares: { memberId: string; percentageBasisPoints: number }[]
+  ) => Promise<void>;
+  disputeSplitSending: boolean;
   onOpenChat: () => void;
 }
 
@@ -81,6 +86,8 @@ export default function QuestWorkActionsCard({
   onRespondToEdit,
   onConfirmCompletion,
   onFileDispute,
+  onSubmitDisputeSplit,
+  disputeSplitSending,
   onOpenChat,
 }: QuestWorkActionsCardProps) {
   const { colors: palette } = useAppTheme();
@@ -107,7 +114,9 @@ export default function QuestWorkActionsCard({
   const disputeStatusError =
     isFailedWorker && serverDispute === undefined && disputeQuery.isError;
   const filedDispute =
-    serverDispute?.myCase ?? (isFailedWorker ? disputeQuery.data?.case : null);
+    serverDispute?.myCase ??
+    serverDispute?.teamCase ??
+    (isFailedWorker ? disputeQuery.data?.case : null);
   // Only the Team Leader files for a Candidate Team.
   const canFileDispute =
     snapshot.teamRole !== QuestTeamRole.MEMBER &&
@@ -203,6 +212,15 @@ export default function QuestWorkActionsCard({
             </Pressable>
           ) : null}
         </View>
+      ) : null}
+
+      {serverDispute?.teamSplit ? (
+        <TeamDisputeSplitCard
+          split={serverDispute.teamSplit}
+          messages={messages}
+          submitting={disputeSplitSending}
+          onSubmit={onSubmitDisputeSplit}
+        />
       ) : null}
 
       {isFailedWorker && !pendingDisputeStatus ? (

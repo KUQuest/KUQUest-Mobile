@@ -1258,6 +1258,49 @@ describe("QuestWorkScreen", () => {
       ).toBeTruthy();
     });
 
+    it("shows the Team Dispute split when the failed Quest's roster is unreadable", async () => {
+      mockedGetSnapshot.mockResolvedValue(
+        makeSnapshot({
+          ...groupCandidate,
+          state: "QUEST_FAILED",
+          team: null,
+          teamRole: "UNKNOWN",
+          quest: {
+            state: "QUEST_FAILED",
+            dispute: {
+              canFile: false,
+              windowEndsAt: null,
+              myCase: null,
+              teamCase: {
+                id: "case-1",
+                displayId: "DC-000001",
+                status: "DISPUTE_CASE_RESOLVED",
+                createdAt: "2099-08-26T12:00:00.000Z",
+              },
+              teamSplit: {
+                disputeCaseId: "case-1",
+                status: "AWAITING_SPLIT",
+                splitSource: null,
+                approvedAmountSatang: 10_000,
+                deadlineAt: "2099-08-27T12:00:00.000Z",
+                confirmedAt: null,
+                paidAt: null,
+                paymentPending: false,
+                viewerIsLeader: false,
+                canSubmitSplit: false,
+                members: [],
+              },
+            },
+          },
+        })
+      );
+      const view = await renderWithQueryClient(
+        <QuestWorkScreen questId="quest-work-1" viewerId="worker-1" />
+      );
+      expect(await view.findByTestId("team-dispute-split")).toBeTruthy();
+      expect(view.getByText(/Waiting for the Team Leader/)).toBeTruthy();
+    });
+
     it("hides File Dispute from a Team Member and keeps it for the Team Leader", async () => {
       const failed = {
         ...groupCandidate,

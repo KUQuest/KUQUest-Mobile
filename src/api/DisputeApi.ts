@@ -1,5 +1,9 @@
 import { z } from "zod";
 import { ApiClient } from "./ApiClient";
+import {
+  questV2DisputeTeamSplitSchema,
+  type QuestV2DisputeTeamSplit,
+} from "./questV2Contracts";
 
 /** Fields the mobile app reads from `fileQuestDispute` (docs/api/api.yaml). */
 export const disputeCaseSchema = z.object({
@@ -50,6 +54,20 @@ export class DisputeApi {
       `/api/v1/quests/${questId}/disputes`,
       disputeCaseSchema,
       { json: input }
+    );
+  }
+
+  /** The Team Leader confirms every member's share; shares total 10,000 basis points. */
+  async submitTeamSplit(
+    questId: string,
+    shares: { memberId: string; percentageBasisPoints: number }[],
+    idempotencyKey: string
+  ): Promise<QuestV2DisputeTeamSplit> {
+    return this.client.send(
+      "POST",
+      `/api/v1/quests/${questId}/disputes/team-split`,
+      questV2DisputeTeamSplitSchema,
+      { json: { shares }, idempotencyKey }
     );
   }
 }

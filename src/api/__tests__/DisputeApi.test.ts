@@ -27,6 +27,40 @@ describe("DisputeApi", () => {
     api = new DisputeApi(client);
   });
 
+  it("confirms the Team split with every share and an Idempotency-Key", async () => {
+    const memberId = "22222222-2222-4222-8222-222222222222";
+    fetchMock.mockResolvedValue(
+      jsonResponse(200, {
+        success: true,
+        data: {
+          disputeCaseId: "33333333-3333-4333-8333-333333333333",
+          status: "SPLIT_CONFIRMED",
+          splitSource: "LEADER",
+          approvedAmountSatang: 10_000,
+          deadlineAt: "2099-08-27T12:00:00.000Z",
+          confirmedAt: "2099-08-26T12:00:00.000Z",
+          paidAt: null,
+          paymentPending: true,
+          viewerIsLeader: true,
+          canSubmitSplit: false,
+          members: [],
+        },
+      })
+    );
+    const shares = [{ memberId, percentageBasisPoints: 10_000 }];
+
+    const result = await api.submitTeamSplit("quest-101", shares, "split-key");
+
+    expect(result.status).toBe("SPLIT_CONFIRMED");
+    const [url, init] = fetchMock.mock.calls[0];
+    expect(String(url)).toBe(
+      "https://api.example.test/api/v1/quests/quest-101/disputes/team-split"
+    );
+    expect(init.method).toBe("POST");
+    expect(JSON.parse(init.body)).toEqual({ shares });
+    expect(new Headers(init.headers).get("idempotency-key")).toBe("split-key");
+  });
+
   it("files with the required request body and reads the Dispute Case from data", async () => {
     fetchMock.mockResolvedValue(
       jsonResponse(200, {

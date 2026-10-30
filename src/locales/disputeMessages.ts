@@ -26,6 +26,12 @@ export interface DisputeMessages {
   windowEndsIn: (hours: number, minutes: number) => string;
   moneyHeldUntil: (date: string) => string;
   moneyReleased: string;
+  teamSplitTitle: string;
+  teamSplitDescription: (amount: string) => string;
+  teamSplitApproved: (amount: string) => string;
+  teamSplitAwaiting: (deadline: string) => string;
+  teamSplitPaying: string;
+  teamSplitPaid: string;
 }
 
 export const disputeMessages: Record<SupportedLocale, DisputeMessages> = {
@@ -67,6 +73,14 @@ export const disputeMessages: Record<SupportedLocale, DisputeMessages> = {
       `You can file a Dispute Case for ${hours > 0 ? `${hours}h ` : ""}${minutes}m more.`,
     moneyHeldUntil: (date) => `Money is held until ${date}.`,
     moneyReleased: "The money hold has been released.",
+    teamSplitTitle: "Split the Dispute amount",
+    teamSplitDescription: (amount) =>
+      `Admin approved ${amount} for the Team. Set each share. If you do not split in time, the Server splits it equally.`,
+    teamSplitApproved: (amount) => `Admin approved ${amount} for the Team.`,
+    teamSplitAwaiting: (deadline) =>
+      `Waiting for the Team Leader to split it by ${deadline}. If they do not, the Server splits it equally.`,
+    teamSplitPaying: "The split is confirmed. Payment is in progress.",
+    teamSplitPaid: "Paid to each member's Earnings Balance.",
   },
   th: {
     rules: [
@@ -106,5 +120,13 @@ export const disputeMessages: Record<SupportedLocale, DisputeMessages> = {
       `ยื่นคำร้องข้อพิพาทได้อีก ${hours > 0 ? `${hours} ชม. ` : ""}${minutes} นาที`,
     moneyHeldUntil: (date) => `เงินถูกพักไว้จนถึง ${date}`,
     moneyReleased: "ปล่อยเงินที่พักไว้แล้ว",
+    teamSplitTitle: "แบ่งเงินจากข้อพิพาท",
+    teamSplitDescription: (amount) =>
+      `ผู้ดูแลระบบอนุมัติ ${amount} ให้ทีม กำหนดสัดส่วนของแต่ละคน ถ้าไม่แบ่งทันเวลา ระบบจะหารเท่ากัน`,
+    teamSplitApproved: (amount) => `ผู้ดูแลระบบอนุมัติ ${amount} ให้ทีม`,
+    teamSplitAwaiting: (deadline) =>
+      `รอหัวหน้าทีมแบ่งเงินภายใน ${deadline} ถ้าไม่แบ่ง ระบบจะหารเท่ากัน`,
+    teamSplitPaying: "ยืนยันการแบ่งแล้ว กำลังโอนเงิน",
+    teamSplitPaid: "โอนเข้ายอดรายได้ของสมาชิกแต่ละคนแล้ว",
   },
 };

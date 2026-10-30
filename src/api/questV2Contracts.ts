@@ -119,17 +119,44 @@ export const questV2PublicImageSchema = z.object({
 export type QuestV2PublicImage = z.infer<typeof questV2PublicImageSchema>;
 
 export const questV2ImageSchema = questV2OwnerImageSchema;
+const questV2DisputeCaseViewSchema = z.object({
+  id: questV2IdSchema,
+  displayId: z.string(),
+  status: z.string(),
+  createdAt: z.string(),
+});
+export const questV2DisputeTeamSplitSchema = z.object({
+  disputeCaseId: questV2IdSchema,
+  status: z.enum(["AWAITING_SPLIT", "SPLIT_CONFIRMED", "PAID"]),
+  splitSource: z.enum(["LEADER", "AUTO_EQUAL"]).nullable(),
+  approvedAmountSatang: z.number().int().positive(),
+  deadlineAt: z.string(),
+  confirmedAt: z.string().nullable(),
+  paidAt: z.string().nullable(),
+  paymentPending: z.boolean(),
+  viewerIsLeader: z.boolean(),
+  canSubmitSplit: z.boolean(),
+  members: z.array(
+    z.object({
+      memberId: questV2IdSchema,
+      displayName: z.string(),
+      isLeader: z.boolean(),
+      percentageBasisPoints: z.number().int().min(0).max(10_000).nullable(),
+      amountSatang: z.number().int().nonnegative().nullable(),
+      paidAt: z.string().nullable(),
+    })
+  ),
+});
+export type QuestV2DisputeTeamSplit = z.infer<
+  typeof questV2DisputeTeamSplitSchema
+>;
 export const questV2DisputeWindowSchema = z.object({
   canFile: z.boolean(),
   windowEndsAt: z.string().nullable(),
-  myCase: z
-    .object({
-      id: questV2IdSchema,
-      displayId: z.string(),
-      status: z.string(),
-      createdAt: z.string(),
-    })
-    .nullable(),
+  myCase: questV2DisputeCaseViewSchema.nullable(),
+  /** The Candidate Team's case and split; absent on an older API response. */
+  teamCase: questV2DisputeCaseViewSchema.nullable().optional(),
+  teamSplit: questV2DisputeTeamSplitSchema.nullable().optional(),
 });
 export type QuestV2DisputeWindow = z.infer<typeof questV2DisputeWindowSchema>;
 export const questV2MoneyHoldSchema = z.object({

@@ -74,6 +74,8 @@ export default function QuestWorkScreen(props: QuestWorkScreenProps) {
     startWorkSending,
     submitTeamRewardAllocation,
     allocationSending,
+    submitTeamDisputeSplit,
+    disputeSplitSending,
   } = useQuestWorkFeature(props);
   const tagQuery = useQuestTagsQuery();
   const tagCatalog = tagQuery.data ?? [];
@@ -279,6 +281,8 @@ export default function QuestWorkScreen(props: QuestWorkScreenProps) {
       onRespondToEdit={respondToEdit}
       onConfirmCompletion={confirmCompletion}
       onFileDispute={resolvedQuestId ? openDispute : undefined}
+      onSubmitDisputeSplit={submitTeamDisputeSplit}
+      disputeSplitSending={disputeSplitSending}
       onOpenChat={openChat}
     />
   );
