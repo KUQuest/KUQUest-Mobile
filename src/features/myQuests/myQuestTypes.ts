@@ -4,7 +4,13 @@ export type StatusTone = "success" | "warning" | "danger" | "neutral";
 export type CategoryTone = "green" | "blue" | "purple";
 /** Card actions route to existing Quest screens; cancel is handled separately. */
 export type QuestCardAction =
-  "edit" | "manage" | "review" | "proofReview" | "completionReview" | "dispute";
+  | "edit"
+  | "manage"
+  | "review"
+  | "proofReview"
+  | "proofHistory"
+  | "completionReview"
+  | "dispute";
 export type QuestSummary = {
   id: string;
   title: string;

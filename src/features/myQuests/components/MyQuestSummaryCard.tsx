@@ -6,6 +6,7 @@ import {
   Check,
   CircleX,
   Clock3,
+  Files,
   Globe,
   MapPin,
   Pencil,
@@ -59,6 +60,7 @@ const ACTION_ICONS: Record<QuestCardAction, LucideIcon> = {
   manage: Settings2,
   review: Star,
   proofReview: ShieldCheck,
+  proofHistory: Files,
   completionReview: ShieldCheck,
   dispute: TriangleAlert,
 };
@@ -68,6 +70,7 @@ const ACTION_MESSAGE_KEYS = {
   manage: "manage",
   review: "review",
   proofReview: "proofReview",
+  proofHistory: "proofHistory",
   completionReview: "completionReview",
   dispute: "fileDispute",
 } as const satisfies Record<QuestCardAction, keyof MyQuestMessages>;

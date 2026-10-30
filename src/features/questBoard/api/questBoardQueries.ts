@@ -7,7 +7,7 @@ import {
   useQueryClient,
 } from "@tanstack/react-query";
 import type { QueryClient, QueryKey } from "@tanstack/react-query";
-import { ApiError } from "@/api/ApiClient";
+import { ApiError, type RequestOptions } from "@/api/ApiClient";
 import { questApi } from "@/api/QuestApi";
 import type { UploadAsset } from "@/api/fileUpload";
 import {
@@ -23,6 +23,7 @@ import type {
 } from "@/api/QuestApi";
 import {
   questV2ProofFileStatusSchema,
+  type QuestV2ProofFileLink,
   type QuestV2ProofSubmission,
   type QuestV2TeamFileLink,
 } from "@/api/questV2Contracts";
@@ -92,6 +93,27 @@ export const questBoardKeys = {
     ] as const,
 };
 
+/**
+ * Gets an authorized, short-lived URL for one submitted Proof file.
+ * Presentation components use this feature API seam instead of calling the
+ * transport client directly when a URL needs refreshing.
+ */
+export function fetchProofFileLink(
+  questId: string,
+  proofSubmissionId: string,
+  fileId: string,
+  options?: RequestOptions
+): Promise<QuestV2ProofFileLink> {
+  return questApi
+    .getProofFileLink(questId, proofSubmissionId, fileId, options)
+    .then((link) => {
+      if (link.fileId !== fileId) {
+        throw new Error("Proof file endpoint returned a mismatched file");
+      }
+      return link;
+    });
+}
+
 export function setQuestEditRequestId(
   queryClient: QueryClient,
   questId: string,
@@ -127,19 +149,13 @@ export function useProofFileLinksQuery(
       if (!questId || !proof) {
         throw new Error("A quest and proof submission are required");
       }
-      const fileLinks = await Promise.all(
+      return Promise.all(
         fileIds.map((fileId) =>
-          questApi.getProofFileLink(questId, proof.id, fileId, {
+          fetchProofFileLink(questId, proof.id, fileId, {
             signal,
           })
         )
       );
-      if (
-        fileLinks.some((fileLink, index) => fileLink.fileId !== fileIds[index])
-      ) {
-        throw new Error("Proof file endpoint returned a mismatched file");
-      }
-      return fileLinks;
     },
     staleTime: 0,
   });

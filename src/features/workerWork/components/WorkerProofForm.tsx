@@ -39,6 +39,7 @@ import { getLocalizedErrorMessage } from "@/utils/error";
 import { planProofSend, type ProofDraftRef } from "../proofDraftPlan";
 import { latestSentProof, unsentProofDraft } from "../workerWorkProjection";
 import { ProofFilePicker, type ProofFile } from "./ProofFilePicker";
+import { ProofSubmissionFiles } from "@/features/questBoard/shared/ProofSubmissionFiles";
 
 const MAX_PROOF_FILES = 5;
 const MAX_PROOF_FILE_BYTES = 10 * 1024 * 1024;
@@ -131,7 +132,7 @@ export function WorkerProofForm({
       <SentProofCard
         messages={messages}
         palette={palette}
-        status={sentProof.status}
+        proof={sentProof}
         submittedAt={
           sentProof.submittedAt
             ? formatTimestampDateTime(sentProof.submittedAt, locale)
@@ -493,14 +494,15 @@ export function WorkerProofForm({
 function SentProofCard({
   messages,
   palette,
-  status,
+  proof,
   submittedAt,
 }: {
   messages: WorkerWorkMessages;
   palette: ThemeColors;
-  status: QuestProofStatus | null;
+  proof: NonNullable<ReturnType<typeof latestSentProof>>;
   submittedAt: string | null;
 }) {
+  const status = proof.status;
   const Icon =
     status === QuestProofStatus.PROOF_APPROVED
       ? CheckCircle2
@@ -548,6 +550,7 @@ function SentProofCard({
         <Text className="font-ku-regular text-ku-body-small text-ku-text-secondary">
           {description}
         </Text>
+        <ProofSubmissionFiles proof={proof} />
       </View>
     </View>
   );
