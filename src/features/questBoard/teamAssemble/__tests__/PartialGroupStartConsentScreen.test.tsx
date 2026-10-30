@@ -1,5 +1,6 @@
 import { formatTimestampDate, formatTimeInBangkok } from "@/domain/datetime";
 import { groupQuestMessages } from "@/locales/groupQuestMessages";
+import * as sweetAlert from "@/components/ui/SweetAlert";
 import { act, fireEvent } from "@testing-library/react-native";
 
 import { resetServerClock } from "@/api/serverClock";
@@ -144,6 +145,9 @@ describe("PartialGroupStartConsentScreen", () => {
   });
 
   it("formats due date and forwards pending Worker consent", async () => {
+    const details = jest
+      .spyOn(sweetAlert, "showSweetAlert")
+      .mockImplementation(() => undefined);
     const onWorkerConsent = jest.fn();
     const dueAt = "2030-10-02T12:00:00.000Z";
     const model = makeView({
@@ -201,23 +205,39 @@ describe("PartialGroupStartConsentScreen", () => {
       <PartialGroupStartConsentScreen questId="quest-1" />
     );
 
-    expect(
-      screen.getByText("1 Oct 2030 19:00 → 2 Oct 2030 19:00")
-    ).toBeTruthy();
+    expect(screen.getByText("Previous: 1 Oct 2030 19:00")).toBeTruthy();
+    expect(screen.getByText("New: 2 Oct 2030 19:00")).toBeTruthy();
     expect(screen.getByText("The quest details changed")).toBeTruthy();
     expect(screen.getByText("You need to respond")).toBeTruthy();
-    expect(screen.getByText(/฿200 → ฿150/)).toBeTruthy();
+    expect(screen.getByText("Previous: ฿200")).toBeTruthy();
+    expect(screen.getByText("New: ฿150")).toBeTruthy();
     expect(
-      screen.getByText(/Accepting does not start the quest by itself/)
+      screen.getByText(groupQuestMessages.en.responseSummary)
     ).toBeTruthy();
+    await fireEvent.press(
+      screen.getByRole("button", {
+        name: groupQuestMessages.en.responseDetails,
+      })
+    );
+    expect(details).toHaveBeenCalledWith(
+      expect.objectContaining({
+        message: `${groupQuestMessages.en.acceptingWaitsForEveryone}\n\n${groupQuestMessages.en.decliningCancelsForEveryone}`,
+      })
+    );
+    details.mockRestore();
     expect(screen.getByText("Accept")).toBeTruthy();
     expect(screen.getByText("Decline")).toBeTruthy();
+    expect(screen.getByTestId("partial-group-start-votes")).toBeTruthy();
+    expect(screen.queryByTestId("partial-group-start-roster")).toBeNull();
     await fireEvent.press(screen.getByTestId("partial-group-start-approve"));
     expect(onWorkerConsent).toHaveBeenCalledWith(
       QuestUnderfilledConsentDecision.ACCEPT
     );
   });
   it("separates hirer decision from Worker response", async () => {
+    const details = jest
+      .spyOn(sweetAlert, "showSweetAlert")
+      .mockImplementation(() => undefined);
     const model = makeView({
       quest: { id: "quest-1" },
       state: "ready",
@@ -242,8 +262,19 @@ describe("PartialGroupStartConsentScreen", () => {
     );
     expect(screen.getByText("Waiting for the hirer's decision")).toBeTruthy();
     expect(
-      screen.getByText(/Proceeding gives joined workers 10 minutes/)
+      screen.getByText(groupQuestMessages.en.decisionSummary)
     ).toBeTruthy();
+    await fireEvent.press(
+      screen.getByRole("button", {
+        name: groupQuestMessages.en.responseDetails,
+      })
+    );
+    expect(details).toHaveBeenCalledWith(
+      expect.objectContaining({
+        message: `${groupQuestMessages.en.proceedConsequence}\n\n${groupQuestMessages.en.cancelConsequence}`,
+      })
+    );
+    details.mockRestore();
     expect(screen.getByTestId("partial-group-start-proceed")).toBeTruthy();
     expect(screen.queryByTestId("partial-group-start-approve")).toBeNull();
   });
@@ -291,7 +322,7 @@ describe("PartialGroupStartConsentScreen", () => {
       screen.getByText("You accepted — waiting for 1 other worker.")
     ).toBeTruthy();
     expect(
-      screen.getByText(/Accepting does not start the quest by itself/)
+      screen.getByText(groupQuestMessages.en.responseSummary)
     ).toBeTruthy();
     expect(screen.queryByTestId("partial-group-start-approve")).toBeNull();
   });
