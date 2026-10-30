@@ -1,14 +1,25 @@
 import React, { useEffect, useRef, useState } from "react";
 import { useLocalSearchParams, useRouter } from "expo-router";
-import { ChevronRight, Pencil, Plus } from "lucide-react-native";
+import { useSafeAreaInsets } from "react-native-safe-area-context";
+import {
+  Award,
+  Briefcase,
+  ChevronRight,
+  FolderOpen,
+  GraduationCap,
+  Pencil,
+  Plus,
+} from "lucide-react-native";
 import type { ProfileEditData } from "../../api/StudentApi";
 import { useProfileEditDataQuery } from "../profile/api/profileQueries";
 import { profileEditMessages } from "../../locales/profileEditMessages";
 import { useLocale } from "@/features/preferences/localeStore";
-import { Button } from "../../components/ui/Button";
+import { formatDisplayMonthYear } from "../profile/profileFormatting";
 import { Image, Pressable, ScrollView, Text, View } from "../../tw";
 import { useAppTheme } from "@/features/workspace/AppThemeProvider";
+import { Avatar } from "../../components/ui/Avatar";
 import { ScreenLayout } from "../../components/layout/ScreenLayout";
+import { cn } from "@/tw/cn";
 import styles from "./profileEditStyles";
 import type {
   CertificateEntry,
@@ -55,23 +66,19 @@ function HubContent({ data }: { data: ProfileEditData }) {
     router.push("/onboarding?mode=edit");
   };
   const sections: {
-    key: HubSectionKey;
+    key: Exclude<HubSectionKey, "basics">;
     title: string;
     summary: string;
+    icon: typeof Award;
     onPress: () => void;
   }[] = [
-    {
-      key: "basics",
-      title: messages.basics,
-      summary: messages.basicsSummary,
-      onPress: () => router.push("/profile/edit/basics"),
-    },
     {
       key: "academic-registration",
       title: messages.academicRegistration,
       summary: academicUnavailable
         ? messages.unavailable
         : messages.academicRegistrationSummary,
+      icon: GraduationCap,
       onPress: openAcademicRegistration,
     },
     {
@@ -81,6 +88,7 @@ function HubContent({ data }: { data: ProfileEditData }) {
         data.sectionUnavailable.experience || data.sectionErrors.experience
           ? messages.unavailable
           : messages.experienceSummary(data.experiences.length),
+      icon: Briefcase,
       onPress: () => router.push("/profile/edit/experience"),
     },
     {
@@ -90,6 +98,7 @@ function HubContent({ data }: { data: ProfileEditData }) {
         data.sectionUnavailable.portfolio || data.sectionErrors.portfolio
           ? messages.unavailable
           : messages.portfolioSummary(data.portfolio.length),
+      icon: FolderOpen,
       onPress: () => router.push("/profile/edit/portfolio"),
     },
     {
@@ -99,9 +108,11 @@ function HubContent({ data }: { data: ProfileEditData }) {
         data.sectionUnavailable.certificates || data.sectionErrors.certificates
           ? messages.unavailable
           : messages.certificatesSummary(data.certificates.length),
+      icon: Award,
       onPress: () => router.push("/profile/edit/certificates"),
     },
   ];
+  const fullName = `${data.profile.firstName} ${data.profile.lastName}`.trim();
 
   return (
     <ScreenLayout edges={["top", "left", "right"]} className={styles.safeArea}>
@@ -114,29 +125,64 @@ function HubContent({ data }: { data: ProfileEditData }) {
           backLabel={messages.back}
           onBack={() => router.back()}
         />
-        <Text className={styles.intro}>{messages.basicsSummary}</Text>
-        <View className={styles.sectionList}>
-          {sections.map((section) => (
-            <Pressable
-              key={section.key}
-              testID={`profile-edit-section-${section.key}`}
-              accessibilityRole="button"
-              className={styles.sectionRow}
-              onPress={section.onPress}
-            >
-              <View className={styles.sectionRowContent}>
-                <Text className={styles.sectionRowTitle}>{section.title}</Text>
-                <Text className={styles.sectionRowSummary}>
-                  {section.summary}
-                </Text>
-              </View>
-              <ChevronRight
-                color={colors.textMuted}
-                size={22}
-                strokeWidth={2}
-              />
-            </Pressable>
-          ))}
+        <Pressable
+          testID="profile-edit-section-basics"
+          accessibilityRole="button"
+          accessibilityLabel={`${messages.basics}: ${fullName}`}
+          className={styles.hubProfile}
+          onPress={() => router.push("/profile/edit/basics")}
+        >
+          <View>
+            <Avatar
+              name={fullName}
+              uri={data.profile.avatar?.url}
+              size={88}
+              textClassName="text-ku-title-large"
+            />
+            <View className={styles.hubProfileBadge}>
+              <Pencil color={colors.onPrimary} size={14} />
+            </View>
+          </View>
+          <Text className={styles.hubProfileName} numberOfLines={2}>
+            {fullName}
+          </Text>
+          <Text className={styles.hubProfileSub} numberOfLines={1}>
+            {data.profile.email}
+          </Text>
+        </Pressable>
+        <View className={styles.hubGroup}>
+          {sections.map((section, index) => {
+            const Icon = section.icon;
+            return (
+              <Pressable
+                key={section.key}
+                testID={`profile-edit-section-${section.key}`}
+                accessibilityRole="button"
+                className={cn(
+                  styles.hubRow,
+                  index > 0 ? styles.hubRowDivider : null
+                )}
+                onPress={section.onPress}
+              >
+                <View className={styles.hubRowIcon}>
+                  <Icon color={colors.primary} size={20} strokeWidth={2} />
+                </View>
+                <View className={styles.sectionRowContent}>
+                  <Text className={styles.sectionRowTitle}>
+                    {section.title}
+                  </Text>
+                  <Text className={styles.sectionRowSummary}>
+                    {section.summary}
+                  </Text>
+                </View>
+                <ChevronRight
+                  color={colors.textMuted}
+                  size={22}
+                  strokeWidth={2}
+                />
+              </Pressable>
+            );
+          })}
         </View>
       </ScrollView>
     </ScreenLayout>
@@ -163,6 +209,7 @@ function SectionListScreen({
 }) {
   const { colors } = useAppTheme();
   const router = useRouter();
+  const insets = useSafeAreaInsets();
   const { locale } = useLocale();
   const messages = profileEditMessages[locale];
   const title =
@@ -202,7 +249,13 @@ function SectionListScreen({
             <Text className={styles.emptyText}>{messages.noItems}</Text>
           </View>
         ) : (
-          <View className={styles.sectionList}>
+          <View
+            className={
+              section === "portfolio"
+                ? styles.portfolioGrid
+                : styles.sectionList
+            }
+          >
             {items.map((item) =>
               section === "experience" ? (
                 <ExperienceRow
@@ -212,7 +265,7 @@ function SectionListScreen({
                   onPress={() => openItem((item as ExperienceEntry).id)}
                 />
               ) : section === "portfolio" ? (
-                <PortfolioRow
+                <PortfolioTile
                   key={(item as PortfolioEntry).id}
                   entry={item as PortfolioEntry}
                   noImageLabel={messages.noImage}
@@ -229,19 +282,20 @@ function SectionListScreen({
             )}
           </View>
         )}
-        {data.sectionUnavailable[section] ||
-        data.sectionErrors[section] ? null : (
-          <Button
-            variant="secondary"
-            className={styles.addButton}
-            onPress={() => openItem()}
-            accessibilityLabel={messages.add}
-          >
-            <Plus color={colors.primary} size={18} />
-            <Text className={styles.addButtonText}>{messages.add}</Text>
-          </Button>
-        )}
       </ScrollView>
+      {data.sectionUnavailable[section] ||
+      data.sectionErrors[section] ? null : (
+        <Pressable
+          accessibilityRole="button"
+          accessibilityLabel={messages.add}
+          className={styles.fab}
+          onPress={() => openItem()}
+          style={{ bottom: insets.bottom + 16 }}
+          testID="profile-edit-add-button"
+        >
+          <Plus color={colors.onPrimary} size={28} strokeWidth={2.4} />
+        </Pressable>
+      )}
     </ScreenLayout>
   );
 }
@@ -256,6 +310,7 @@ function ExperienceRow({
   onPress: () => void;
 }) {
   const { colors } = useAppTheme();
+  const { locale } = useLocale();
   return (
     <Pressable
       accessibilityRole="button"
@@ -268,9 +323,11 @@ function ExperienceRow({
           {entry.organization || entry.employmentType}
         </Text>
         <Text className={styles.itemDescription}>
-          {entry.endedAt
-            ? `${entry.startedAt} – ${entry.endedAt}`
-            : `${entry.startedAt} – ${presentLabel}`}
+          {`${formatDisplayMonthYear(entry.startedAt, locale)} – ${
+            entry.endedAt
+              ? formatDisplayMonthYear(entry.endedAt, locale)
+              : presentLabel
+          }`}
         </Text>
       </View>
       <Pencil color={colors.primary} size={18} />
@@ -278,7 +335,7 @@ function ExperienceRow({
   );
 }
 
-function PortfolioRow({
+function PortfolioTile({
   entry,
   noImageLabel,
   onPress,
@@ -289,34 +346,33 @@ function PortfolioRow({
 }) {
   const image = entry.images[0]?.url;
   const [imageFailed, setImageFailed] = useState(false);
-  const { colors } = useAppTheme();
   return (
     <Pressable
       accessibilityRole="button"
-      className={styles.itemRow}
+      accessibilityLabel={entry.title}
+      className={styles.portfolioTile}
       onPress={onPress}
     >
       {image && !imageFailed ? (
         <Image
           source={{ uri: image }}
           onError={() => setImageFailed(true)}
-          className={styles.itemImage}
+          className={styles.portfolioTileImage}
           contentFit="cover"
         />
       ) : (
-        <View className={styles.itemImageFallback}>
+        <View className={styles.portfolioTileFallback}>
           <Text className={styles.itemImageFallbackText}>{noImageLabel}</Text>
         </View>
       )}
-      <View className={styles.itemRowContent}>
-        <Text className={styles.itemTitle}>{entry.title}</Text>
-        {entry.description ? (
-          <Text className={styles.itemDescription} numberOfLines={2}>
-            {entry.description}
-          </Text>
-        ) : null}
-      </View>
-      <Pencil color={colors.primary} size={18} />
+      <Text className={styles.portfolioTileTitle} numberOfLines={2}>
+        {entry.title}
+      </Text>
+      {entry.description ? (
+        <Text className={styles.portfolioTileDescription} numberOfLines={2}>
+          {entry.description}
+        </Text>
+      ) : null}
     </Pressable>
   );
 }
@@ -332,6 +388,7 @@ function CertificateRow({
 }) {
   const [imageFailed, setImageFailed] = useState(false);
   const { colors } = useAppTheme();
+  const { locale } = useLocale();
   return (
     <Pressable
       accessibilityRole="button"
@@ -353,7 +410,9 @@ function CertificateRow({
       <View className={styles.itemRowContent}>
         <Text className={styles.itemTitle}>{entry.name}</Text>
         <Text className={styles.itemMeta}>{entry.issuer}</Text>
-        <Text className={styles.itemDescription}>{entry.issuedAt}</Text>
+        <Text className={styles.itemDescription}>
+          {formatDisplayMonthYear(entry.issuedAt, locale)}
+        </Text>
       </View>
       <Pencil color={colors.primary} size={18} />
     </Pressable>
