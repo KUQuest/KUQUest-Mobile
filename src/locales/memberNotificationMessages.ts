@@ -4,6 +4,7 @@ import type {
 } from "@/api/NotificationApi";
 import type { SupportedLocale } from "./locale";
 
+type DisputeStatus = "DISPUTE_CASE_DISMISSED" | "DISPUTE_CASE_RESOLVED";
 type Copy = { title: string; body: string };
 /** `until` is the formatted `expiresAt`, or null when the server sent none. */
 type CopyBuilder = (
@@ -31,9 +32,20 @@ type MemberNotificationMessages = {
   loadMore: string;
   unread: string;
   opensProfile: string;
+  opensQuest: string;
+  opensRespondForm: string;
   openInbox: (count: number) => string;
   generic: Copy;
   types: Record<MemberNotificationType, CopyBuilder>;
+  dispute: {
+    filedAgainstYou: (questTitle: string | null) => Copy;
+    /** `viewerWon` is the server's answer for this Member; null when unknown. */
+    decided: (
+      status: DisputeStatus | null,
+      viewerWon: boolean | null,
+      questTitle: string | null
+    ) => Copy;
+  };
 };
 
 export const memberNotificationMessages: Record<
@@ -61,6 +73,8 @@ export const memberNotificationMessages: Record<
     loadMore: "Load more",
     unread: "Unread",
     opensProfile: "Opens your profile",
+    opensQuest: "Opens the Quest",
+    opensRespondForm: "Opens a form to send your statement",
     openInbox: (count) =>
       count > 0 ? `Notifications, ${count} unread` : "Notifications",
     generic: {
@@ -99,6 +113,39 @@ export const memberNotificationMessages: Record<
         body: "An Admin upheld a Conduct Report about you. Check your penalty status on your Profile.",
       }),
     },
+    dispute: {
+      filedAgainstYou: (questTitle) => ({
+        title: "A Dispute Case was filed against you",
+        body: questTitle
+          ? `About "${questTitle}". Open it to send your statement.`
+          : "Open it to send your statement.",
+      }),
+      decided: (status, viewerWon, questTitle) => {
+        const about = questTitle ? ` on "${questTitle}"` : "";
+        if (status === "DISPUTE_CASE_DISMISSED") {
+          return {
+            title: "Dispute Case dismissed",
+            body: `An Admin dismissed the Dispute Case${about}.`,
+          };
+        }
+        if (viewerWon === true) {
+          return {
+            title: "You won the Dispute Case",
+            body: `An Admin decided in your favour${about}.`,
+          };
+        }
+        if (viewerWon === false) {
+          return {
+            title: "You did not win the Dispute Case",
+            body: `An Admin decided against you${about}.`,
+          };
+        }
+        return {
+          title: "Dispute Case decided",
+          body: `An Admin decided the Dispute Case${about}.`,
+        };
+      },
+    },
   },
   th: {
     title: "การแจ้งเตือน",
@@ -121,6 +168,8 @@ export const memberNotificationMessages: Record<
     loadMore: "โหลดเพิ่ม",
     unread: "ยังไม่อ่าน",
     opensProfile: "เปิดโปรไฟล์ของคุณ",
+    opensQuest: "เปิดเควสต์",
+    opensRespondForm: "เปิดฟอร์มส่งคำชี้แจง",
     openInbox: (count) =>
       count > 0 ? `การแจ้งเตือน ยังไม่อ่าน ${count} รายการ` : "การแจ้งเตือน",
     generic: {
@@ -158,6 +207,39 @@ export const memberNotificationMessages: Record<
         title: "รายงานพฤติกรรมได้รับการยืนยัน",
         body: "แอดมินยืนยันรายงานพฤติกรรมเกี่ยวกับคุณ ตรวจสอบสถานะบทลงโทษได้ที่โปรไฟล์",
       }),
+    },
+    dispute: {
+      filedAgainstYou: (questTitle) => ({
+        title: "มีการยื่นคำร้องข้อพิพาทเกี่ยวกับคุณ",
+        body: questTitle
+          ? `เควสต์ "${questTitle}" เปิดเพื่อส่งคำชี้แจงของคุณ`
+          : "เปิดเพื่อส่งคำชี้แจงของคุณ",
+      }),
+      decided: (status, viewerWon, questTitle) => {
+        const about = questTitle ? ` ในเควสต์ "${questTitle}"` : "";
+        if (status === "DISPUTE_CASE_DISMISSED") {
+          return {
+            title: "คำร้องข้อพิพาทถูกยก",
+            body: `แอดมินยกคำร้องข้อพิพาท${about}`,
+          };
+        }
+        if (viewerWon === true) {
+          return {
+            title: "คุณชนะคำร้องข้อพิพาท",
+            body: `แอดมินตัดสินให้คุณชนะ${about}`,
+          };
+        }
+        if (viewerWon === false) {
+          return {
+            title: "คุณไม่ชนะคำร้องข้อพิพาท",
+            body: `แอดมินตัดสินไม่เข้าข้างคุณ${about}`,
+          };
+        }
+        return {
+          title: "คำร้องข้อพิพาทมีผลตัดสินแล้ว",
+          body: `แอดมินตัดสินคำร้องข้อพิพาท${about}`,
+        };
+      },
     },
   },
 };

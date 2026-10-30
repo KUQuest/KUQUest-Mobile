@@ -1,6 +1,7 @@
 import React from "react";
 import { fireEvent, screen, waitFor } from "@testing-library/react-native";
 
+import { disputeApi } from "@/api/DisputeApi";
 import { notificationApi } from "@/api/NotificationApi";
 import { renderWithQueryClient } from "@/testing/queryTestUtils";
 import { NotificationInboxScreen } from "../inbox/NotificationInboxScreen";
@@ -26,7 +27,34 @@ jest.mock("@/api/NotificationApi", () => ({
   },
 }));
 
+jest.mock("@/api/DisputeApi", () => ({
+  ...jest.requireActual("@/api/DisputeApi"),
+  disputeApi: { respondToDispute: jest.fn() },
+}));
+
 const api = jest.mocked(notificationApi);
+const disputes = jest.mocked(disputeApi);
+
+const filedAgainstYou = {
+  id: "d-1",
+  type: "DISPUTE_CASE_FILED_AGAINST_YOU",
+  createdAt: "2026-10-30T10:00:00Z",
+  readAt: null,
+  questId: "11111111-1111-4111-8111-111111111111",
+  questTitle: "Wash my car",
+  result: null,
+  expiresAt: null,
+  disputeCaseId: "22222222-2222-4222-8222-222222222222",
+  disputeStatus: null,
+  viewerWon: null,
+};
+const decided = {
+  ...filedAgainstYou,
+  id: "d-2",
+  type: "DISPUTE_CASE_DECIDED",
+  disputeStatus: "DISPUTE_CASE_RESOLVED" as const,
+  viewerWon: false,
+};
 
 const redFlag = {
   id: "n-1",
@@ -224,5 +252,60 @@ describe("NotificationInboxScreen", () => {
 
     await fireEvent.press(screen.getByTestId("notifications-filter-unread"));
     expect(await screen.findByText("You're all caught up")).toBeTruthy();
+  });
+
+  it("lets a Member answer a Dispute Case filed against them with one statement", async () => {
+    api.listNotifications.mockResolvedValue({
+      items: [filedAgainstYou],
+      nextCursor: null,
+    });
+    disputes.respondToDispute.mockResolvedValue({} as never);
+
+    await renderWithQueryClient(<NotificationInboxScreen />);
+    expect(
+      await screen.findByText("A Dispute Case was filed against you")
+    ).toBeTruthy();
+
+    await fireEvent.press(screen.getByTestId("notification-row-d-1"));
+    expect(mockPush).not.toHaveBeenCalled();
+    const send = screen.getByRole("button", { name: "Send statement" });
+    expect(send.props.accessibilityState.disabled).toBe(true);
+
+    await fireEvent.changeText(
+      screen.getByLabelText("Your statement"),
+      "  The proof did not match the Quest.  "
+    );
+    await fireEvent.press(
+      screen.getByRole("button", { name: "Send statement" })
+    );
+
+    await waitFor(() =>
+      expect(disputes.respondToDispute).toHaveBeenCalledWith(
+        "22222222-2222-4222-8222-222222222222",
+        "The proof did not match the Quest."
+      )
+    );
+    await waitFor(() =>
+      expect(screen.queryByLabelText("Your statement")).toBeNull()
+    );
+  });
+
+  it("opens the Quest from a decided Dispute Case with the server's verdict", async () => {
+    api.listNotifications.mockResolvedValue({
+      items: [decided],
+      nextCursor: null,
+    });
+
+    await renderWithQueryClient(<NotificationInboxScreen />);
+    expect(
+      await screen.findByText("You did not win the Dispute Case")
+    ).toBeTruthy();
+
+    await fireEvent.press(screen.getByTestId("notification-row-d-2"));
+    expect(mockPush).toHaveBeenCalledWith({
+      pathname: "/quest/[id]",
+      params: { id: decided.questId },
+    });
+    expect(screen.queryByLabelText("Your statement")).toBeNull();
   });
 });

@@ -3,11 +3,13 @@ import {
   Bell,
   Flag,
   FlagOff,
+  Scale,
   ShieldCheck,
   type LucideIcon,
 } from "lucide-react-native";
 
 import {
+  memberDisputeNotificationTypeSchema,
   memberNotificationTypeSchema,
   type MemberNotification,
   type MemberNotificationType,
@@ -31,6 +33,7 @@ export const notificationPresentationByType: Record<
 };
 
 const NEUTRAL: Presentation = { icon: Bell, tone: "neutral" };
+const DISPUTE: Presentation = { icon: Scale, tone: "warning" };
 
 export const notificationToneStyle: Record<
   NotificationTone,
@@ -45,6 +48,8 @@ export const notificationToneStyle: Record<
 export function notificationPresentation(
   notification: Pick<MemberNotification, "type" | "result">
 ): Presentation {
+  if (memberDisputeNotificationTypeSchema.safeParse(notification.type).success)
+    return DISPUTE;
   const type = memberNotificationTypeSchema.safeParse(notification.type);
   if (!type.success) return NEUTRAL;
   if (
@@ -62,4 +67,21 @@ export function notificationOpensProfile(
   notification: Pick<MemberNotification, "type" | "result">
 ): boolean {
   return notification.type === "CONDUCT_REPORT_UPHELD" || !!notification.result;
+}
+
+/** A case filed against the viewer opens the statement form. */
+export function notificationOpensRespondForm(
+  notification: Pick<MemberNotification, "type" | "disputeCaseId">
+): boolean {
+  return (
+    notification.type === "DISPUTE_CASE_FILED_AGAINST_YOU" &&
+    !!notification.disputeCaseId
+  );
+}
+
+/** A decided case opens its Quest, where the Member reads the money result. */
+export function notificationOpensQuest(
+  notification: Pick<MemberNotification, "type" | "questId">
+): boolean {
+  return notification.type === "DISPUTE_CASE_DECIDED" && !!notification.questId;
 }

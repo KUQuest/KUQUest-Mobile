@@ -29,6 +29,14 @@ export interface DisputeMessages {
   outcomeYouWon: (amount: string) => string;
   outcomeOtherWorkerPaid: (amount: string) => string;
   outcomeDismissed: string;
+  respondTitle: string;
+  respondIntro: string;
+  respondLabel: string;
+  respondSend: string;
+  respondSuccessTitle: string;
+  respondSuccessDescription: string;
+  respondErrorTitle: string;
+  respondErrorFallback: string;
 }
 
 export const disputeMessages: Record<SupportedLocale, DisputeMessages> = {
@@ -75,6 +83,16 @@ export const disputeMessages: Record<SupportedLocale, DisputeMessages> = {
     outcomeOtherWorkerPaid: (amount) =>
       `Admin paid ${amount} to another Worker on this Quest.`,
     outcomeDismissed: "You did not win the case. No money was moved.",
+    respondTitle: "Respond to the Dispute Case",
+    respondIntro:
+      "You can send one statement while the case is pending. An Admin reads it with the evidence before deciding.",
+    respondLabel: "Your statement",
+    respondSend: "Send statement",
+    respondSuccessTitle: "Statement sent",
+    respondSuccessDescription: "An Admin will read it when reviewing the case.",
+    respondErrorTitle: "Couldn't send your statement",
+    respondErrorFallback:
+      "The case may already have your statement or be closed. Please try again.",
   },
   th: {
     rules: [
@@ -119,5 +137,15 @@ export const disputeMessages: Record<SupportedLocale, DisputeMessages> = {
     outcomeOtherWorkerPaid: (amount) =>
       `แอดมินจ่าย ${amount} ให้ผู้ทำงานคนอื่นในเควสต์นี้`,
     outcomeDismissed: "คุณไม่ชนะคำร้อง ไม่มีการโอนเงิน",
+    respondTitle: "ตอบคำร้องข้อพิพาท",
+    respondIntro:
+      "คุณส่งคำชี้แจงได้หนึ่งครั้งขณะที่คำร้องยังรอตัดสิน แอดมินจะอ่านพร้อมหลักฐานก่อนตัดสิน",
+    respondLabel: "คำชี้แจงของคุณ",
+    respondSend: "ส่งคำชี้แจง",
+    respondSuccessTitle: "ส่งคำชี้แจงแล้ว",
+    respondSuccessDescription: "แอดมินจะอ่านคำชี้แจงนี้ตอนตรวจสอบคำร้อง",
+    respondErrorTitle: "ส่งคำชี้แจงไม่สำเร็จ",
+    respondErrorFallback:
+      "คำร้องอาจมีคำชี้แจงของคุณแล้วหรือปิดไปแล้ว โปรดลองอีกครั้ง",
   },
 };

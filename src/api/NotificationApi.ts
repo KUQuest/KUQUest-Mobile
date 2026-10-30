@@ -13,6 +13,23 @@ export type MemberNotificationType = z.infer<
   typeof memberNotificationTypeSchema
 >;
 
+/**
+ * Dispute Case `type` values (staging, 2026-10-31). They stay out of
+ * `memberNotificationTypeSchema`, which also validates the penalty Push.
+ */
+export const memberDisputeNotificationTypeSchema = z.enum([
+  "DISPUTE_CASE_FILED_AGAINST_YOU",
+  "DISPUTE_CASE_DECIDED",
+]);
+export type MemberDisputeNotificationType = z.infer<
+  typeof memberDisputeNotificationTypeSchema
+>;
+
+export const memberDisputeStatusSchema = z.enum([
+  "DISPUTE_CASE_DISMISSED",
+  "DISPUTE_CASE_RESOLVED",
+]);
+
 export const memberPenaltyResultSchema = z.enum([
   "RED_FLAG",
   "TEMPORARY_BAN",
@@ -33,6 +50,11 @@ export const memberNotificationSchema = z.object({
   questId: z.string().nullable(),
   result: memberPenaltyResultSchema.nullable().catch(null),
   expiresAt: z.string().nullable(),
+  questTitle: z.string().nullable().optional(),
+  /** Dispute rows only. `viewerWon` is the server's answer for this Member. */
+  disputeCaseId: z.string().nullable().optional(),
+  disputeStatus: memberDisputeStatusSchema.nullable().catch(null).optional(),
+  viewerWon: z.boolean().nullable().optional(),
 });
 export type MemberNotification = z.infer<typeof memberNotificationSchema>;
 

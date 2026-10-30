@@ -22,6 +22,7 @@ import {
   formatTimestampDateTime,
 } from "@/domain/datetime";
 import { useLocale } from "@/features/preferences/localeStore";
+import { DisputeRespondSheet } from "@/features/questBoard/dispute/DisputeRespondSheet";
 import { useAppTheme } from "@/features/workspace/AppThemeProvider";
 import { memberNotificationMessages } from "@/locales/memberNotificationMessages";
 import { spacing } from "@/theme/spacing";
@@ -35,6 +36,8 @@ import {
 import { memberNotificationCopy } from "./memberNotificationCopy";
 import {
   notificationOpensProfile,
+  notificationOpensQuest,
+  notificationOpensRespondForm,
   notificationPresentation,
   notificationToneStyle,
 } from "./notificationPresentation";
@@ -93,12 +96,16 @@ function NotificationRow({
   const copy = memberNotificationCopy(item, locale);
   const unread = item.readAt === null;
   const opensProfile = notificationOpensProfile(item);
+  const opensRespondForm = notificationOpensRespondForm(item);
+  const opensQuest = notificationOpensQuest(item);
   const { icon: Icon, tone } = notificationPresentation(item);
   const toneStyle = notificationToneStyle[tone];
   const time = formatTimeInBangkok(item.createdAt);
   const hint = [
     unread ? messages.unread : null,
     opensProfile ? messages.opensProfile : null,
+    opensRespondForm ? messages.opensRespondForm : null,
+    opensQuest ? messages.opensQuest : null,
   ]
     .filter(Boolean)
     .join(". ");
@@ -131,7 +138,7 @@ function NotificationRow({
         <Text className={styles.rowBody}>{copy.body}</Text>
         <Text className={styles.rowTime}>{time}</Text>
       </View>
-      {opensProfile ? (
+      {opensProfile || opensRespondForm || opensQuest ? (
         <ChevronRight
           color={colors.textMuted}
           size={20}
@@ -180,6 +187,7 @@ export function NotificationInboxScreen() {
   const { locale } = useLocale();
   const messages = memberNotificationMessages[locale];
   const [unreadOnly, setUnreadOnly] = useState(false);
+  const [respondingTo, setRespondingTo] = useState<string | null>(null);
   const query = useNotificationsQuery(unreadOnly);
   const markRead = useMarkNotificationsReadMutation();
   const pages = query.data?.pages;
@@ -201,6 +209,10 @@ export function NotificationInboxScreen() {
       if (item.readAt === null) markRead.mutate({ ids: [item.id] });
       if (notificationOpensProfile(item)) {
         router.push("/(tabs)/profile");
+      } else if (notificationOpensRespondForm(item) && item.disputeCaseId) {
+        setRespondingTo(item.disputeCaseId);
+      } else if (notificationOpensQuest(item) && item.questId) {
+        router.push({ pathname: "/quest/[id]", params: { id: item.questId } });
       }
     },
     [markRead, router]
@@ -353,6 +365,12 @@ export function NotificationInboxScreen() {
         />
       </View>
       {body}
+      {respondingTo ? (
+        <DisputeRespondSheet
+          disputeCaseId={respondingTo}
+          onClose={() => setRespondingTo(null)}
+        />
+      ) : null}
     </ScreenLayout>
   );
 }

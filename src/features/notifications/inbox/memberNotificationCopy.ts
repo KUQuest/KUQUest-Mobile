@@ -1,5 +1,7 @@
 import {
+  memberDisputeNotificationTypeSchema,
   memberNotificationTypeSchema,
+  type MemberNotification,
   type MemberPenaltyResult,
 } from "@/api/NotificationApi";
 import { formatTimestampDateTime } from "@/domain/datetime";
@@ -15,10 +17,25 @@ export function memberNotificationCopy(
     type: string;
     result?: MemberPenaltyResult | null;
     expiresAt?: string | null;
-  },
+  } & Partial<
+    Pick<MemberNotification, "questTitle" | "disputeStatus" | "viewerWon">
+  >,
   locale: SupportedLocale
 ): { title: string; body: string } {
   const messages = memberNotificationMessages[locale];
+  const dispute = memberDisputeNotificationTypeSchema.safeParse(
+    notification.type
+  );
+  if (dispute.success) {
+    const questTitle = notification.questTitle ?? null;
+    return dispute.data === "DISPUTE_CASE_FILED_AGAINST_YOU"
+      ? messages.dispute.filedAgainstYou(questTitle)
+      : messages.dispute.decided(
+          notification.disputeStatus ?? null,
+          notification.viewerWon ?? null,
+          questTitle
+        );
+  }
   const type = memberNotificationTypeSchema.safeParse(notification.type);
   if (!type.success) return messages.generic;
   const until = notification.expiresAt
