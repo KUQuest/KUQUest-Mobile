@@ -117,17 +117,15 @@ export function TopUpPromptPayStep({
           )}
         </Button>
 
-        {__DEV__ ? (
-          <Button
-            accessibilityLabel={m.simulateSuccess}
-            disabled={checkingStatus}
-            onPress={onSimulatePayment}
-            testID="top-up-simulate-btn"
-            variant="secondary"
-          >
-            {m.simulateSuccess}
-          </Button>
-        ) : null}
+        <Button
+          accessibilityLabel={m.simulateSuccess}
+          disabled={checkingStatus}
+          onPress={onSimulatePayment}
+          testID="top-up-simulate-btn"
+          variant="secondary"
+        >
+          {m.simulateSuccess}
+        </Button>
       </View>
     </View>
   );
