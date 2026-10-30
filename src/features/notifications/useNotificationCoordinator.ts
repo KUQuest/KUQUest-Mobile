@@ -6,6 +6,7 @@ import { useSessionQuery } from "@/features/auth/sessionQueries";
 import { authEnvironment } from "@/features/auth/authEnvironment";
 import { isPublicAuthRoute } from "@/features/auth/AuthMiddleware";
 import { useChatNotificationConversationsQuery } from "@/features/chat/api/chatQueries";
+import { useChatInboxRealtime } from "@/features/chat/api/useChatInboxRealtime";
 import { getChatRouteParams } from "@/features/chat/chatData";
 import { useLocale } from "@/features/preferences/localeStore";
 import { serverNow } from "@/api/serverClock";
@@ -80,6 +81,8 @@ export function useNotificationCoordinator() {
     viewerId,
     Boolean(viewerId) && foreground
   );
+  // Root-mounted so Chat notices stay live on routes opened without the tab bar.
+  useChatInboxRealtime(viewerId, foreground);
   const applicationsQuery = useMyWorkerCandidateApplicationsQuery(
     viewerId || null,
     workerEnabled
@@ -267,6 +270,9 @@ export function useNotificationCoordinator() {
         RESPONSE_REQUIRED: copy.underfilledConsentRequired(),
         DECISION_PENDING: copy.underfilledDecisionPending(),
         FULL_OR_ASSIGNED: copy.questFullOrAssigned(),
+        FAILED: copy.questFailed(),
+        INCOMPLETE: copy.questCompletedNotApproved(),
+        PROOF_NOT_APPROVED: copy.proofNotApproved(),
         CANCELLED: copy.underfilledCancelled(transition.cancellationReason),
       }[transition.kind];
       enqueue(copy.questUpdate, message, {

@@ -48,6 +48,7 @@ import {
   QuestUnderfilledConsentDecision,
   QuestUnderfilledDecision,
 } from "../domain/types";
+import { chatApi } from "@/api/ChatApi";
 
 export const questBoardKeys = {
   all: ["questBoard"] as const,
@@ -127,7 +128,7 @@ export function useProofFileLinksQuery(
       }
       const fileLinks = await Promise.all(
         fileIds.map((fileId) =>
-          liveQuestService.getProofFileLink(questId, proof.id, fileId, {
+          questApi.getProofFileLink(questId, proof.id, fileId, {
             signal,
           })
         )
@@ -165,7 +166,7 @@ export function useCandidateTeamFileLinksQuery(
       }
       const fileLinks = await Promise.all(
         fileIds.map((fileId) =>
-          liveQuestService.getCandidateTeamFileLink(questId, teamId, fileId, {
+          questApi.getCandidateTeamFileLink(questId, teamId, fileId, {
             signal,
           })
         )
@@ -224,7 +225,7 @@ export function useQuestAssignmentsQuery(
     queryKey: questBoardKeys.assignments(questId ?? "", viewerId ?? ""),
     queryFn: ({ signal }) => {
       if (!questId) throw new Error("A quest ID is required");
-      return liveQuestService.listQuestAssignments(questId, { signal });
+      return questApi.listQuestAssignments(questId, { signal });
     },
   });
 }
@@ -370,7 +371,7 @@ export async function invalidateWorkerQuestReads(
       workerHomeKeys.assignments("active"),
       workerHomeKeys.assignments("all"),
       workerHomeKeys.participationDetail(questId),
-      workerHomeKeys.liveSnapshot(questId, viewerId),
+      workerHomeKeys.boardScope(),
       myQuestsKeys.worker(viewerId),
     ].map((queryKey) => queryClient.invalidateQueries({ queryKey }))
   );
@@ -425,7 +426,7 @@ export function useApplyQuestMutation() {
       questId: string;
       viewerId?: string;
       idempotencyKey?: string;
-    }) => liveQuestService.applyQuest(questId, idempotencyKey),
+    }) => questApi.applyQuest(questId, idempotencyKey),
     onSuccess: (_, variables) =>
       invalidateQuestReads(
         queryClient,
@@ -448,12 +449,7 @@ export function useWithdrawApplicationMutation() {
       applicationId: string;
       viewerId?: string;
       idempotencyKey?: string;
-    }) =>
-      liveQuestService.withdrawApplication(
-        questId,
-        applicationId,
-        idempotencyKey
-      ),
+    }) => questApi.withdrawApplication(questId, applicationId, idempotencyKey),
     onSuccess: (_, variables) =>
       invalidateQuestReads(
         queryClient,
@@ -466,8 +462,7 @@ export function useWithdrawApplicationMutation() {
 
 export function useCreateCandidateInquiryMutation() {
   return useMutation({
-    mutationFn: (questId: string) =>
-      liveQuestService.createCandidateInquiry(questId),
+    mutationFn: (questId: string) => chatApi.createCandidateInquiry(questId),
   });
 }
 
@@ -483,12 +478,7 @@ export function useSelectApplicationMutation() {
       applicationId: string;
       viewerId?: string;
       idempotencyKey?: string;
-    }) =>
-      liveQuestService.selectApplication(
-        questId,
-        applicationId,
-        idempotencyKey
-      ),
+    }) => questApi.selectApplication(questId, applicationId, idempotencyKey),
     onSuccess: (_, variables) =>
       invalidateQuestReads(
         queryClient,
@@ -512,7 +502,7 @@ export function useRejectApplicationMutation() {
       viewerId?: string;
       idempotencyKey?: string;
     }) =>
-      liveQuestService.rejectApplication(
+      questApi.rejectCandidateApplication(
         questId,
         applicationId,
         idempotencyKey
@@ -567,17 +557,8 @@ export function useJoinCandidateTeamMutation() {
       idempotencyKey?: string;
     }) =>
       teamId
-        ? liveQuestService.joinCandidateTeam(
-            questId,
-            teamId,
-            joinCode,
-            idempotencyKey
-          )
-        : liveQuestService.joinCandidateTeamByCode(
-            questId,
-            joinCode,
-            idempotencyKey
-          ),
+        ? questApi.joinCandidateTeam(questId, teamId, joinCode, idempotencyKey)
+        : questApi.joinCandidateTeamByCode(questId, joinCode, idempotencyKey),
     onSuccess: (_, variables) =>
       invalidateQuestReads(
         queryClient,
@@ -600,7 +581,7 @@ export function useSelectCandidateTeamMutation() {
       teamId: string;
       viewerId?: string;
       idempotencyKey?: string;
-    }) => liveQuestService.selectCandidateTeam(questId, teamId, idempotencyKey),
+    }) => questApi.selectCandidateTeam(questId, teamId, idempotencyKey),
     onSuccess: (_, variables) =>
       invalidateQuestReads(
         queryClient,
@@ -623,7 +604,7 @@ export function useRejectCandidateTeamMutation() {
       teamId: string;
       viewerId?: string;
       idempotencyKey?: string;
-    }) => liveQuestService.rejectCandidateTeam(questId, teamId, idempotencyKey),
+    }) => questApi.rejectCandidateTeam(questId, teamId, idempotencyKey),
     onSuccess: (_, variables) =>
       invalidateQuestReads(
         queryClient,
@@ -646,7 +627,7 @@ export function useLeaveCandidateTeamMutation() {
       teamId: string;
       viewerId?: string;
       idempotencyKey?: string;
-    }) => liveQuestService.leaveCandidateTeam(questId, teamId, idempotencyKey),
+    }) => questApi.leaveCandidateTeam(questId, teamId, idempotencyKey),
     onSuccess: (_, variables) =>
       invalidateQuestReads(
         queryClient,
@@ -672,7 +653,7 @@ export function useRemoveCandidateTeamMemberMutation() {
       viewerId?: string;
       idempotencyKey?: string;
     }) =>
-      liveQuestService.removeCandidateTeamMember(
+      questApi.removeCandidateTeamMember(
         questId,
         teamId,
         memberId,
@@ -731,12 +712,7 @@ export function useUpdateCandidateTeamMutation() {
       viewerId?: string;
       idempotencyKey?: string;
     }) =>
-      liveQuestService.updateCandidateTeam(
-        questId,
-        teamId,
-        payload,
-        idempotencyKey
-      ),
+      questApi.updateCandidateTeam(questId, teamId, payload, idempotencyKey),
     onSuccess: (_, variables) =>
       invalidateQuestReads(
         queryClient,
@@ -793,12 +769,7 @@ export function useUploadCandidateTeamFileMutation() {
       viewerId?: string;
       idempotencyKey?: string;
     }) =>
-      liveQuestService.uploadCandidateTeamFile(
-        questId,
-        teamId,
-        asset,
-        idempotencyKey
-      ),
+      questApi.uploadCandidateTeamFile(questId, teamId, asset, idempotencyKey),
     onSuccess: (_, variables) =>
       invalidateQuestReads(
         queryClient,
@@ -821,7 +792,7 @@ export function useDecideUnderfilledMutation() {
       decision: QuestUnderfilledDecision;
       viewerId?: string;
       idempotencyKey?: string;
-    }) => liveQuestService.decideUnderfilled(questId, decision, idempotencyKey),
+    }) => questApi.decideUnderfilled(questId, decision, idempotencyKey),
     onSuccess: (_, variables) =>
       invalidateQuestReads(
         queryClient,
@@ -844,12 +815,7 @@ export function useRespondUnderfilledConsentMutation() {
       decision: QuestUnderfilledConsentDecision;
       viewerId?: string;
       idempotencyKey?: string;
-    }) =>
-      liveQuestService.respondUnderfilledConsent(
-        questId,
-        decision,
-        idempotencyKey
-      ),
+    }) => questApi.respondUnderfilledConsent(questId, decision, idempotencyKey),
     onSuccess: (_, variables) =>
       invalidateQuestReads(
         queryClient,
@@ -872,7 +838,7 @@ export function useCancelQuestMutation() {
       viewerId?: string;
       idempotencyKey?: string;
       previewVersion?: string;
-    }) => liveQuestService.cancelQuest(questId, idempotencyKey, previewVersion),
+    }) => questApi.cancelQuest(questId, idempotencyKey, previewVersion),
     onSuccess: async (_, variables) => {
       await Promise.all([
         invalidateQuestReads(
@@ -926,14 +892,21 @@ export function useFileDisputeMutation() {
         variables.viewerId
       );
     },
-    onError: async (error, variables) => {
+    onError: async (error, { questId, viewerId }) => {
       if (error instanceof ApiError && error.status === 409) {
-        await queryClient.invalidateQueries({
-          queryKey: questBoardKeys.myDisputeCase(
-            variables.questId,
-            variables.viewerId
-          ),
-        });
+        // The Work Hub reads the Dispute window from the snapshot and keeps
+        // the case lookup disabled, so a plain invalidation would not refetch
+        // it. Fetch the case directly and reload the snapshot's window.
+        await Promise.all([
+          queryClient
+            .fetchQuery({
+              queryKey: questBoardKeys.myDisputeCase(questId, viewerId),
+              queryFn: ({ signal }) =>
+                disputeApi.getMyDisputeCase(questId, signal),
+            })
+            .catch(() => undefined),
+          invalidateQuestReads(queryClient, questId, viewerId),
+        ]);
       }
     },
   });
@@ -992,12 +965,7 @@ export function useReviewProofMutation() {
       viewerId?: string;
       idempotencyKey?: string;
     }) =>
-      liveQuestService.reviewProof(
-        questId,
-        proofSubmissionId,
-        payload,
-        idempotencyKey
-      ),
+      questApi.reviewProof(questId, proofSubmissionId, payload, idempotencyKey),
     onSuccess: async (_, variables) => {
       await invalidateQuestReads(
         queryClient,
@@ -1075,7 +1043,7 @@ export function useCreateReviewMutation() {
       input: QuestV2ReviewPayload;
       viewerId?: string;
       idempotencyKey?: string;
-    }) => liveQuestService.createReview(questId, input, idempotencyKey),
+    }) => questApi.createReview(questId, input, idempotencyKey),
     onSuccess: (_, variables) =>
       invalidateReviewReads(
         queryClient,
@@ -1101,8 +1069,7 @@ export function useUpdateReviewMutation() {
       revieweeId?: string;
       input: { rating: number; comment?: string };
       idempotencyKey?: string;
-    }) =>
-      liveQuestService.updateReview(questId, reviewId, input, idempotencyKey),
+    }) => questApi.updateReview(questId, reviewId, input, idempotencyKey),
     onSuccess: (_, variables) =>
       invalidateReviewReads(
         queryClient,
@@ -1123,7 +1090,7 @@ export function useStartWorkMutation() {
       questId: string;
       viewerId: string;
       idempotencyKey: string;
-    }) => liveQuestService.startWork(questId, idempotencyKey),
+    }) => questApi.startWork(questId, idempotencyKey),
     onSuccess: (_, variables) =>
       invalidateWorkerQuestReads(
         queryClient,
@@ -1147,11 +1114,7 @@ export function useRespondToEditMutation() {
       decision: QuestEditResponseDecision;
       idempotencyKey?: string;
     }) =>
-      liveQuestService.respondToEditRequest(
-        requestId,
-        { decision },
-        idempotencyKey
-      ),
+      questApi.respondToEditRequest(requestId, { decision }, idempotencyKey),
     onSuccess: (_, variables) =>
       invalidateWorkerQuestReads(
         queryClient,
@@ -1171,7 +1134,7 @@ export function useConfirmCompletionMutation() {
       questId: string;
       viewerId: string;
       idempotencyKey?: string;
-    }) => liveQuestService.confirmCompletion(questId, idempotencyKey),
+    }) => questApi.confirmCompletion(questId, idempotencyKey),
     onSuccess: async (_, variables) => {
       await invalidateWorkerQuestReads(
         queryClient,
@@ -1225,7 +1188,7 @@ export function useCreateEditRequestMutation() {
       payload: QuestV2CreateEditRequestPayload;
       viewerId?: string;
       idempotencyKey?: string;
-    }) => liveQuestService.createEditRequest(questId, payload, idempotencyKey),
+    }) => questApi.createEditRequest(questId, payload, idempotencyKey),
     onSuccess: (_, variables) =>
       invalidateQuestReads(
         queryClient,

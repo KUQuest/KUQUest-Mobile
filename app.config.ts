@@ -100,6 +100,8 @@ export default function configureApp({ config }: ConfigContext): ExpoConfig {
     extra: {
       ...(baseConfig.extra ?? {}),
       appVariant: variant,
+      // A build without google-services.json cannot get an FCM token, so it must not ask for permission.
+      pushEnabled: Boolean(process.env.GOOGLE_SERVICES_JSON),
     },
     android: {
       ...baseConfig.android,

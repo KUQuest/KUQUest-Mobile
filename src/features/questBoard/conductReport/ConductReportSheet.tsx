@@ -14,11 +14,12 @@ import {
 } from "@/tw";
 
 import styles from "../styles/questDetailStyles";
-import type { useHirerConductReport } from "./useHirerConductReport";
+import type { useConductReport } from "./useConductReport";
 
 type ConductReportSheetProps = Pick<
-  ReturnType<typeof useHirerConductReport>,
+  ReturnType<typeof useConductReport>,
   | "messages"
+  | "copy"
   | "open"
   | "closeReport"
   | "targets"
@@ -31,9 +32,10 @@ type ConductReportSheetProps = Pick<
   | "submitError"
 >;
 
-/** Hirer form for a CONDUCT_ABANDONED Conduct Report. */
+/** Conduct Report form; the copy and target reasons follow the filer's role. */
 export function ConductReportSheet({
   messages,
+  copy,
   open,
   closeReport,
   targets,
@@ -79,7 +81,7 @@ export function ConductReportSheet({
                       accessibilityRole="header"
                       className={styles.proofSheetTitle}
                     >
-                      {messages.title}
+                      {copy.title}
                     </Text>
                   </View>
                 </View>
@@ -100,7 +102,7 @@ export function ConductReportSheet({
                 showsVerticalScrollIndicator={false}
               >
                 <View className="gap-ku-xs">
-                  {messages.rules.map((rule) => (
+                  {copy.rules.map((rule) => (
                     <Text
                       className="text-ku-body-small text-ku-text-secondary"
                       key={rule}
@@ -112,7 +114,7 @@ export function ConductReportSheet({
 
                 <View className="gap-ku-sm">
                   <Text className="font-ku-semibold text-ku-body-small text-ku-text-strong">
-                    {messages.workerLabel}
+                    {copy.targetLabel}
                   </Text>
                   {targets.map((target) => {
                     const selected = target.id === selectedTarget?.id;
@@ -133,7 +135,7 @@ export function ConductReportSheet({
                           {target.label}
                         </Text>
                         <Text className="text-ku-body-small text-ku-text-secondary">
-                          {messages.reasonAbandoned}
+                          {messages.reasons[target.reason]}
                         </Text>
                       </Pressable>
                     );

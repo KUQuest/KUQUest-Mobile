@@ -11,6 +11,7 @@ import {
 import type { QuestV2Detail } from "@/api/questV2Contracts";
 import { ApiError } from "@/api/ApiClient";
 import { renderWithQueryClient } from "@/testing/queryTestUtils";
+import { questApi } from "@/api/QuestApi";
 
 type BeforeRemoveEvent = {
   preventDefault: jest.Mock;
@@ -71,6 +72,12 @@ jest.mock("@/features/auth/AuthService", () => ({
 jest.mock("../../live/liveQuestService", () => ({
   liveQuestService: {
     getLiveSnapshot: jest.fn(),
+  },
+}));
+
+jest.mock("@/api/QuestApi", () => ({
+  ...jest.requireActual("@/api/QuestApi"),
+  questApi: {
     respondToEditRequest: jest.fn(),
     confirmCompletion: jest.fn(),
     startWork: jest.fn(),
@@ -79,7 +86,7 @@ jest.mock("../../live/liveQuestService", () => ({
 
 jest.mock("../../api/questBoardQueries", () => ({
   ...jest.requireActual("../../api/questBoardQueries"),
-  useMyDisputeCaseQuery: () => mockMineDisputeQuery(),
+  useMyDisputeCaseQuery: (...args: unknown[]) => mockMineDisputeQuery(...args),
   useFileDisputeMutation: () => ({
     mutate: (...args: unknown[]) => mockFileDispute(...args),
     isPending: false,
@@ -91,15 +98,15 @@ const mockedGetSnapshot =
     typeof liveQuestService.getLiveSnapshot
   >;
 const mockedRespondToEdit =
-  liveQuestService.respondToEditRequest as jest.MockedFunction<
-    typeof liveQuestService.respondToEditRequest
+  questApi.respondToEditRequest as jest.MockedFunction<
+    typeof questApi.respondToEditRequest
   >;
 const mockedConfirmCompletion =
-  liveQuestService.confirmCompletion as jest.MockedFunction<
-    typeof liveQuestService.confirmCompletion
+  questApi.confirmCompletion as jest.MockedFunction<
+    typeof questApi.confirmCompletion
   >;
-const mockedStartWork = liveQuestService.startWork as jest.MockedFunction<
-  typeof liveQuestService.startWork
+const mockedStartWork = questApi.startWork as jest.MockedFunction<
+  typeof questApi.startWork
 >;
 
 type SnapshotOverrides = Omit<
@@ -537,7 +544,67 @@ describe("QuestWorkScreen", () => {
     expect(
       await view.findByRole("button", { name: "File Dispute" })
     ).toBeTruthy();
+    expect(mockMineDisputeQuery).toHaveBeenCalledWith(
+      "quest-work-1",
+      "worker-1",
+      false
+    );
   });
+
+  it.each([
+    {
+      name: "a closed Dispute window",
+      dispute: { canFile: false, windowEndsAt: null, myCase: null },
+      shows: [],
+    },
+    {
+      name: "the Worker's filed Dispute Case",
+      dispute: {
+        canFile: false,
+        windowEndsAt: "2099-01-02T18:00:00+07:00",
+        myCase: {
+          id: "dispute-1",
+          displayId: "DC-000123",
+          status: "DISPUTE_CASE_PENDING",
+          createdAt: "2099-01-01T19:00:00+07:00",
+        },
+      },
+      shows: ["Dispute filed", "Case DC-000123 · Waiting for Admin review"],
+    },
+  ])(
+    "hides File Dispute for $name from the failed-Quest snapshot",
+    async ({ dispute, shows }) => {
+      mockMineDisputeQuery.mockReturnValue({
+        isPending: false,
+        isError: false,
+        isSuccess: true,
+        isFetching: false,
+        data: { case: null },
+        refetch: jest.fn(),
+      });
+      mockedGetSnapshot.mockResolvedValue(
+        makeSnapshot({
+          state: "QUEST_FAILED",
+          quest: { state: "QUEST_FAILED", dispute },
+          assignment: {
+            ...defaultAssignment,
+            state: "ASSIGNMENT_INCOMPLETE",
+            questState: "QUEST_FAILED",
+          },
+        })
+      );
+
+      const view = await renderWithQueryClient(
+        <QuestWorkScreen questId="quest-work-1" viewerId="worker-1" />
+      );
+
+      await view.findByRole("button", { name: "Open Work Chat" });
+      expect(view.queryByRole("button", { name: "File Dispute" })).toBeNull();
+      for (const text of shows) {
+        expect(view.getByText(text)).toBeTruthy();
+      }
+    }
+  );
 
   it("renders an assigned wait state with canonical conditions and due countdown", async () => {
     mockedGetSnapshot.mockResolvedValue(makeSnapshot());

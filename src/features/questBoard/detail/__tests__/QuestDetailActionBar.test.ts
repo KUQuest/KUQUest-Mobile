@@ -1,6 +1,7 @@
 import {
   QuestActor,
-  QuestCandidateMode,
+  QuestMode,
+  QuestParticipation,
   QuestStatus,
   type QuestBoardQuest,
 } from "../../domain/types";
@@ -29,11 +30,9 @@ function makeQuest(status: QuestStatus): QuestBoardQuest {
     postedAt: "2026-09-20T09:00:00.000Z",
     location: "KU Library",
     locationMode: "on-campus",
-    participationMode: "single",
-    candidateMode: QuestCandidateMode.NO_CANDIDATE,
+    participation: QuestParticipation.SINGLE,
+    mode: QuestMode.FIRST_COME_FIRST_SERVED,
     creator: { name: "Hirer" },
-    studentInterestMatch: false,
-    ownerStudentId: "hirer-1",
     status,
   };
 }
@@ -153,6 +152,33 @@ describe("buildQuestDetailActionBar", () => {
 
     expect(actionBar.canReview).toBe(true);
     expect(actionBar.canEditPost).toBe(false);
+  });
+
+  it("lets a Worker on a failed Quest back into the Work Hub to file a dispute", () => {
+    const context = makeContext(
+      {
+        quest: makeQuest(QuestStatus.QUEST_FAILED),
+        isHirerView: false,
+      },
+      { actor: QuestActor.WORKER }
+    );
+    const actionBar = buildQuestDetailActionBar(context);
+
+    expect(actionBar.canOpenWorkHub).toBe(true);
+    actionBar.onOpenWorkHub();
+    expect(context.navigation.openWorkHub).toHaveBeenCalledTimes(1);
+  });
+
+  it("offers no Work Hub shortcut to the Hirer or on a Quest that has not failed", () => {
+    expect(
+      buildQuestDetailActionBar(
+        makeContext({ quest: makeQuest(QuestStatus.QUEST_FAILED) })
+      ).canOpenWorkHub
+    ).toBe(false);
+    expect(
+      buildQuestDetailActionBar(makeContext({}, { actor: QuestActor.WORKER }))
+        .canOpenWorkHub
+    ).toBe(false);
   });
 
   it("enables canEditPost and disables canReview for draft Quests", () => {

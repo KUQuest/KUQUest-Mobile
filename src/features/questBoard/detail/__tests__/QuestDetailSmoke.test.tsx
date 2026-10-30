@@ -17,12 +17,12 @@ import { questBoardMessages } from "@/locales/questBoardMessages";
 import { groupQuestMessages } from "@/locales/groupQuestMessages";
 import * as questDetailFeature from "../useQuestDetailFeature";
 import * as questDetailProjection from "../questDetailProjection";
-import { getQuestDetailProjection } from "../questDetailProjection";
 import {
-  DEFAULT_PROTOTYPE_VIEWER_ID,
-  questFixtureAdapter,
-} from "../../fixtures/adapters/questFixtureAdapter";
-import { questWorkflow } from "../../workflow/questWorkflow";
+  QuestMode,
+  QuestParticipation,
+  QuestStatus,
+  type QuestBoardQuest,
+} from "../../domain/types";
 import QuestDetailScreen from "../QuestDetailScreen";
 import { useQuestDetailReadSource } from "../useQuestDetailReadSource";
 import { useQuestDetailNavigation } from "../useQuestDetailNavigation";
@@ -48,11 +48,17 @@ let mockExposeLiveSnapshot = false;
 jest.mock("../../live/liveQuestService", () => ({
   liveQuestService: {
     getQuestDetail: (...args: unknown[]) => mockGetQuestDetail(...args),
-    joinCandidateTeam: (...args: unknown[]) => mockJoinCandidateTeam(...args),
     joinQuest: (...args: unknown[]) => mockJoinQuest(...args),
     get getLiveSnapshot() {
       return mockExposeLiveSnapshot ? mockGetLiveSnapshot : undefined;
     },
+  },
+}));
+
+jest.mock("@/api/QuestApi", () => ({
+  ...jest.requireActual("@/api/QuestApi"),
+  questApi: {
+    joinCandidateTeam: (...args: unknown[]) => mockJoinCandidateTeam(...args),
   },
 }));
 
@@ -67,6 +73,35 @@ jest.mock("expo-router", () => ({
   useLocalSearchParams: () => ({ id: "quest-1" }),
 }));
 
+function makeQuest(): QuestBoardQuest {
+  return {
+    id: "move-boxes",
+    title: "Help move boxes to the dorm",
+    tags: ["moving"],
+    description: "Help carry labelled boxes from the parking area to Dorm 13.",
+    completionCriteria: "All boxes are delivered safely to the assigned room.",
+    proofRequired: "optional",
+    status: QuestStatus.QUEST_OPEN,
+    rewardPerPerson: 300,
+    headcount: 1,
+    acceptedParticipants: 0,
+    startDate: "2026-08-14",
+    deadline: "2026-08-16",
+    timeRange: "17:00–19:00",
+    postedAt: "2026-08-13T15:00:00.000Z",
+    location: "Dorm 13",
+    locationMode: "on-campus",
+    participation: QuestParticipation.SINGLE,
+    mode: QuestMode.CANDIDATE,
+    creator: { name: "Nicha S.", faculty: "Architecture" },
+    imageUris: [
+      "https://placehold.co/800x500/E2EEE4/014925/png?text=Boxes+1",
+      "https://placehold.co/800x500/E2EEE4/014925/png?text=Boxes+2",
+      "https://placehold.co/800x500/E2EEE4/014925/png?text=Boxes+3",
+    ],
+  };
+}
+
 describe("QuestDetailScreen smoke", () => {
   beforeEach(() => {
     mockRouterPush.mockReset();
@@ -76,22 +111,12 @@ describe("QuestDetailScreen smoke", () => {
     mockJoinQuest.mockReset();
     mockJoinCandidateTeam.mockReset();
     mockExposeLiveSnapshot = false;
-    questFixtureAdapter.reset();
-  });
-  afterEach(() => {
-    questFixtureAdapter.reset();
   });
   it("shows proof review before rating and opens the proof-review route", async () => {
-    const quest = questFixtureAdapter.listBoardQuests(
-      "student-001",
-      questFixtureAdapter.now
-    )[0];
-    if (!quest) throw new Error("Expected a Quest fixture");
+    const quest = makeQuest();
     const navigation = await renderHook(() =>
       useQuestDetailNavigation({
         quest,
-        projection: null,
-        source: { kind: "live-detail" },
         viewerId: "hirer-1",
         messages: questBoardMessages.en,
         canMessageOwner: false,
@@ -129,6 +154,8 @@ describe("QuestDetailScreen smoke", () => {
           canReview: true,
           canReviewProof: true,
           onReviewProof: navigation.result.current.openProofReview,
+          canOpenWorkHub: false,
+          onOpenWorkHub: jest.fn(),
           canMessageOwner: false,
           onMessageOwner: jest.fn(),
           canShowWithdraw: false,
@@ -163,16 +190,10 @@ describe("QuestDetailScreen smoke", () => {
     }
   });
   it("opens Work Hub with viewer identity and replaces to Manage", async () => {
-    const quest = questFixtureAdapter.listBoardQuests(
-      "student-001",
-      questFixtureAdapter.now
-    )[0];
-    if (!quest) throw new Error("Expected a Quest fixture");
+    const quest = makeQuest();
     const navigation = await renderHook(() =>
       useQuestDetailNavigation({
         quest,
-        projection: null,
-        source: { kind: "live-detail" },
         viewerId: "worker-1",
         messages: questBoardMessages.en,
         canMessageOwner: false,
@@ -192,11 +213,7 @@ describe("QuestDetailScreen smoke", () => {
     });
   });
   it("offers accepted Workers an Open Work Hub action from Detail", async () => {
-    const quest = questFixtureAdapter.listBoardQuests(
-      "student-001",
-      questFixtureAdapter.now
-    )[0];
-    if (!quest) throw new Error("Expected a Quest fixture");
+    const quest = makeQuest();
     const openWorkHub = jest.fn();
     const screen = await render(
       <QuestDetailBody
@@ -231,11 +248,7 @@ describe("QuestDetailScreen smoke", () => {
     expect(openWorkHub).toHaveBeenCalledTimes(1);
   });
   it("allows team join when server capability allows it", async () => {
-    const quest = questFixtureAdapter.listBoardQuests(
-      "student-001",
-      questFixtureAdapter.now
-    )[0];
-    if (!quest) throw new Error("Expected a Quest fixture");
+    const quest = makeQuest();
     const beginLiveAction = jest.fn(() => true);
     const transitions: QuestDetailSurfaceTransitions = {
       beginLiveAction,
@@ -247,11 +260,8 @@ describe("QuestDetailScreen smoke", () => {
       dismissIntent: jest.fn(),
       openCandidateReview: jest.fn(),
       closeCandidateReview: jest.fn(),
-      setTeamSearchQuery: jest.fn(),
-      setTeamSelectedMemberIds: jest.fn(),
       setTeamReviewing: jest.fn(),
       selectProposal: jest.fn(),
-      markFixtureChanged: jest.fn(),
     };
     const context: QuestDetailLiveActionContext = {
       questId: quest.id,
@@ -262,8 +272,6 @@ describe("QuestDetailScreen smoke", () => {
         canJoin: false,
         canWithdrawApplication: false,
         canCreateTeam: false,
-        canInviteWorker: false,
-        canRespondInvitation: false,
         canJoinTeam: true,
         canUpdateTeam: false,
         canLeaveTeam: false,
@@ -276,7 +284,6 @@ describe("QuestDetailScreen smoke", () => {
         canRejectTeam: false,
         canDecideUnderfilled: false,
         canConsentUnderfilled: false,
-        canRespondPartialStart: false,
         canRespondToEdit: false,
         canMessageOwner: false,
       },
@@ -308,27 +315,7 @@ describe("QuestDetailScreen smoke", () => {
   });
 
   it("renders the live quest path after the fold", async () => {
-    const fixture = questFixtureAdapter.listBoardQuests(
-      "student-001",
-      questFixtureAdapter.now
-    )[0];
-    if (!fixture) throw new Error("Expected a Quest fixture");
-    const state = questFixtureAdapter.getQuestDetail(
-      fixture.id,
-      DEFAULT_PROTOTYPE_VIEWER_ID,
-      questFixtureAdapter.now
-    );
-    if (!state) throw new Error("Expected a Quest detail fixture");
-    expect(
-      getQuestDetailProjection(
-        state,
-        DEFAULT_PROTOTYPE_VIEWER_ID,
-        questFixtureAdapter.now
-      )
-    ).toMatchObject({
-      quest: { id: fixture.id, title: fixture.title },
-      participantCount: expect.any(Number),
-    });
+    const fixture = makeQuest();
     mockGetQuestDetail.mockResolvedValue(fixture);
 
     const view = await render(<QuestDetailScreen questId={fixture.id} />);
@@ -342,11 +329,7 @@ describe("QuestDetailScreen smoke", () => {
     expect(await view.findByText(fixture.title)).toBeTruthy();
   });
   it("falls back to public detail when live snapshots need a viewer", async () => {
-    const fixture = questFixtureAdapter.listBoardQuests(
-      DEFAULT_PROTOTYPE_VIEWER_ID,
-      questFixtureAdapter.now
-    )[0];
-    if (!fixture) throw new Error("Expected a Quest fixture");
+    const fixture = makeQuest();
     mockExposeLiveSnapshot = true;
     mockGetQuestDetail.mockResolvedValue(fixture);
 
@@ -362,51 +345,6 @@ describe("QuestDetailScreen smoke", () => {
     expect(await view.findByText(fixture.title)).toBeTruthy();
   });
 
-  it("keeps preview participation in the fixture workflow", async () => {
-    const fixture = questFixtureAdapter.getQuestDetail(
-      "print-documents",
-      DEFAULT_PROTOTYPE_VIEWER_ID,
-      questFixtureAdapter.now
-    );
-    if (!fixture) throw new Error("Expected a Quest fixture");
-    const dispatch = jest.spyOn(questWorkflow, "dispatch");
-
-    try {
-      const view = await render(
-        <QuestDetailScreen
-          questId={fixture.quest.id}
-          previewState="populated"
-          studentId={DEFAULT_PROTOTYPE_VIEWER_ID}
-        />
-      );
-      await fireEvent.press(await view.findByTestId("quest-apply-button"));
-      await fireEvent.press(
-        await view.findByTestId("confirm-quest-application")
-      );
-
-      await waitFor(() => {
-        expect(dispatch).toHaveBeenCalledWith(
-          expect.objectContaining({ questId: fixture.quest.id })
-        );
-      });
-      expect(
-        questWorkflow.getQuestDetailState(
-          fixture.quest.id,
-          DEFAULT_PROTOTYPE_VIEWER_ID
-        )
-      ).toMatchObject({
-        assignments: expect.arrayContaining([
-          expect.objectContaining({
-            workerId: DEFAULT_PROTOTYPE_VIEWER_ID,
-            status: "ASSIGNMENT_ACTIVE",
-          }),
-        ]),
-      });
-      expect(mockGetQuestDetail).not.toHaveBeenCalled();
-    } finally {
-      dispatch.mockRestore();
-    }
-  });
   it("polls while a Worker has a pending Candidate application on an open Quest", async () => {
     const mockLiveSnapshotQuery = jest.spyOn(
       questBoardQueries,
@@ -441,7 +379,6 @@ describe("QuestDetailScreen smoke", () => {
           useQuestDetailReadSource({
             questId: "quest-1",
             viewerId: "worker-1",
-            explicitPreview: false,
             sessionReady: true,
           }),
         { wrapper }
@@ -561,7 +498,6 @@ describe("QuestDetailScreen smoke", () => {
           useQuestDetailReadSource({
             questId: "quest-1",
             viewerId: "hirer-1",
-            explicitPreview: false,
             sessionReady: true,
           }),
         { wrapper }
@@ -582,11 +518,7 @@ describe("QuestDetailScreen smoke", () => {
     }
   });
   it("hides worker Group FCFS status from Hirer actor", () => {
-    const quest = questFixtureAdapter.listBoardQuests(
-      "student-001",
-      questFixtureAdapter.now
-    )[0];
-    if (!quest) throw new Error("Expected a Quest fixture");
+    const quest = makeQuest();
     const snapshot = {
       actor: "HIRER",
       participation: "GROUP",
@@ -614,7 +546,6 @@ describe("QuestDetailScreen smoke", () => {
         dismissedIntent: null,
         manualConfirmationOpen: false,
       },
-      teamDirectory: [],
       tagCatalog: [],
       colors: { textMuted: "", primary: "", dangerDark: "" },
     } as never);
@@ -630,11 +561,7 @@ describe("QuestDetailScreen smoke", () => {
   ] as const)(
     "points an accepted Worker at a pending Quest Edit (%s route, pending %s)",
     (mode, canRespondToEdit) => {
-      const quest = questFixtureAdapter.listBoardQuests(
-        "student-001",
-        questFixtureAdapter.now
-      )[0];
-      if (!quest) throw new Error("Expected a Quest fixture");
+      const quest = makeQuest();
       const facts = getQuestDetailPresentationFacts({
         read: {
           quest,
@@ -664,7 +591,6 @@ describe("QuestDetailScreen smoke", () => {
           dismissedIntent: null,
           manualConfirmationOpen: false,
         },
-        teamDirectory: [],
         tagCatalog: [],
         colors: { textMuted: "", primary: "", dangerDark: "" },
       } as never);
@@ -689,15 +615,11 @@ describe("QuestDetailScreen smoke", () => {
   );
 
   it("keeps Group FCFS facts and Join visible without passive explanations", async () => {
-    const fixture = questFixtureAdapter.listBoardQuests(
-      "student-001",
-      questFixtureAdapter.now
-    )[0];
-    if (!fixture) throw new Error("Expected a Quest fixture");
+    const fixture = makeQuest();
     const quest = {
       ...fixture,
-      participationMode: "team" as const,
-      candidateMode: "NO_CANDIDATE" as const,
+      participation: QuestParticipation.GROUP,
+      mode: QuestMode.FIRST_COME_FIRST_SERVED,
       headcount: 4,
       acceptedParticipants: 2,
     };
@@ -748,15 +670,11 @@ describe("QuestDetailScreen smoke", () => {
   });
 
   it("shows joined progress and filled assignment without a Join CTA", async () => {
-    const fixture = questFixtureAdapter.listBoardQuests(
-      "student-001",
-      questFixtureAdapter.now
-    )[0];
-    if (!fixture) throw new Error("Expected a Quest fixture");
+    const fixture = makeQuest();
     const quest = {
       ...fixture,
-      participationMode: "team" as const,
-      candidateMode: "NO_CANDIDATE" as const,
+      participation: QuestParticipation.GROUP,
+      mode: QuestMode.FIRST_COME_FIRST_SERVED,
       headcount: 4,
       acceptedParticipants: 2,
     };
@@ -850,11 +768,7 @@ describe("QuestDetailScreen smoke", () => {
   it("announces consent countdown only at expiry and minute boundaries", async () => {
     jest.useFakeTimers();
     jest.setSystemTime(new Date("2099-10-01T00:09:59.000Z"));
-    const fixture = questFixtureAdapter.listBoardQuests(
-      "student-001",
-      questFixtureAdapter.now
-    )[0];
-    if (!fixture) throw new Error("Expected a Quest fixture");
+    const fixture = makeQuest();
     const view = await render(
       <QuestDetailBody
         quest={fixture}
@@ -920,15 +834,11 @@ describe("QuestDetailScreen smoke", () => {
   });
 
   it("shows decision pending and opens the required consent route", async () => {
-    const fixture = questFixtureAdapter.listBoardQuests(
-      "student-001",
-      questFixtureAdapter.now
-    )[0];
-    if (!fixture) throw new Error("Expected a Quest fixture");
+    const fixture = makeQuest();
     const quest = {
       ...fixture,
-      participationMode: "team" as const,
-      candidateMode: "NO_CANDIDATE" as const,
+      participation: QuestParticipation.GROUP,
+      mode: QuestMode.FIRST_COME_FIRST_SERVED,
       headcount: 4,
       acceptedParticipants: 2,
     };
@@ -1152,7 +1062,6 @@ describe("QuestDetailScreen smoke", () => {
       useQuestDetailParticipation({
         facts,
         liveActions: liveActions as never,
-        previewActions: {} as never,
         navigation: { openWorkHub } as never,
         transitions: { markJoined, closeConfirmation } as never,
       })
@@ -1192,7 +1101,6 @@ describe("QuestDetailScreen smoke", () => {
       useQuestDetailParticipation({
         facts,
         liveActions: liveActions as never,
-        previewActions: {} as never,
         navigation: { openWorkHub } as never,
         transitions: { markJoined, closeConfirmation } as never,
       })
@@ -1226,7 +1134,6 @@ describe("QuestDetailScreen smoke", () => {
       useQuestDetailParticipation({
         facts,
         liveActions: liveActions as never,
-        previewActions: {} as never,
         navigation: { openWorkHub } as never,
         transitions: { markJoined, closeConfirmation } as never,
       })
@@ -1448,14 +1355,11 @@ describe("QuestDetailScreen smoke", () => {
     }
   });
   it("keeps full capacity visible and disables confirmation in the sheet", async () => {
-    const fixture = questFixtureAdapter.listBoardQuests(
-      "student-001",
-      questFixtureAdapter.now
-    )[0];
+    const fixture = makeQuest();
     const quest = {
       ...fixture,
-      participationMode: "team" as const,
-      candidateMode: "NO_CANDIDATE" as const,
+      participation: QuestParticipation.GROUP,
+      mode: QuestMode.FIRST_COME_FIRST_SERVED,
       headcount: 4,
       acceptedParticipants: 4,
     };

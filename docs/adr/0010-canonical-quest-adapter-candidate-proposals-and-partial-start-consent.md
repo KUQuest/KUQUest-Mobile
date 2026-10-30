@@ -2,6 +2,8 @@
 
 **Status:** Superseded by Mirrored Backend Rulebook (`docs/rulebook/quest/`, synced from `KUQuest-API-Server` at commit `1b55199d74d2e73a4a05a4662e49fb643cbee3e6`)
 
+**Implementation note (2026-10-29):** The fixture adapter, workflow, reducer, and Roleplay simulator this record describes were removed from the mobile client. Live Quest behavior is read through `liveQuestService`/`questApi`; the text below is kept as history.
+
 ## Context
 
 During early mobile prototyping, `src/features/questBoard/questFixtureAdapter.ts` provided a provisional state machine and fixture model for candidate proposals, partial-start consent, and group formation before the backend contracts were finalized.

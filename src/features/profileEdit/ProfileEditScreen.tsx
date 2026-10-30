@@ -3,7 +3,6 @@ import { useLocalSearchParams, useRouter } from "expo-router";
 import { ChevronRight, Pencil, Plus } from "lucide-react-native";
 import type { ProfileEditData } from "../../api/StudentApi";
 import { useProfileEditDataQuery } from "../profile/api/profileQueries";
-import { isPrototypeDemoEnabled } from "../auth/authEnvironment";
 import { profileEditMessages } from "../../locales/profileEditMessages";
 import { useLocale } from "@/features/preferences/localeStore";
 import { Button } from "../../components/ui/Button";
@@ -46,15 +45,10 @@ function HubContent({ data }: { data: ProfileEditData }) {
   const { locale } = useLocale();
   const messages = profileEditMessages[locale];
   const [academicUnavailable, setAcademicUnavailable] = useState(
-    () =>
-      isPrototypeDemoEnabled() ||
-      process.env.EXPO_PUBLIC_PROFILE_DEMO === "true"
+    () => process.env.EXPO_PUBLIC_PROFILE_DEMO === "true"
   );
   const openAcademicRegistration = () => {
-    if (
-      isPrototypeDemoEnabled() ||
-      process.env.EXPO_PUBLIC_PROFILE_DEMO === "true"
-    ) {
+    if (process.env.EXPO_PUBLIC_PROFILE_DEMO === "true") {
       setAcademicUnavailable(true);
       return;
     }

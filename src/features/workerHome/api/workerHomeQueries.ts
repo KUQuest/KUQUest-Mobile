@@ -88,7 +88,7 @@ export function useWorkerBoardQuery({ q, tagId }: WorkerBoardQueryParams) {
     if (!hasBoardSnapshot) return;
     const invalidateBoard = () => {
       void queryClient.invalidateQueries({
-        queryKey: [...workerHomeKeys.all, "board"],
+        queryKey: workerHomeKeys.boardScope(),
       });
     };
     return subscribeToQuestBoardEvents(invalidateBoard, invalidateBoard);

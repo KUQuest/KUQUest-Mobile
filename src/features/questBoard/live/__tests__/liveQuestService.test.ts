@@ -1,5 +1,10 @@
 import { resetServerClock, syncServerClock } from "@/api/serverClock";
-import { liveQuestService } from "../liveQuestService";
+import {
+  canonicalToQuestBoardQuest,
+  cardToQuestBoardCard,
+  liveQuestService,
+  publicDetailToQuestBoardQuest,
+} from "../liveQuestService";
 import { getQuestDetailProjection } from "../../detail/questDetailProjection";
 import { ApiError } from "@/api/ApiClient";
 import { questApi } from "@/api/QuestApi";
@@ -76,7 +81,7 @@ describe("LiveQuestService", () => {
   beforeEach(() => {
     jest.clearAllMocks();
   });
-  it("maps Board Hirer profile ids to ownerStudentId and leaves absent profiles empty", async () => {
+  it("maps Board Hirer profile ids to ownerStudentId and leaves absent profiles undefined", async () => {
     const cards: QuestV2BoardCard[] = [
       {
         id: "quest-1",
@@ -127,8 +132,112 @@ describe("LiveQuestService", () => {
 
     expect(quests.map((quest) => quest.ownerStudentId)).toEqual([
       "00000000-0000-4000-8000-000000000001",
-      "",
+      undefined,
     ]);
+  });
+
+  it("maps Board cards without inventing detail-only fields or a status", () => {
+    const card: QuestV2BoardCard = {
+      id: "quest-card-1",
+      title: "Group review Quest",
+      questReward: 80,
+      tag: null,
+      mode: "CANDIDATE",
+      participation: "GROUP",
+      headcount: 4,
+      activeWorkerCount: 2,
+      startTime: "2026-09-16T10:00:00+07:00",
+      dueAt: null,
+      hirerName: "Hirer One",
+      location: null,
+    };
+
+    const mapped = cardToQuestBoardCard(card);
+
+    expect(mapped).toMatchObject({
+      mode: "CANDIDATE",
+      participation: "GROUP",
+      acceptedParticipants: 2,
+      creator: { name: "Hirer One" },
+    });
+    for (const key of [
+      "description",
+      "completionCriteria",
+      "proofRequired",
+      "status",
+      "ownerStudentId",
+      "studentInterestMatch",
+    ]) {
+      expect(mapped).not.toHaveProperty(key);
+    }
+  });
+
+  describe("detail mappers and acceptedParticipants", () => {
+    const canonical = {
+      id: "quest-owner-1",
+      version: 3,
+      hiddenAt: null,
+      title: "Owner Quest",
+      description: "Do it",
+      condition: { items: [{ position: 0, text: "Done" }] },
+      tag: null,
+      mode: "FIRST_COME_FIRST_SERVED",
+      participation: "GROUP",
+      state: "QUEST_COMPLETED",
+      questFundingTotal: 300,
+      questReward: 100,
+      headcount: 3,
+      startTime: "2099-08-26T09:00:00+07:00",
+      dueAt: "2099-08-27T12:00:00+07:00",
+      proofRequired: false,
+      locations: [],
+      createdAt: "2099-08-01T00:00:00Z",
+      updatedAt: "2099-08-01T00:00:00Z",
+      images: [],
+    } as never;
+
+    it("does not report a participant count the Hirer read does not carry", () => {
+      const mapped = canonicalToQuestBoardQuest(canonical);
+
+      expect(mapped).not.toHaveProperty("acceptedParticipants");
+      expect(mapped).not.toHaveProperty("ownerStudentId");
+      expect(mapped).toMatchObject({
+        mode: "FIRST_COME_FIRST_SERVED",
+        participation: "GROUP",
+        status: "QUEST_COMPLETED",
+      });
+    });
+
+    it("takes the roster-derived count the caller supplies", () => {
+      expect(
+        canonicalToQuestBoardQuest(canonical, { acceptedParticipants: 3 })
+          .acceptedParticipants
+      ).toBe(3);
+      expect(
+        publicDetailToQuestBoardQuest(
+          {
+            id: "quest-public-2",
+            title: "Public",
+            description: null,
+            condition: { items: [] },
+            tag: null,
+            mode: "FIRST_COME_FIRST_SERVED",
+            participation: "GROUP",
+            state: "QUEST_COMPLETED",
+            questReward: 100,
+            headcount: 3,
+            activeWorkerCount: 0,
+            startTime: "2099-08-26T09:00:00+07:00",
+            dueAt: null,
+            proofRequired: false,
+            hirerName: "Hirer",
+            locations: [],
+            images: [],
+          } as never,
+          { acceptedParticipants: 3 }
+        ).acceptedParticipants
+      ).toBe(3);
+    });
   });
 
   it("returns the Quest's reviews to the caller", async () => {
@@ -177,9 +286,9 @@ describe("LiveQuestService", () => {
       canPublish: true,
     } as never);
 
-    await expect(
-      liveQuestService.getPublishCheck("quest-1")
-    ).resolves.toMatchObject({ canPublish: true });
+    await expect(questApi.getPublishCheck("quest-1")).resolves.toMatchObject({
+      canPublish: true,
+    });
 
     expect(mockedQuestApi.getPublishCheck).toHaveBeenCalledWith("quest-1");
   });
@@ -190,8 +299,8 @@ describe("LiveQuestService", () => {
       state: "QUEST_OPEN",
     } as never);
 
-    const created = await liveQuestService.createQuest(payload, "create-key-2");
-    await liveQuestService.publishQuest("quest-2", "publish-key-2");
+    const created = await questApi.createQuest(payload, "create-key-2");
+    await questApi.publishQuest("quest-2", "publish-key-2");
 
     expect(created.id).toBe("quest-2");
     expect(mockedQuestApi.createQuest).toHaveBeenCalledWith(
@@ -308,7 +417,7 @@ describe("LiveQuestService", () => {
       version: 2,
     } as never);
 
-    const updated = await liveQuestService.editQuest(
+    const updated = await questApi.editQuest(
       "quest-1",
       1,
       { title: "Updated Title" },
@@ -390,7 +499,9 @@ describe("LiveQuestService", () => {
     });
   });
   it("lets a non-member join by invite before startTime only", async () => {
-    mockedQuestApi.getDetail.mockRejectedValue(new Error("not the Hirer"));
+    mockedQuestApi.getDetail.mockRejectedValue(
+      new ApiError(404, "QUEST_NOT_FOUND", "not the Hirer")
+    );
     mockedQuestApi.getPublicDetail.mockImplementation(
       async () =>
         ({
@@ -480,7 +591,9 @@ describe("LiveQuestService", () => {
       ...team,
       joinCode: "ABCD2345",
     });
-    mockedQuestApi.getDetail.mockRejectedValue(new Error("not the Hirer"));
+    mockedQuestApi.getDetail.mockRejectedValue(
+      new ApiError(404, "QUEST_NOT_FOUND", "not the Hirer")
+    );
     mockedQuestApi.getPublicDetail.mockResolvedValue({
       id: "quest-code-1",
       title: "Team Quest",
@@ -539,7 +652,7 @@ describe("LiveQuestService", () => {
       application as never
     );
 
-    const result = await liveQuestService.rejectApplication(
+    const result = await questApi.rejectCandidateApplication(
       "quest-1",
       "app-1",
       "reject-key-1"
@@ -556,7 +669,7 @@ describe("LiveQuestService", () => {
     const team = { id: "team-1", state: "TEAM_REJECTED" };
     mockedQuestApi.rejectCandidateTeam.mockResolvedValueOnce(team as never);
 
-    const result = await liveQuestService.rejectCandidateTeam(
+    const result = await questApi.rejectCandidateTeam(
       "quest-1",
       "team-1",
       "reject-key-2"
@@ -581,7 +694,9 @@ describe("LiveQuestService", () => {
   });
 
   it("uses Work Conversation Workers for the FCFS group roster and falls back if participants fail", async () => {
-    mockedQuestApi.getDetail.mockRejectedValue(new Error("not hirer"));
+    mockedQuestApi.getDetail.mockRejectedValue(
+      new ApiError(404, "QUEST_NOT_FOUND", "not hirer")
+    );
     mockedQuestApi.getPublicDetail.mockResolvedValue({
       id: "quest-team",
       title: "Team Quest",
@@ -696,7 +811,9 @@ describe("LiveQuestService", () => {
   // Mobile #287: settlement closes each early finisher's Work Chat membership, so a
   // finished Group FCFS Quest must name its Workers from the Participation `workers`.
   it("names every Worker of a finished FCFS group from Participation workers", async () => {
-    mockedQuestApi.getDetail.mockRejectedValue(new Error("not hirer"));
+    mockedQuestApi.getDetail.mockRejectedValue(
+      new ApiError(404, "QUEST_NOT_FOUND", "not hirer")
+    );
     mockedQuestApi.getPublicDetail.mockRejectedValue(new Error("not open"));
     mockedQuestApi.getParticipationDetail.mockResolvedValue({
       id: "quest-team",
@@ -770,7 +887,7 @@ describe("LiveQuestService", () => {
       { id: "worker-2", displayName: "Worker Two" },
       { id: "worker-3", displayName: "Worker Three" },
     ]);
-    const detail = getQuestDetailProjection(snapshot, "worker-1");
+    const detail = getQuestDetailProjection(snapshot);
     expect(detail.participantCount).toBe(3);
     expect(detail.quest.acceptedParticipants).toBe(3);
   });
@@ -802,7 +919,9 @@ describe("LiveQuestService", () => {
       options: { editRequestId?: string } = {},
       mockEditRequest = true
     ) {
-      mockedQuestApi.getDetail.mockRejectedValue(new Error("forbidden"));
+      mockedQuestApi.getDetail.mockRejectedValue(
+        new ApiError(404, "QUEST_NOT_FOUND", "forbidden")
+      );
       mockedQuestApi.getPublicDetail.mockRejectedValue(new Error("not open"));
       mockedQuestApi.getParticipationDetail.mockResolvedValue({
         id: "quest-edit-1",
@@ -953,7 +1072,9 @@ describe("LiveQuestService", () => {
         .mockReturnValue(Date.parse("2026-10-01T00:00:00Z"));
       syncServerClock(serverTime, null);
       // A Worker cannot read the Hirer detail; the snapshot falls back to public detail.
-      mockedQuestApi.getDetail.mockRejectedValue(new Error("forbidden"));
+      mockedQuestApi.getDetail.mockRejectedValue(
+        new ApiError(404, "QUEST_NOT_FOUND", "forbidden")
+      );
       mockedQuestApi.getPublicDetail.mockResolvedValue({
         id: "quest-start-1",
         title: "Start Quest",
@@ -1095,6 +1216,82 @@ describe("LiveQuestService", () => {
       await expect(
         startCapability({ ...input, serverTime: "2099-08-27T12:00:00+07:00" })
       ).resolves.toBe(false);
+    });
+  });
+
+  describe("getLiveSnapshot Hirer detail read failures", () => {
+    function stubPublicSnapshotReads() {
+      mockedQuestApi.getPublicDetail.mockResolvedValue({
+        id: "quest-detail-err-1",
+        title: "Public quest",
+        description: "Description",
+        condition: { items: [{ id: "c1", text: "Condition 1" }] },
+        tag: null,
+        mode: "FIRST_COME_FIRST_SERVED",
+        participation: "SINGLE",
+        state: "QUEST_OPEN",
+        questReward: 150,
+        headcount: 1,
+        activeWorkerCount: 0,
+        startTime: "2099-08-26T09:00:00+07:00",
+        dueAt: "2099-08-27T12:00:00+07:00",
+        proofRequired: false,
+        hirerName: "Hirer Alice",
+        locations: [],
+        images: [],
+      } as never);
+      mockedQuestApi.listQuestAssignments.mockResolvedValue([] as never);
+      mockedQuestApi.listApplications.mockResolvedValue([] as never);
+      mockedQuestApi.listCandidateTeams.mockResolvedValue([] as never);
+      mockedQuestApi.getUnderfilled.mockResolvedValue(null as never);
+      mockedQuestApi.listProofSubmissions.mockResolvedValue([] as never);
+      mockedChatApi.listConversations.mockResolvedValue({
+        items: [],
+        nextCursor: null,
+      } as never);
+    }
+
+    it("rethrows a transport failure instead of treating the viewer as a prospective Worker", async () => {
+      stubPublicSnapshotReads();
+      mockedQuestApi.getDetail.mockRejectedValue(
+        new TypeError("Network request failed")
+      );
+
+      await expect(
+        liveQuestService.getLiveSnapshot("quest-detail-err-1", "worker-1")
+      ).rejects.toThrow("Network request failed");
+      expect(mockedQuestApi.getPublicDetail).not.toHaveBeenCalled();
+    });
+
+    it("rethrows a Server failure from the Hirer detail read", async () => {
+      stubPublicSnapshotReads();
+      mockedQuestApi.getDetail.mockRejectedValue(
+        new ApiError(500, "INTERNAL_ERROR", "Server failed")
+      );
+
+      await expect(
+        liveQuestService.getLiveSnapshot("quest-detail-err-1", "worker-1")
+      ).rejects.toMatchObject({ status: 500 });
+      expect(mockedQuestApi.getPublicDetail).not.toHaveBeenCalled();
+    });
+
+    it("falls back to public detail when the Hirer detail answers 404 for a non-owner", async () => {
+      stubPublicSnapshotReads();
+      mockedQuestApi.getDetail.mockRejectedValue(
+        new ApiError(404, "QUEST_NOT_FOUND", "Quest not found")
+      );
+
+      const snapshot = await liveQuestService.getLiveSnapshot(
+        "quest-detail-err-1",
+        "worker-1"
+      );
+
+      expect(snapshot.actor).toBe("PROSPECTIVE_WORKER");
+      expect(snapshot.quest.id).toBe("quest-detail-err-1");
+      expect(mockedQuestApi.getPublicDetail).toHaveBeenCalledWith(
+        "quest-detail-err-1",
+        {}
+      );
     });
   });
 });

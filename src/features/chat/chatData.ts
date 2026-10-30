@@ -10,7 +10,7 @@ export type {
 
 /**
  * Keep only stable identifiers on the chat route. Conversation membership and
- * write capability are re-derived by Quest Workflow for the explicit viewer.
+ * write capability are re-derived by the server for the explicit viewer.
  */
 export function getChatRouteParams({
   conversationId,

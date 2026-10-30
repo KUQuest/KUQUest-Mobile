@@ -4,75 +4,48 @@ import {
   questApi,
   type CreateQuestV2Payload,
   type QuestV2AssignmentMineStatus,
-  type QuestV2CreateEditRequestPayload,
-  type QuestV2EditRequestResponsePayload,
-  type QuestV2ProofCreatePayload,
-  type QuestV2ProofFileUploadPayload,
-  type QuestV2ProofReviewPayload,
-  type QuestV2ProofRetryPayload,
-  type QuestV2ProofUpdatePayload,
-  type QuestV2ReviewPayload,
 } from "@/api/QuestApi";
 import { ApiError, type RequestOptions } from "@/api/ApiClient";
 import { authService } from "../../auth/AuthService";
 import { chatApi } from "@/api/ChatApi";
 import type {
-  CandidateInquiryParticipant,
-  ServerCandidateInquiry,
   ServerCandidateInquiryPage,
-  ServerChatAttachment,
-  ServerChatAttachmentLink,
   ServerChatConversation,
-  ServerChatMessage,
   ServerChatMessagePage,
-  ServerChatReadCursor,
 } from "@/api/ChatApi";
-import type { UploadAsset } from "@/api/fileUpload";
-import { isTerminalStatus } from "@/domain/questLifecycle";
 import type {
   QuestV2Application,
-  QuestV2ApplicationSelection,
   QuestV2Assignment,
   QuestV2BoardCard,
   QuestV2CanonicalQuest,
-  QuestV2CancellationOutcome,
-  QuestV2CancelPreview,
-  QuestV2Completion,
   QuestV2Detail,
   QuestV2EditRequest,
   QuestV2Image,
   QuestV2Mode,
   QuestV2Participation,
   QuestV2ParticipationDetail,
-  QuestV2ProofFileLink,
-  QuestV2ProofReview,
   QuestV2ProofSubmission,
   QuestV2PublicDetail,
   QuestV2PublicImage,
-  QuestV2PublishCheck,
   QuestV2Review,
   QuestV2Team,
-  QuestV2TeamFile,
-  QuestV2TeamFileLink,
-  QuestV2TeamSelection,
-  QuestV2StartWork,
   QuestV2Underfilled,
 } from "@/api/questV2Contracts";
 import {
   QuestActor,
   QuestMode,
-  QuestNextAction,
   QuestParticipation,
   QuestTeamRole,
+  type QuestBoardCard,
   type QuestBoardQuest,
   type QuestStatus,
-  type QuestUnderfilledConsentDecision,
-  type QuestUnderfilledDecision,
 } from "../domain/types";
+import {
+  deriveQuestCapabilities,
+  deriveQuestNextAction,
+} from "../domain/questCapabilities";
 import type {
   LiveQuestActor,
-  LiveQuestNextAction,
-  LiveQuestCapabilities,
   LiveQuestAssignment,
   LiveQuestParticipant,
   LiveQuestSnapshot,
@@ -99,7 +72,7 @@ function timeRange(startTime: string, dueAt: string): string | undefined {
   return start && end ? `${start}–${end}` : undefined;
 }
 
-export function cardToQuestBoardQuest(card: QuestV2BoardCard): QuestBoardQuest {
+export function cardToQuestBoardCard(card: QuestV2BoardCard): QuestBoardCard {
   const startDate = card.startTime.slice(0, 10);
   const deadline = card.dueAt ? card.dueAt.slice(0, 10) : startDate;
   const rewardSatang = Math.round(card.questReward * 100);
@@ -110,9 +83,6 @@ export function cardToQuestBoardQuest(card: QuestV2BoardCard): QuestBoardQuest {
     ...(card.tag
       ? { tagId: card.tag.id, tags: [card.tag.name] }
       : { tags: [] }),
-    description: "",
-    completionCriteria: "",
-    proofRequired: "none",
     rewardPerPerson: card.questReward,
     rewardSatang,
     questFundingTotalSatang:
@@ -128,19 +98,18 @@ export function cardToQuestBoardQuest(card: QuestV2BoardCard): QuestBoardQuest {
     location: card.location ?? "Online",
     locationDetails: { label: card.location },
     locationMode: card.location === null ? "online" : "on-campus",
-    participationMode: card.participation === "GROUP" ? "team" : "single",
-    candidateMode: card.mode === "CANDIDATE" ? "CANDIDATE" : "NO_CANDIDATE",
+    participation: card.participation,
+    mode: card.mode,
     creator: { name: card.hirerName },
     hirerName: card.hirerName,
-    studentInterestMatch: false,
-    ownerStudentId: card.hirerProfile?.id ?? "",
-    status: "QUEST_OPEN",
+    ...(card.hirerProfile ? { ownerStudentId: card.hirerProfile.id } : {}),
   };
 }
 export function canonicalToQuestBoardQuest(
   q: QuestV2CanonicalQuest | QuestV2Detail,
-  creatorName = "Me"
+  options: { creatorName?: string; acceptedParticipants?: number } = {}
 ): QuestBoardQuest {
+  const { creatorName = "Me", acceptedParticipants } = options;
   const rewardSatang = Math.round((q.questReward ?? 0) * 100);
   const startDate = q.startTime.slice(0, 10);
   const deadline = q.dueAt ? q.dueAt.slice(0, 10) : startDate;
@@ -162,7 +131,7 @@ export function canonicalToQuestBoardQuest(
         ? Math.round(q.questFundingTotal * 100)
         : null,
     headcount: q.headcount,
-    acceptedParticipants: 0,
+    ...(acceptedParticipants === undefined ? {} : { acceptedParticipants }),
     startDate,
     deadline,
     timeRange: q.dueAt ? timeRange(q.startTime, q.dueAt) : undefined,
@@ -170,19 +139,18 @@ export function canonicalToQuestBoardQuest(
     location: q.locations[0]?.label ?? "Online",
     locationDetails: { label: q.locations[0]?.label ?? null },
     locationMode: q.locations.length > 0 ? "on-campus" : "online",
-    participationMode: q.participation === "GROUP" ? "team" : "single",
-    candidateMode: q.mode === "CANDIDATE" ? "CANDIDATE" : "NO_CANDIDATE",
+    participation: q.participation,
+    mode: q.mode,
     creator: { name: creatorName },
     imageUris:
       "images" in q ? q.images.map((img: QuestV2Image) => img.url) : [],
-    studentInterestMatch: false,
-    ownerStudentId: "",
     status: q.state as QuestStatus,
   };
 }
 
 export function publicDetailToQuestBoardQuest(
-  d: QuestV2PublicDetail | QuestV2ParticipationDetail
+  d: QuestV2PublicDetail | QuestV2ParticipationDetail,
+  options: { acceptedParticipants?: number } = {}
 ): QuestBoardQuest {
   const startDate = d.startTime.slice(0, 10);
   const deadline = d.dueAt ? d.dueAt.slice(0, 10) : startDate;
@@ -206,7 +174,7 @@ export function publicDetailToQuestBoardQuest(
         ? Math.round(d.questFundingTotal * 100)
         : null,
     headcount: d.headcount,
-    acceptedParticipants: d.activeWorkerCount,
+    acceptedParticipants: options.acceptedParticipants ?? d.activeWorkerCount,
     startDate,
     deadline,
     timeRange: d.dueAt ? timeRange(d.startTime, d.dueAt) : undefined,
@@ -214,13 +182,11 @@ export function publicDetailToQuestBoardQuest(
     location: d.locations[0]?.label ?? "Online",
     locationDetails: { label: d.locations[0]?.label ?? null },
     locationMode: d.locations.length > 0 ? "on-campus" : "online",
-    participationMode: d.participation === "GROUP" ? "team" : "single",
-    candidateMode: d.mode === "CANDIDATE" ? "CANDIDATE" : "NO_CANDIDATE",
+    participation: d.participation,
+    mode: d.mode,
     creator: { name: d.hirerName },
     hirerName: d.hirerName,
     imageUris: d.images?.map((img: QuestV2PublicImage) => img.url) ?? [],
-    studentInterestMatch: false,
-    ownerStudentId: "",
     status: d.state as QuestStatus,
     hasJoined: d.hasJoined,
     assignmentId: d.assignmentId,
@@ -234,6 +200,17 @@ function isOptionalResourceError(error: unknown): boolean {
     (error.status === 403 ||
       error.status === 404 ||
       (error.status === 409 && error.code === "QUEST_NOT_UNDERFILLED"))
+  );
+}
+
+/**
+ * The Hirer detail read answers 404 (the v2 contract documents no other
+ * non-owner status) to a viewer who does not own the Quest. Offline and Server
+ * failures must surface, not demote the viewer to a prospective Worker.
+ */
+function isNonOwnerDetailError(error: unknown): boolean {
+  return (
+    error instanceof ApiError && (error.status === 403 || error.status === 404)
   );
 }
 
@@ -380,254 +357,6 @@ function deriveTeamRole(
     : QuestTeamRole.MEMBER;
 }
 
-function deriveCapabilities(input: {
-  viewerId: string;
-  actor: LiveQuestActor;
-  state: QuestV2Detail["state"];
-  mode: QuestV2Mode;
-  participation: QuestV2Participation;
-  startTime: string;
-  dueAt: string | null;
-  proofRequired: boolean;
-  headcount: number;
-  assignments: LiveQuestAssignment[];
-  assignment: LiveQuestAssignment | null;
-  application: QuestV2Application | null;
-  team: QuestV2Team | null;
-  teamRole: QuestTeamRole | null;
-  underfilled: QuestV2Underfilled | null;
-  editRequest: QuestV2EditRequest | null;
-  proofs: QuestV2ProofSubmission[];
-  workConversation: ServerChatConversation | null;
-}): LiveQuestCapabilities {
-  const {
-    viewerId,
-    actor,
-    state,
-    mode,
-    participation,
-    proofRequired,
-    headcount,
-    assignments,
-    assignment,
-    application,
-    team,
-    teamRole,
-    underfilled,
-    editRequest,
-    proofs,
-    workConversation,
-    startTime,
-    dueAt,
-  } = input;
-  const isHirer = actor === QuestActor.HIRER;
-  const isWorker = actor === QuestActor.WORKER;
-  const isCandidate = actor === QuestActor.CANDIDATE;
-  const isProspectiveWorker =
-    isCandidate || actor === QuestActor.PROSPECTIVE_WORKER;
-  const activeWorker = assignment?.state === "ASSIGNMENT_ACTIVE";
-  const open = state === "QUEST_OPEN";
-  const now = serverNow();
-  const startAt = Date.parse(startTime);
-  const dueAtMs = Date.parse(dueAt ?? "");
-  const beforeStartTime = Number.isFinite(startAt) && now < startAt;
-  const withinWorkWindow =
-    Number.isFinite(startAt) &&
-    Number.isFinite(dueAtMs) &&
-    now >= startAt &&
-    now < dueAtMs;
-  const assigned = state === "QUEST_ASSIGNED";
-  const inProgress = state === "QUEST_IN_PROGRESS";
-  const reviewableProofState = inProgress || state === "QUEST_FAILED";
-  const terminal = isTerminalStatus(state);
-  const ownPendingApplication = application?.state === "APPLICATION_APPLIED";
-  const ownFormingTeam = team?.state === "TEAM_FORMING";
-  const teamAtCapacity = team !== null && team.members.length >= team.headcount;
-  // Leader-only actions stay open unless a readable Team names someone else; the
-  // server enforces Team Leader ONLY (START_WORK_NOT_REQUIRED).
-  const mayActAsTeamLeader = teamRole !== QuestTeamRole.MEMBER;
-  const ownProof = proofs.find(
-    (proof) =>
-      proof.submittedByUserId === viewerId ||
-      proof.workerId === viewerId ||
-      (team?.id !== undefined && proof.teamId === team.id)
-  );
-  const hasEditableProofDraft =
-    ownProof !== undefined &&
-    ownProof.status === null &&
-    ownProof.submittedAt === null;
-  const hasLockedProof = ownProof !== undefined && !hasEditableProofDraft;
-  const hasCapacity =
-    assignments.filter(
-      (candidate) => candidate.state !== "ASSIGNMENT_CANCELLED"
-    ).length < headcount;
-  // The Server returns a responding Worker's ownResponse with a null decision
-  // until they answer, not a null ownResponse.
-  const pendingEdit =
-    editRequest?.status === "EDIT_REQUEST_PENDING" &&
-    (editRequest.ownResponse?.decision ?? null) === null;
-  const pendingProof = proofs.some((proof) => proof.status === "PROOF_PENDING");
-  const canWorkChat =
-    Boolean(workConversation) && (isHirer || assignment !== null);
-  return {
-    canJoin:
-      isProspectiveWorker &&
-      mode === "FIRST_COME_FIRST_SERVED" &&
-      open &&
-      assignment === null &&
-      hasCapacity,
-    canApply:
-      isProspectiveWorker &&
-      mode === "CANDIDATE" &&
-      participation === "SINGLE" &&
-      open &&
-      application === null,
-    canWithdrawApplication:
-      isCandidate && open && ownPendingApplication === true,
-    canCreateTeam:
-      isProspectiveWorker &&
-      mode === "CANDIDATE" &&
-      participation === "GROUP" &&
-      open &&
-      beforeStartTime &&
-      team === null,
-    // Non-members cannot list other Teams; the Join Code invite carries the
-    // Team id, so joining does not depend on a listed joinable Team.
-    canJoinTeam:
-      isProspectiveWorker &&
-      mode === "CANDIDATE" &&
-      participation === "GROUP" &&
-      open &&
-      beforeStartTime &&
-      team === null,
-    canUpdateTeam:
-      isProspectiveWorker &&
-      team?.leaderId === viewerId &&
-      ownFormingTeam === true,
-    canLeaveTeam: isProspectiveWorker && ownFormingTeam === true,
-    canRemoveTeamMember:
-      isProspectiveWorker &&
-      team?.leaderId === viewerId &&
-      ownFormingTeam === true,
-    canRegenerateTeamCode:
-      isProspectiveWorker &&
-      team?.leaderId === viewerId &&
-      ownFormingTeam === true,
-    canSubmitTeam:
-      isProspectiveWorker &&
-      team?.leaderId === viewerId &&
-      ownFormingTeam === true &&
-      teamAtCapacity === true,
-    canSelectCandidate:
-      isHirer && mode === "CANDIDATE" && participation === "SINGLE" && open,
-    canSelectTeam:
-      isHirer && mode === "CANDIDATE" && participation === "GROUP" && open,
-    canDecideUnderfilled:
-      isHirer && underfilled?.state === "UNDERFILLED_DECISION_PENDING",
-    canRejectCandidate:
-      isHirer && mode === "CANDIDATE" && participation === "SINGLE" && open,
-    canRejectTeam:
-      isHirer && mode === "CANDIDATE" && participation === "GROUP" && open,
-    canConsentUnderfilled:
-      isWorker &&
-      activeWorker === true &&
-      underfilled?.state === "UNDERFILLED_CONSENT_PENDING",
-    canRequestEdit: isHirer && assigned,
-    canRespondToEdit: isWorker && activeWorker === true && pendingEdit,
-    canReadWorkChat: canWorkChat,
-    canWriteWorkChat:
-      canWorkChat && !terminal && (isHirer || activeWorker === true),
-    canSubmitProof:
-      isWorker &&
-      activeWorker === true &&
-      inProgress &&
-      proofRequired &&
-      mayActAsTeamLeader &&
-      !hasLockedProof,
-    canStartWork:
-      isWorker &&
-      activeWorker === true &&
-      assigned &&
-      withinWorkWindow &&
-      !assignment?.startedAt &&
-      mayActAsTeamLeader,
-    canConfirmCompletion:
-      isWorker &&
-      activeWorker === true &&
-      inProgress &&
-      !proofRequired &&
-      mayActAsTeamLeader,
-    canCancel: isHirer && !terminal,
-    canReviewProof: isHirer && reviewableProofState && pendingProof,
-    canCreateReview: (isHirer || isWorker) && terminal,
-  };
-}
-
-function deriveNextAction(
-  state: LiveQuestSnapshot["state"],
-  actor: LiveQuestActor,
-  mode: QuestV2Mode,
-  participation: QuestV2Participation,
-  capabilities: LiveQuestCapabilities,
-  application: QuestV2Application | null,
-  applications: QuestV2Application[],
-  team: QuestV2Team | null,
-  teams: QuestV2Team[],
-  underfilled: QuestV2Underfilled | null,
-  editRequest: QuestV2EditRequest | null
-): LiveQuestNextAction {
-  if (capabilities.canRespondToEdit) return QuestNextAction.RESPOND_TO_EDIT;
-  if (capabilities.canDecideUnderfilled)
-    return QuestNextAction.DECIDE_UNDERFILLED;
-  if (capabilities.canConsentUnderfilled)
-    return QuestNextAction.CONSENT_UNDERFILLED;
-  if (state === "QUEST_OPEN") {
-    if (capabilities.canJoin) return QuestNextAction.JOIN;
-    if (
-      capabilities.canSelectCandidate &&
-      applications.some(
-        (candidate) => candidate.state === "APPLICATION_APPLIED"
-      )
-    )
-      return QuestNextAction.SELECT_CANDIDATE;
-    if (
-      capabilities.canSelectTeam &&
-      teams.some((candidate) => candidate.state === "TEAM_SUBMITTED")
-    )
-      return QuestNextAction.SELECT_TEAM;
-    if (capabilities.canWithdrawApplication)
-      return QuestNextAction.WITHDRAW_APPLICATION;
-    if (capabilities.canApply) return QuestNextAction.APPLY;
-    if (capabilities.canSubmitTeam) return QuestNextAction.SUBMIT_TEAM;
-    if (capabilities.canCreateTeam) return QuestNextAction.CREATE_TEAM;
-    if (capabilities.canJoinTeam && team === null)
-      return QuestNextAction.JOIN_TEAM;
-  }
-  if (state === "QUEST_ASSIGNED" && actor === QuestActor.WORKER)
-    return editRequest?.status === "EDIT_REQUEST_PENDING"
-      ? QuestNextAction.RESPOND_TO_EDIT
-      : QuestNextAction.WAIT_FOR_START;
-  if (
-    (state === "QUEST_IN_PROGRESS" || state === "QUEST_FAILED") &&
-    capabilities.canReviewProof
-  )
-    return QuestNextAction.REVIEW_PROOF;
-  if (state === "QUEST_IN_PROGRESS") {
-    if (capabilities.canSubmitProof) return QuestNextAction.SUBMIT_PROOF;
-    if (capabilities.canConfirmCompletion)
-      return QuestNextAction.CONFIRM_COMPLETION;
-  }
-  if (capabilities.canCreateReview) return QuestNextAction.CREATE_REVIEW;
-  if (capabilities.canCancel) return QuestNextAction.CANCEL;
-  if (application?.state === "APPLICATION_SELECTED")
-    return QuestNextAction.WAIT_FOR_START;
-  if (mode === "CANDIDATE" && participation === "GROUP" && team) {
-    return QuestNextAction.NONE;
-  }
-  if (underfilled) return QuestNextAction.NONE;
-  return QuestNextAction.NONE;
-}
-
 export class LiveQuestService {
   private participantCache = new Map<string, LiveQuestParticipant>();
   private participantRequests = new Map<
@@ -724,30 +453,10 @@ export class LiveQuestService {
       : await this.loadParticipantProfiles(resolvedAssignments);
   }
 
-  async createCandidateInquiry(
-    questId: string
-  ): Promise<ServerCandidateInquiry> {
-    return chatApi.createCandidateInquiry(questId);
-  }
-
   async listCandidateInquiries(
     params: { limit?: number; cursor?: string } = {}
   ): Promise<ServerCandidateInquiryPage> {
     return chatApi.listCandidateInquiries(params);
-  }
-
-  async getCandidateInquiry(
-    conversationId: string,
-    options?: RequestOptions
-  ): Promise<ServerCandidateInquiry> {
-    return chatApi.getCandidateInquiry(conversationId, options);
-  }
-
-  async listCandidateInquiryParticipants(
-    conversationId: string,
-    options?: RequestOptions
-  ): Promise<CandidateInquiryParticipant[]> {
-    return chatApi.listCandidateInquiryParticipants(conversationId, options);
   }
 
   async getCandidateInquiryMessages(
@@ -758,56 +467,8 @@ export class LiveQuestService {
     return chatApi.getCandidateInquiryMessages(conversationId, params, options);
   }
 
-  async sendCandidateInquiryMessage(
-    conversationId: string,
-    text: string,
-    clientMessageId?: string,
-    attachmentIds?: string[]
-  ): Promise<ServerChatMessage> {
-    return chatApi.sendCandidateInquiryMessage(
-      conversationId,
-      text,
-      clientMessageId,
-      attachmentIds
-    );
-  }
-
-  async markCandidateInquiryRead(
-    conversationId: string,
-    messageId: string
-  ): Promise<ServerChatReadCursor> {
-    return chatApi.markCandidateInquiryRead(conversationId, messageId);
-  }
-
-  async uploadCandidateInquiryAttachment(
-    conversationId: string,
-    asset: UploadAsset
-  ): Promise<ServerChatAttachment> {
-    return chatApi.uploadCandidateInquiryAttachment(conversationId, asset);
-  }
-
-  async getCandidateInquiryAttachmentLink(
-    conversationId: string,
-    attachmentId: string
-  ): Promise<ServerChatAttachmentLink> {
-    return chatApi.getCandidateInquiryAttachmentLink(
-      conversationId,
-      attachmentId
-    );
-  }
-
-  async deleteCandidateInquiryAttachment(
-    conversationId: string,
-    attachmentId: string
-  ): Promise<{ attachmentId: string }> {
-    return chatApi.deleteCandidateInquiryAttachment(
-      conversationId,
-      attachmentId
-    );
-  }
-
-  async listBoardQuests(options?: RequestOptions): Promise<QuestBoardQuest[]> {
-    const items: QuestBoardQuest[] = [];
+  async listBoardQuests(options?: RequestOptions): Promise<QuestBoardCard[]> {
+    const items: QuestBoardCard[] = [];
     const seenCursors = new Set<string>();
     let cursor: string | undefined;
 
@@ -816,7 +477,7 @@ export class LiveQuestService {
         cursor ? { cursor, limit: 50 } : { limit: 50 },
         options
       );
-      items.push(...result.items.map(cardToQuestBoardQuest));
+      items.push(...result.items.map(cardToQuestBoardCard));
       if (!result.nextCursor || seenCursors.has(result.nextCursor)) break;
       seenCursors.add(result.nextCursor);
       cursor = result.nextCursor;
@@ -829,7 +490,7 @@ export class LiveQuestService {
     options?: RequestOptions
   ): Promise<QuestBoardQuest[]> {
     const result = await questApi.listMine({}, options);
-    return result.items.map((q) => canonicalToQuestBoardQuest(q, "Me"));
+    return result.items.map((q) => canonicalToQuestBoardQuest(q));
   }
   async listMyWorkerAssignments(
     status?: QuestV2AssignmentMineStatus,
@@ -839,13 +500,6 @@ export class LiveQuestService {
       ? questApi.listMyAssignments(status, options)
       : questApi.listMyAssignments(status);
   }
-  async listQuestAssignments(
-    questId: string,
-    options?: RequestOptions
-  ): Promise<QuestV2Assignment[]> {
-    return questApi.listQuestAssignments(questId, options);
-  }
-
   async getQuestDetail(
     questId: string,
     options?: RequestOptions
@@ -880,7 +534,8 @@ export class LiveQuestService {
     try {
       quest = await questApi.getDetail(questId, options);
       routeActor = QuestActor.HIRER;
-    } catch {
+    } catch (error) {
+      if (!isNonOwnerDetailError(error)) throw error;
       try {
         quest = await questApi.getPublicDetail(questId, options);
       } catch {
@@ -904,7 +559,7 @@ export class LiveQuestService {
       editRequest,
     ] = await Promise.all([
       optionalResource(
-        () => this.listQuestAssignments(questId, options),
+        () => questApi.listQuestAssignments(questId, options),
         [] as QuestV2Assignment[]
       ),
       optionalResource(
@@ -992,7 +647,7 @@ export class LiveQuestService {
             > | null
           )
         : null;
-    const capabilities = deriveCapabilities({
+    const capabilities = deriveQuestCapabilities({
       viewerId,
       actor,
       state: quest.state,
@@ -1011,20 +666,21 @@ export class LiveQuestService {
       editRequest,
       proofs,
       workConversation: conversations,
+      now: serverNow(),
     });
-    const nextAction = deriveNextAction(
-      quest.state,
+    const nextAction = deriveQuestNextAction({
+      state: quest.state,
       actor,
-      quest.mode,
-      quest.participation,
+      mode: quest.mode,
+      participation: quest.participation,
       capabilities,
       application,
       applications,
       team,
       teams,
       underfilled,
-      editRequest
-    );
+      editRequest,
+    });
 
     return {
       viewerId,
@@ -1053,26 +709,6 @@ export class LiveQuestService {
     };
   }
 
-  async getLiveQuestSnapshot(
-    questId: string,
-    viewerId: string,
-    options?: LiveQuestSnapshotOptions
-  ): Promise<LiveQuestSnapshot> {
-    return this.getLiveSnapshot(questId, viewerId, options);
-  }
-  /**
-   * Re-reads all live resources after a command. No local mutation is kept in
-   * this service; callers use this method after a successful or ambiguous
-   * command to render the server result.
-   */
-  async refreshLiveSnapshot(
-    questId: string,
-    viewerId: string,
-    options?: LiveQuestSnapshotOptions
-  ): Promise<LiveQuestSnapshot> {
-    return this.getLiveSnapshot(questId, viewerId, options);
-  }
-
   async uploadImages(
     questId: string,
     imageUris: string[],
@@ -1082,90 +718,19 @@ export class LiveQuestService {
     return questApi.uploadQuestImages(questId, assets, idempotencyKey);
   }
 
-  async getPublishCheck(questId: string): Promise<QuestV2PublishCheck> {
-    return questApi.getPublishCheck(questId);
-  }
-
-  async editQuest(
-    questId: string,
-    version: number,
-    payload: Partial<CreateQuestV2Payload>,
-    idempotencyKey?: string
-  ): Promise<QuestV2CanonicalQuest> {
-    return questApi.editQuest(questId, version, payload, idempotencyKey);
-  }
-  async createQuest(
-    payload: CreateQuestV2Payload,
-    idempotencyKey?: string
-  ): Promise<QuestV2CanonicalQuest> {
-    return questApi.createQuest(payload, idempotencyKey);
-  }
-
-  async publishQuest(
-    questId: string,
-    idempotencyKey?: string
-  ): Promise<QuestV2CanonicalQuest> {
-    return questApi.publishQuest(questId, idempotencyKey);
-  }
-
   async createAndPublishQuest(
     payload: CreateQuestV2Payload,
     idempotencyKey?: string
   ): Promise<QuestV2CanonicalQuest> {
-    const created = await this.createQuest(
+    const created = await questApi.createQuest(
       payload,
       createQuestIdempotencyKey()
     );
-    return this.publishQuest(created.id, idempotencyKey);
+    return questApi.publishQuest(created.id, idempotencyKey);
   }
 
   async joinQuest(questId: string): Promise<QuestV2Assignment> {
     return questApi.joinQuest(questId, createQuestIdempotencyKey());
-  }
-
-  async applyQuest(
-    questId: string,
-    idempotencyKey?: string
-  ): Promise<QuestV2Application> {
-    return questApi.applyQuest(questId, idempotencyKey);
-  }
-
-  async listApplications(questId: string): Promise<QuestV2Application[]> {
-    return questApi.listApplications(questId);
-  }
-
-  async getApplication(
-    questId: string,
-    applicationId: string
-  ): Promise<QuestV2Application> {
-    return questApi.getApplication(questId, applicationId);
-  }
-
-  async withdrawApplication(
-    questId: string,
-    applicationId: string,
-    idempotencyKey?: string
-  ): Promise<QuestV2Application> {
-    return questApi.withdrawApplication(questId, applicationId, idempotencyKey);
-  }
-  async selectApplication(
-    questId: string,
-    applicationId: string,
-    idempotencyKey?: string
-  ): Promise<QuestV2ApplicationSelection> {
-    return questApi.selectApplication(questId, applicationId, idempotencyKey);
-  }
-
-  async rejectApplication(
-    questId: string,
-    applicationId: string,
-    idempotencyKey?: string
-  ): Promise<QuestV2Application> {
-    return questApi.rejectCandidateApplication(
-      questId,
-      applicationId,
-      idempotencyKey
-    );
   }
 
   async createCandidateTeam(
@@ -1175,82 +740,6 @@ export class LiveQuestService {
   ): Promise<QuestV2Team> {
     return rememberJoinCode(
       await questApi.createCandidateTeam(questId, payload, idempotencyKey)
-    );
-  }
-
-  async listCandidateTeams(questId: string): Promise<QuestV2Team[]> {
-    return questApi.listCandidateTeams(questId);
-  }
-
-  async getCandidateTeam(
-    questId: string,
-    teamId: string
-  ): Promise<QuestV2Team> {
-    return questApi.getCandidateTeam(questId, teamId);
-  }
-  async getCandidateTeamFileLink(
-    questId: string,
-    teamId: string,
-    fileId: string,
-    options?: RequestOptions
-  ): Promise<QuestV2TeamFileLink> {
-    return questApi.getCandidateTeamFileLink(questId, teamId, fileId, options);
-  }
-
-  async updateCandidateTeam(
-    questId: string,
-    teamId: string,
-    payload: { name: string },
-    idempotencyKey?: string
-  ): Promise<QuestV2Team> {
-    return questApi.updateCandidateTeam(
-      questId,
-      teamId,
-      payload,
-      idempotencyKey
-    );
-  }
-
-  async joinCandidateTeam(
-    questId: string,
-    teamId: string,
-    joinCode: string,
-    idempotencyKey?: string
-  ): Promise<QuestV2Team> {
-    return questApi.joinCandidateTeam(
-      questId,
-      teamId,
-      joinCode,
-      idempotencyKey
-    );
-  }
-  async joinCandidateTeamByCode(
-    questId: string,
-    joinCode: string,
-    idempotencyKey?: string
-  ): Promise<QuestV2Team> {
-    return questApi.joinCandidateTeamByCode(questId, joinCode, idempotencyKey);
-  }
-
-  async leaveCandidateTeam(
-    questId: string,
-    teamId: string,
-    idempotencyKey?: string
-  ): Promise<QuestV2Team> {
-    return questApi.leaveCandidateTeam(questId, teamId, idempotencyKey);
-  }
-
-  async removeCandidateTeamMember(
-    questId: string,
-    teamId: string,
-    memberId: string,
-    idempotencyKey?: string
-  ): Promise<QuestV2Team> {
-    return questApi.removeCandidateTeamMember(
-      questId,
-      teamId,
-      memberId,
-      idempotencyKey
     );
   }
 
@@ -1267,20 +756,6 @@ export class LiveQuestService {
       )
     );
   }
-  async uploadCandidateTeamFile(
-    questId: string,
-    teamId: string,
-    asset: UploadAsset,
-    idempotencyKey?: string
-  ): Promise<QuestV2TeamFile> {
-    return questApi.uploadCandidateTeamFile(
-      questId,
-      teamId,
-      asset,
-      idempotencyKey
-    );
-  }
-
   async submitCandidateTeam(
     questId: string,
     teamId: string,
@@ -1298,204 +773,11 @@ export class LiveQuestService {
     );
   }
 
-  async selectCandidateTeam(
-    questId: string,
-    teamId: string,
-    idempotencyKey?: string
-  ): Promise<QuestV2TeamSelection> {
-    return questApi.selectCandidateTeam(questId, teamId, idempotencyKey);
-  }
-
-  async rejectCandidateTeam(
-    questId: string,
-    teamId: string,
-    idempotencyKey?: string
-  ): Promise<QuestV2Team> {
-    return questApi.rejectCandidateTeam(questId, teamId, idempotencyKey);
-  }
-
-  async getUnderfilled(
-    questId: string,
-    options?: RequestOptions
-  ): Promise<QuestV2Underfilled> {
-    return questApi.getUnderfilled(questId, options);
-  }
-
-  async decideUnderfilled(
-    questId: string,
-    decision: QuestUnderfilledDecision,
-    idempotencyKey?: string
-  ): Promise<QuestV2Underfilled> {
-    return questApi.decideUnderfilled(questId, decision, idempotencyKey);
-  }
-
-  async respondUnderfilledConsent(
-    questId: string,
-    decision: QuestUnderfilledConsentDecision,
-    idempotencyKey?: string
-  ): Promise<QuestV2Underfilled> {
-    return questApi.respondUnderfilledConsent(
-      questId,
-      decision,
-      idempotencyKey
-    );
-  }
-
-  async createEditRequest(
-    questId: string,
-    payload: QuestV2CreateEditRequestPayload,
-    idempotencyKey?: string
-  ): Promise<QuestV2EditRequest> {
-    return questApi.createEditRequest(questId, payload, idempotencyKey);
-  }
-
-  async getEditRequest(
-    requestId: string,
-    options?: RequestOptions
-  ): Promise<QuestV2EditRequest> {
-    return questApi.getEditRequest(requestId, options);
-  }
-
-  async respondToEditRequest(
-    requestId: string,
-    payload: QuestV2EditRequestResponsePayload,
-    idempotencyKey?: string
-  ): Promise<QuestV2EditRequest> {
-    return questApi.respondToEditRequest(requestId, payload, idempotencyKey);
-  }
-
-  async createProofDraft(
-    questId: string,
-    payload:
-      | QuestV2ProofCreatePayload
-      | { assets: { uri: string }[]; description?: string },
-    idempotencyKey?: string
-  ): Promise<QuestV2ProofSubmission> {
-    return questApi.createProofDraft(questId, payload, idempotencyKey);
-  }
-
-  async updateProofDraft(
-    questId: string,
-    proofSubmissionId: string,
-    payload:
-      | QuestV2ProofUpdatePayload
-      | QuestV2ProofRetryPayload
-      | QuestV2ProofFileUploadPayload,
-    idempotencyKey?: string
-  ): Promise<QuestV2ProofSubmission> {
-    return questApi.updateProofDraft(
-      questId,
-      proofSubmissionId,
-      payload,
-      idempotencyKey
-    );
-  }
-
-  async deleteProofDraft(
-    questId: string,
-    proofSubmissionId: string,
-    idempotencyKey?: string
-  ): Promise<{ proofSubmissionId: string; deleted: true }> {
-    return questApi.deleteProofDraft(
-      questId,
-      proofSubmissionId,
-      idempotencyKey
-    );
-  }
-
-  async submitProofDraft(
-    questId: string,
-    proofSubmissionId: string,
-    idempotencyKey?: string
-  ): Promise<QuestV2ProofSubmission> {
-    return questApi.submitProofDraft(
-      questId,
-      proofSubmissionId,
-      idempotencyKey
-    );
-  }
-
-  async listProofSubmissions(
-    questId: string
-  ): Promise<QuestV2ProofSubmission[]> {
-    return questApi.listProofSubmissions(questId);
-  }
-
-  async getProofFileLink(
-    questId: string,
-    proofSubmissionId: string,
-    fileId: string,
-    options?: RequestOptions
-  ): Promise<QuestV2ProofFileLink> {
-    return questApi.getProofFileLink(
-      questId,
-      proofSubmissionId,
-      fileId,
-      options
-    );
-  }
-
-  async reviewProof(
-    questId: string,
-    proofSubmissionId: string,
-    payload: QuestV2ProofReviewPayload,
-    idempotencyKey?: string
-  ): Promise<QuestV2ProofReview> {
-    return questApi.reviewProof(
-      questId,
-      proofSubmissionId,
-      payload,
-      idempotencyKey
-    );
-  }
-
-  async getCancelPreview(questId: string): Promise<QuestV2CancelPreview> {
-    return questApi.getCancelPreview(questId);
-  }
-
-  async cancelQuest(
-    questId: string,
-    idempotencyKey?: string,
-    previewVersion?: string
-  ): Promise<QuestV2CancellationOutcome> {
-    return questApi.cancelQuest(questId, idempotencyKey, previewVersion);
-  }
-
-  async confirmCompletion(
-    questId: string,
-    idempotencyKey?: string
-  ): Promise<QuestV2Completion> {
-    return questApi.confirmCompletion(questId, idempotencyKey);
-  }
-
-  async startWork(
-    questId: string,
-    idempotencyKey: string
-  ): Promise<QuestV2StartWork> {
-    return questApi.startWork(questId, idempotencyKey);
-  }
-
-  async createReview(
-    questId: string,
-    input: QuestV2ReviewPayload,
-    idempotencyKey?: string
-  ): Promise<QuestV2Review> {
-    return questApi.createReview(questId, input, idempotencyKey);
-  }
   async listQuestReviews(
     questId: string,
     _viewerId?: string
   ): Promise<QuestV2Review[]> {
     return questApi.listQuestReviews(questId);
-  }
-
-  async updateReview(
-    questId: string,
-    reviewId: string,
-    input: { rating: number; comment?: string },
-    idempotencyKey?: string
-  ): Promise<QuestV2Review> {
-    return questApi.updateReview(questId, reviewId, input, idempotencyKey);
   }
 }
 

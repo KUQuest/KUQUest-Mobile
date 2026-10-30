@@ -10,11 +10,8 @@ export interface QuestDetailSurfaceState {
   dismissedIntent?: string;
   candidateReviewSheetOpen: boolean;
 
-  teamSearchQuery: string;
-  teamSelectedMemberIds: string[];
   teamReviewing: boolean;
   selectedProposalId: string | null;
-  fixtureRevision: number;
 }
 
 type SurfaceAction =
@@ -27,11 +24,8 @@ type SurfaceAction =
   | { type: "dismiss-intent"; key: string }
   | { type: "open-candidate-review" }
   | { type: "close-candidate-review" }
-  | { type: "set-team-search"; value: string }
-  | { type: "set-team-selection"; value: string[] }
   | { type: "set-team-reviewing"; value: boolean }
-  | { type: "select-proposal"; value: string | null }
-  | { type: "fixture-changed" };
+  | { type: "select-proposal"; value: string | null };
 
 const initialState: QuestDetailSurfaceState = {
   liveAction: null,
@@ -41,11 +35,8 @@ const initialState: QuestDetailSurfaceState = {
   dismissedIntent: undefined,
   candidateReviewSheetOpen: false,
 
-  teamSearchQuery: "",
-  teamSelectedMemberIds: [],
   teamReviewing: false,
   selectedProposalId: null,
-  fixtureRevision: 0,
 };
 
 function reduceSurfaceState(
@@ -80,16 +71,10 @@ function reduceSurfaceState(
         selectedProposalId: null,
       };
 
-    case "set-team-search":
-      return { ...state, teamSearchQuery: action.value };
-    case "set-team-selection":
-      return { ...state, teamSelectedMemberIds: action.value };
     case "set-team-reviewing":
       return { ...state, teamReviewing: action.value };
     case "select-proposal":
       return { ...state, selectedProposalId: action.value };
-    case "fixture-changed":
-      return { ...state, fixtureRevision: state.fixtureRevision + 1 };
   }
 }
 
@@ -104,11 +89,8 @@ export interface QuestDetailSurfaceTransitions {
   openCandidateReview: () => void;
   closeCandidateReview: () => void;
 
-  setTeamSearchQuery: (value: string) => void;
-  setTeamSelectedMemberIds: (value: string[]) => void;
   setTeamReviewing: (value: boolean) => void;
   selectProposal: (value: string | null) => void;
-  markFixtureChanged: () => void;
 }
 
 export function useQuestDetailSurfaceState(): {
@@ -154,24 +136,12 @@ export function useQuestDetailSurfaceState(): {
     () => dispatch({ type: "close-candidate-review" }),
     []
   );
-  const setTeamSearchQuery = useCallback(
-    (value: string) => dispatch({ type: "set-team-search", value }),
-    []
-  );
-  const setTeamSelectedMemberIds = useCallback(
-    (value: string[]) => dispatch({ type: "set-team-selection", value }),
-    []
-  );
   const setTeamReviewing = useCallback(
     (value: boolean) => dispatch({ type: "set-team-reviewing", value }),
     []
   );
   const selectProposal = useCallback(
     (value: string | null) => dispatch({ type: "select-proposal", value }),
-    []
-  );
-  const markFixtureChanged = useCallback(
-    () => dispatch({ type: "fixture-changed" }),
     []
   );
 
@@ -187,11 +157,8 @@ export function useQuestDetailSurfaceState(): {
       dismissIntent,
       openCandidateReview,
       closeCandidateReview,
-      setTeamSearchQuery,
-      setTeamSelectedMemberIds,
       setTeamReviewing,
       selectProposal,
-      markFixtureChanged,
     },
   };
 }

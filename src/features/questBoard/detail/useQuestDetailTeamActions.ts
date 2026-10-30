@@ -1,11 +1,6 @@
 import { useCallback } from "react";
 
-import type {
-  QuestDetailLiveActions,
-  QuestDetailPreviewActions,
-} from "./questDetailActions";
-import type { QuestDetailPresentationFacts } from "./questDetailPresentation";
-import type { QuestDetailSurfaceTransitions } from "./useQuestDetailSurfaceState";
+import type { QuestDetailLiveActions } from "./questDetailActions";
 import {
   QuestUnderfilledConsentDecision,
   QuestUnderfilledDecision,
@@ -24,23 +19,12 @@ export interface QuestDetailTeamHandlers {
     teamId: string,
     payload?: { text?: string; fileIds?: string[] }
   ) => void;
-  fixtureCreateTeam: () => void;
-  fixtureInviteMembers: (memberIds: string[]) => void;
-  fixtureSubmitTeam: (teamId: string) => void;
-  fixtureRespondInvitation: (invitationId: string, accept: boolean) => void;
-  fixturePartialStartVote: (approve: boolean) => void;
 }
 
 export function useQuestDetailTeamActions({
-  facts,
   liveActions,
-  previewActions,
-  transitions,
 }: {
-  facts: QuestDetailPresentationFacts | null;
   liveActions: QuestDetailLiveActions;
-  previewActions: QuestDetailPreviewActions;
-  transitions: QuestDetailSurfaceTransitions;
 }): QuestDetailTeamHandlers {
   const liveUnderfilledDecision = useCallback(
     (decision: QuestUnderfilledDecision) => {
@@ -96,46 +80,6 @@ export function useQuestDetailTeamActions({
     },
     [liveActions]
   );
-  const fixtureCreateTeam = useCallback(() => {
-    previewActions.createTeam();
-  }, [previewActions]);
-  const fixtureInviteMembers = useCallback(
-    (memberIds: string[]) => {
-      previewActions.inviteMembers(memberIds);
-    },
-    [previewActions]
-  );
-  const fixtureSubmitTeam = useCallback(
-    (teamId: string) => {
-      if (!facts?.teamSheetTeam || facts.teamSheetTeam.id !== teamId) return;
-      previewActions.submitTeam(teamId);
-    },
-    [facts, previewActions]
-  );
-  const fixtureRespondInvitation = useCallback(
-    (invitationId: string, accept: boolean) => {
-      previewActions.respondInvitation(invitationId, accept);
-    },
-    [previewActions]
-  );
-  const fixturePartialStartVote = useCallback(
-    (approve: boolean) => {
-      if (!facts) return;
-      if (
-        facts.source.kind !== "preview" &&
-        facts.projection?.capabilities.canConsentUnderfilled
-      ) {
-        void liveActions.respondUnderfilled(
-          approve
-            ? QuestUnderfilledConsentDecision.ACCEPT
-            : QuestUnderfilledConsentDecision.DECLINE
-        );
-        return;
-      }
-      previewActions.votePartialStart(approve);
-    },
-    [facts, liveActions, previewActions]
-  );
 
   return {
     liveUnderfilledDecision,
@@ -147,10 +91,5 @@ export function useQuestDetailTeamActions({
     liveRegenerateTeamCode,
     liveUpdateTeamName,
     liveSubmitTeam,
-    fixtureCreateTeam,
-    fixtureInviteMembers,
-    fixtureSubmitTeam,
-    fixtureRespondInvitation,
-    fixturePartialStartVote,
   };
 }

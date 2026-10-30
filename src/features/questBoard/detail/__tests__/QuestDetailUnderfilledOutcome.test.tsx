@@ -5,6 +5,7 @@ import { questBoardMessages } from "@/locales/questBoardMessages";
 import { renderWithAppTheme } from "@/testing/queryTestUtils";
 import { LiveEntrySurface } from "../components/QuestDetailEntrySurfaces";
 import { QuestDetailBody } from "../components/QuestDetailBody";
+import { QuestMode, QuestParticipation } from "../../domain/types";
 
 const messages = groupQuestMessages.en;
 const cancelledAt = "2026-08-12T09:00:00.000Z";
@@ -84,11 +85,9 @@ const quest = {
   postedAt: "2026-08-01T00:00:00.000Z",
   location: "Online",
   locationMode: "online",
-  participationMode: "team",
-  candidateMode: "NO_CANDIDATE",
+  participation: QuestParticipation.GROUP,
+  mode: QuestMode.FIRST_COME_FIRST_SERVED,
   creator: { name: "Hirer" },
-  studentInterestMatch: false,
-  ownerStudentId: "hirer-1",
 } as never;
 
 function body(cancellationReason: string | null, ownDeclined = false) {

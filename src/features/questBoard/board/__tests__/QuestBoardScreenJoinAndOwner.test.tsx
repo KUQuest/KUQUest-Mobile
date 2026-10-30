@@ -13,7 +13,13 @@ import { liveQuestService } from "../../live/liveQuestService";
 import { authService } from "@/features/auth/AuthService";
 import { groupQuestMessages } from "@/locales/groupQuestMessages";
 import type { LiveQuestSnapshot } from "../../live/liveQuestService";
-import type { QuestBoardQuest } from "../../domain/types";
+import {
+  QuestMode,
+  QuestParticipation,
+  type QuestBoardCard,
+} from "../../domain/types";
+import { chatApi } from "@/api/ChatApi";
+import { questApi } from "@/api/QuestApi";
 
 const mockPush = jest.fn();
 const mockBack = jest.fn();
@@ -59,34 +65,43 @@ jest.mock("../../live/liveQuestService", () => {
       listBoardQuests: jest.fn(),
       getLiveSnapshot: jest.fn(),
       joinQuest: jest.fn(),
-      applyQuest: jest.fn(),
-      withdrawApplication: jest.fn(),
-      createCandidateInquiry: jest.fn(),
-      selectApplication: jest.fn(),
-      rejectApplication: jest.fn(),
-      selectCandidateTeam: jest.fn(),
-      rejectCandidateTeam: jest.fn(),
       createCandidateTeam: jest.fn(),
-      joinCandidateTeam: jest.fn(),
-      updateCandidateTeam: jest.fn(),
-      leaveCandidateTeam: jest.fn(),
-      removeCandidateTeamMember: jest.fn(),
       regenerateCandidateTeamJoinCode: jest.fn(),
       submitCandidateTeam: jest.fn(),
-      getUnderfilled: jest.fn(),
-      decideUnderfilled: jest.fn(),
-      respondUnderfilledConsent: jest.fn(),
     },
   };
 });
 
-const mockQuestItem: QuestBoardQuest = {
+jest.mock("@/api/QuestApi", () => ({
+  ...jest.requireActual("@/api/QuestApi"),
+  questApi: {
+    applyQuest: jest.fn(),
+    withdrawApplication: jest.fn(),
+    selectApplication: jest.fn(),
+    rejectCandidateApplication: jest.fn(),
+    selectCandidateTeam: jest.fn(),
+    rejectCandidateTeam: jest.fn(),
+    joinCandidateTeam: jest.fn(),
+    updateCandidateTeam: jest.fn(),
+    leaveCandidateTeam: jest.fn(),
+    removeCandidateTeamMember: jest.fn(),
+    getUnderfilled: jest.fn(),
+    decideUnderfilled: jest.fn(),
+    respondUnderfilledConsent: jest.fn(),
+  },
+}));
+
+jest.mock("@/api/ChatApi", () => ({
+  ...jest.requireActual("@/api/ChatApi"),
+  chatApi: {
+    createCandidateInquiry: jest.fn(),
+  },
+}));
+
+const mockQuestItem: QuestBoardCard = {
   id: "quest-fcfs-1",
   title: "Deliver documents across campus",
   tags: ["Delivery"],
-  description: "Pick up envelopes from building A and take to building B.",
-  completionCriteria: "Documents delivered safely.",
-  proofRequired: "none",
   rewardPerPerson: 150,
   rewardSatang: 15000,
   headcount: 2,
@@ -98,11 +113,9 @@ const mockQuestItem: QuestBoardQuest = {
   location: "Main Campus",
   locationMode: "on-campus",
 
-  participationMode: "single",
-  candidateMode: "NO_CANDIDATE", // FCFS
+  participation: QuestParticipation.SINGLE,
+  mode: QuestMode.FIRST_COME_FIRST_SERVED, // FCFS
   creator: { name: "Prof Oak", faculty: "Science" },
-  ownerStudentId: "",
-  studentInterestMatch: false,
   status: "QUEST_OPEN",
 };
 function createLiveSnapshot(
@@ -236,7 +249,7 @@ describe("QuestBoardScreen - Owner Profile and Card Actions", () => {
     await fireEvent.press(view.getByTestId("quest-card-owner-quest-fcfs-1"));
 
     expect(mockPush).toHaveBeenCalledWith("/profile/hirer-oak-uuid");
-    expect(liveQuestService.createCandidateInquiry).not.toHaveBeenCalled();
+    expect(chatApi.createCandidateInquiry).not.toHaveBeenCalled();
   });
 
   it("opens Quest Detail when ownerStudentId is missing, without creating an inquiry", async () => {
@@ -251,7 +264,7 @@ describe("QuestBoardScreen - Owner Profile and Card Actions", () => {
       pathname: "/quest/[id]",
       params: { id: "quest-fcfs-1" },
     });
-    expect(liveQuestService.createCandidateInquiry).not.toHaveBeenCalled();
+    expect(chatApi.createCandidateInquiry).not.toHaveBeenCalled();
   });
   it("opens Candidate Inquiry with explicit route parameters", async () => {
     (liveQuestService.getLiveSnapshot as jest.Mock).mockResolvedValue(
@@ -263,7 +276,7 @@ describe("QuestBoardScreen - Owner Profile and Card Actions", () => {
         },
       })
     );
-    (liveQuestService.createCandidateInquiry as jest.Mock).mockResolvedValue({
+    (chatApi.createCandidateInquiry as jest.Mock).mockResolvedValue({
       id: "inquiry-1",
     });
 
@@ -308,8 +321,8 @@ describe("QuestBoardScreen - Owner Profile and Card Actions", () => {
       expect(liveQuestService.listBoardQuests).toHaveBeenCalledTimes(1)
     );
 
-    let resolveRefresh!: (items: QuestBoardQuest[]) => void;
-    const pendingRefresh = new Promise<QuestBoardQuest[]>((resolve) => {
+    let resolveRefresh!: (items: QuestBoardCard[]) => void;
+    const pendingRefresh = new Promise<QuestBoardCard[]>((resolve) => {
       resolveRefresh = resolve;
     });
     (liveQuestService.listBoardQuests as jest.Mock).mockReturnValueOnce(
@@ -409,7 +422,7 @@ describe("QuestBoardScreen - Owner Profile and Card Actions", () => {
       },
     });
     (liveQuestService.getLiveSnapshot as jest.Mock).mockResolvedValue(snapshot);
-    (liveQuestService.applyQuest as jest.Mock).mockResolvedValue({
+    (questApi.applyQuest as jest.Mock).mockResolvedValue({
       id: "application-live-1",
       questId: "quest-live-1",
       memberId: "current-worker-1",
@@ -434,7 +447,7 @@ describe("QuestBoardScreen - Owner Profile and Card Actions", () => {
     fireEvent.press(await view.findByTestId("confirm-quest-application"));
 
     await waitFor(() => {
-      expect(liveQuestService.applyQuest).toHaveBeenCalledWith(
+      expect(questApi.applyQuest).toHaveBeenCalledWith(
         "quest-live-1",
         expect.any(String)
       );
@@ -466,7 +479,7 @@ describe("QuestBoardScreen - Owner Profile and Card Actions", () => {
       },
     });
     (liveQuestService.getLiveSnapshot as jest.Mock).mockResolvedValue(snapshot);
-    (liveQuestService.rejectApplication as jest.Mock).mockResolvedValue({
+    (questApi.rejectCandidateApplication as jest.Mock).mockResolvedValue({
       id: "app-live-1",
       questId: "quest-live-1",
       memberId: "applicant-1",
@@ -496,15 +509,15 @@ describe("QuestBoardScreen - Owner Profile and Card Actions", () => {
     await fireEvent.press(rejectButton);
 
     expect(view.getByTestId("sweet-alert")).toBeTruthy();
-    expect(liveQuestService.rejectApplication).not.toHaveBeenCalled();
+    expect(questApi.rejectCandidateApplication).not.toHaveBeenCalled();
     await fireEvent.press(view.getByRole("button", { name: "Cancel" }));
-    expect(liveQuestService.rejectApplication).not.toHaveBeenCalled();
+    expect(questApi.rejectCandidateApplication).not.toHaveBeenCalled();
 
     await fireEvent.press(rejectButton);
     await fireEvent.press(view.getByRole("button", { name: "Reject" }));
 
     await waitFor(() => {
-      expect(liveQuestService.rejectApplication).toHaveBeenCalledWith(
+      expect(questApi.rejectCandidateApplication).toHaveBeenCalledWith(
         "quest-live-1",
         "app-live-1",
         expect.any(String)
@@ -581,7 +594,7 @@ describe("QuestBoardScreen - Owner Profile and Card Actions", () => {
     });
     (liveQuestService.getLiveSnapshot as jest.Mock).mockResolvedValue(snapshot);
     const consentResponse = Promise.withResolvers<unknown>();
-    (liveQuestService.respondUnderfilledConsent as jest.Mock).mockReturnValue(
+    (questApi.respondUnderfilledConsent as jest.Mock).mockReturnValue(
       consentResponse.promise
     );
     const queryClient = new QueryClient({
@@ -631,7 +644,7 @@ describe("QuestBoardScreen - Owner Profile and Card Actions", () => {
     );
 
     await waitFor(() =>
-      expect(liveQuestService.respondUnderfilledConsent).toHaveBeenCalledWith(
+      expect(questApi.respondUnderfilledConsent).toHaveBeenCalledWith(
         "quest-live-1",
         "ACCEPT",
         expect.any(String)

@@ -19,30 +19,25 @@ import {
 import { QuestBoardListHeader } from "./components/QuestBoardListHeader";
 import { QuestCard } from "./components/QuestCard";
 import { useQuestBoardController } from "./useQuestBoardController";
-import type { BoardPreviewState } from "../fixtures/questBoardHarness";
-import type { QuestBoardQuest } from "../domain/types";
+import type { QuestBoardCard } from "../domain/types";
 import styles from "./questBoardStyles";
-
-export type { BoardPreviewState } from "../fixtures/questBoardHarness";
 
 export interface QuestBoardScreenProps {
   currentStudentId?: string;
-  initialPreviewState?: BoardPreviewState;
 }
 
 export default function QuestBoardScreen({
   currentStudentId,
-  initialPreviewState = "populated",
 }: QuestBoardScreenProps) {
   const router = useRouter();
-  const board = useQuestBoardController(currentStudentId, initialPreviewState);
+  const board = useQuestBoardController(currentStudentId);
   const { locale, openOwnerProfile, openQuest, rewardSatang } = board;
   const { width, fontScale } = useWindowDimensions();
   const insets = useSafeAreaInsets();
   const chromeMetrics = getAppChromeMetrics(width, fontScale);
 
   const renderQuest = useCallback(
-    ({ item }: { item: QuestBoardQuest }) => (
+    ({ item }: { item: QuestBoardCard }) => (
       <QuestCard
         locale={locale}
         onDetail={() => openQuest(item)}
@@ -93,21 +88,7 @@ export default function QuestBoardScreen({
       />
     ) : boardModel.kind === "empty" ? (
       <StateView variant="empty" title={board.messages.noQuests} />
-    ) : boardModel.kind === "unavailable" ? (
-      <StateView
-        variant="empty"
-        title={
-          boardModel.availability === "full"
-            ? board.messages.stateFull
-            : board.messages.stateClosed
-        }
-        description={board.messages.noMatches}
-        actionLabel={board.messages.title}
-        onAction={() =>
-          board.openQuest(boardModel.quest, boardModel.availability)
-        }
-      />
-    ) : board.noMatch ? (
+    ) : (
       <StateView
         variant="empty"
         title={board.messages.noMatches}
@@ -118,7 +99,7 @@ export default function QuestBoardScreen({
             : undefined
         }
       />
-    ) : null;
+    );
 
   return (
     <ScreenLayout edges={["top", "left", "right"]} className={styles.safeArea}>

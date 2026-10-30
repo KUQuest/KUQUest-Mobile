@@ -1,3 +1,4 @@
+import type { DisputeCase } from "@/api/DisputeApi";
 import type { SupportedLocale } from "./locale";
 
 export interface DisputeMessages {
@@ -11,6 +12,8 @@ export interface DisputeMessages {
   errorFallback: string;
   alreadyFiled: string;
   filedStatus: string;
+  filedCase: (caseId: string) => string;
+  caseStatus: Record<DisputeCase["status"], string>;
   statusError: string;
   retryStatus: string;
   windowClosed: string;
@@ -37,6 +40,12 @@ export const disputeMessages: Record<SupportedLocale, DisputeMessages> = {
     errorFallback: "Please try again.",
     alreadyFiled: "A Dispute Case has already been filed for this Quest.",
     filedStatus: "Dispute filed",
+    filedCase: (caseId) => `Case ${caseId}`,
+    caseStatus: {
+      DISPUTE_CASE_PENDING: "Waiting for Admin review",
+      DISPUTE_CASE_DISMISSED: "Admin dismissed the case",
+      DISPUTE_CASE_RESOLVED: "Admin resolved the case",
+    },
     statusError: "Couldn't check dispute status.",
     retryStatus: "Retry",
     windowClosed: "The 1-day window to file a Dispute Case has closed.",
@@ -62,6 +71,12 @@ export const disputeMessages: Record<SupportedLocale, DisputeMessages> = {
     errorFallback: "โปรดลองอีกครั้ง",
     alreadyFiled: "มีการยื่นคำร้องข้อพิพาทสำหรับเควสต์นี้แล้ว",
     filedStatus: "ยื่นคำร้องข้อพิพาทแล้ว",
+    filedCase: (caseId) => `คำร้อง ${caseId}`,
+    caseStatus: {
+      DISPUTE_CASE_PENDING: "กำลังรอผู้ดูแลระบบตรวจสอบ",
+      DISPUTE_CASE_DISMISSED: "ผู้ดูแลระบบยกคำร้องแล้ว",
+      DISPUTE_CASE_RESOLVED: "ผู้ดูแลระบบตัดสินคำร้องแล้ว",
+    },
     statusError: "ตรวจสอบสถานะคำร้องข้อพิพาทไม่สำเร็จ",
     retryStatus: "ลองอีกครั้ง",
     windowClosed: "หมดเวลายื่นคำร้องข้อพิพาท (1 วัน) แล้ว",

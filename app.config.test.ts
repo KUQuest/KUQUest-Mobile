@@ -23,6 +23,30 @@ function configure(variant?: string, versionCode?: string) {
   }
   return configureApp({ config: baseConfig } as ConfigContext);
 }
+describe("app config push", () => {
+  afterEach(() => {
+    delete process.env.GOOGLE_SERVICES_JSON;
+  });
+
+  test("turns off push for a build without google-services.json", () => {
+    delete process.env.GOOGLE_SERVICES_JSON;
+    const config = configure();
+
+    expect(config.extra?.pushEnabled).toBe(false);
+    expect(config.android?.googleServicesFile).toBeUndefined();
+  });
+
+  test("turns on push for a build with google-services.json", () => {
+    process.env.GOOGLE_SERVICES_JSON = "/tmp/google-services.json";
+    const config = configure();
+
+    expect(config.extra?.pushEnabled).toBe(true);
+    expect(config.android?.googleServicesFile).toBe(
+      "/tmp/google-services.json"
+    );
+  });
+});
+
 describe("app config variants", () => {
   const initialApiUrl = process.env.EXPO_PUBLIC_API_URL;
 

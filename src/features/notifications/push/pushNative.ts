@@ -1,3 +1,4 @@
+import Constants from "expo-constants";
 import * as Notifications from "expo-notifications";
 import { Platform } from "react-native";
 
@@ -29,6 +30,10 @@ const pushRegistrationNative: PushRegistrationNative = {
   addTokenListener: (listener) =>
     Notifications.addPushTokenListener((token) => listener(token.data)),
 };
+
+export function isPushEnabled(): boolean {
+  return Constants.expoConfig?.extra?.pushEnabled === true;
+}
 
 export function createPushRegistrationManager(isDevice: boolean) {
   return new PushRegistrationManager(

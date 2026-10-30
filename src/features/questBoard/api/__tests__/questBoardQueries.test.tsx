@@ -29,6 +29,7 @@ import {
   useApplyQuestMutation,
   useCancelQuestMutation,
   useCreateReviewMutation,
+  useFileDisputeMutation,
   useJoinCandidateTeamMutation,
   useCandidateTeamFileLinksQuery,
   useLiveQuestSnapshotQuery,
@@ -39,14 +40,23 @@ import {
   useSelectApplicationMutation,
   useUpdateReviewMutation,
 } from "../questBoardQueries";
+import { questApi } from "@/api/QuestApi";
+import { ApiError } from "@/api/ApiClient";
+import { disputeApi } from "@/api/DisputeApi";
 
 jest.mock("../../live/liveQuestService", () => ({
   liveQuestService: {
-    getCandidateTeamFileLink: jest.fn(),
-    getProofFileLink: jest.fn(),
     getLiveSnapshot: jest.fn(),
     listBoardQuests: jest.fn(),
     listQuestReviews: jest.fn(),
+  },
+}));
+
+jest.mock("@/api/QuestApi", () => ({
+  ...jest.requireActual("@/api/QuestApi"),
+  questApi: {
+    getCandidateTeamFileLink: jest.fn(),
+    getProofFileLink: jest.fn(),
     applyQuest: jest.fn(),
     cancelQuest: jest.fn(),
     createReview: jest.fn(),
@@ -55,6 +65,14 @@ jest.mock("../../live/liveQuestService", () => ({
     selectApplication: jest.fn(),
     joinCandidateTeam: jest.fn(),
     joinCandidateTeamByCode: jest.fn(),
+  },
+}));
+
+jest.mock("@/api/DisputeApi", () => ({
+  ...jest.requireActual("@/api/DisputeApi"),
+  disputeApi: {
+    fileDispute: jest.fn(),
+    getMyDisputeCase: jest.fn(),
   },
 }));
 
@@ -90,7 +108,7 @@ describe("quest board query ownership", () => {
       url: "https://storage.example.test/file-2",
     };
     jest
-      .mocked(liveQuestService.getCandidateTeamFileLink)
+      .mocked(questApi.getCandidateTeamFileLink)
       .mockImplementation((_questId, _teamId, fileId) =>
         Promise.resolve(fileId === "file-1" ? firstLink : secondLink)
       );
@@ -114,7 +132,7 @@ describe("quest board query ownership", () => {
     );
     expect(
       jest
-        .mocked(liveQuestService.getCandidateTeamFileLink)
+        .mocked(questApi.getCandidateTeamFileLink)
         .mock.calls.map(([, , fileId]) => fileId)
     ).toEqual(["file-1", "file-2"]);
 
@@ -123,7 +141,7 @@ describe("quest board query ownership", () => {
   });
 
   it("rejects a Candidate Team file link for a different submission file", async () => {
-    jest.mocked(liveQuestService.getCandidateTeamFileLink).mockResolvedValue({
+    jest.mocked(questApi.getCandidateTeamFileLink).mockResolvedValue({
       fileId: "different-file",
       contentType: "image/png",
       sizeBytes: 128,
@@ -248,7 +266,6 @@ describe("quest board query ownership", () => {
       workerHomeKeys.assignments("active"),
       workerHomeKeys.assignments("all"),
       workerHomeKeys.participationDetail(questId),
-      workerHomeKeys.liveSnapshot(questId, viewerId),
       myQuestsKeys.worker(viewerId),
     ];
     const chatKey = chatKeys.conversations(viewerId);
@@ -258,9 +275,7 @@ describe("quest board query ownership", () => {
     }
 
     const cancellation = { state: "QUEST_CANCELLED" };
-    jest
-      .mocked(liveQuestService.cancelQuest)
-      .mockResolvedValue(cancellation as never);
+    jest.mocked(questApi.cancelQuest).mockResolvedValue(cancellation as never);
     const { result } = await renderHook(() => useCancelQuestMutation(), {
       wrapper: wrapper(queryClient),
     });
@@ -282,11 +297,49 @@ describe("quest board query ownership", () => {
       expect(queryClient.getQueryState(key)?.isInvalidated).toBe(true);
     }
     expect(queryClient.getQueryState(chatKey)?.isInvalidated).not.toBe(true);
-    expect(liveQuestService.cancelQuest).toHaveBeenCalledWith(
+    expect(questApi.cancelQuest).toHaveBeenCalledWith(
       questId,
       "cancel-key",
       undefined
     );
+    queryClient.clear();
+  });
+
+  it("reloads the filed case and the snapshot's Dispute window after a 409 filing", async () => {
+    const queryClient = new QueryClient();
+    const viewerId = "viewer-1";
+    const questId = "quest-1";
+    const snapshotKey = questBoardKeys.liveSnapshot(questId, viewerId);
+    queryClient.setQueryData(snapshotKey, { cached: true });
+    const filedCase = {
+      id: "dispute-1",
+      displayId: "DC-000123",
+      questId,
+      status: "DISPUTE_CASE_PENDING",
+      createdAt: "2099-01-01T19:00:00+07:00",
+    };
+    jest
+      .mocked(disputeApi.fileDispute)
+      .mockRejectedValue(
+        new ApiError(409, "CONFLICT", "A Dispute Case already exists")
+      );
+    jest
+      .mocked(disputeApi.getMyDisputeCase)
+      .mockResolvedValue({ case: filedCase } as never);
+    const { result } = await renderHook(() => useFileDisputeMutation(), {
+      wrapper: wrapper(queryClient),
+    });
+
+    await act(async () => {
+      await expect(
+        result.current.mutateAsync({ questId, viewerId })
+      ).rejects.toBeInstanceOf(ApiError);
+    });
+
+    expect(
+      queryClient.getQueryData(questBoardKeys.myDisputeCase(questId, viewerId))
+    ).toEqual({ case: filedCase });
+    expect(queryClient.getQueryState(snapshotKey)?.isInvalidated).toBe(true);
     queryClient.clear();
   });
 
@@ -301,7 +354,7 @@ describe("quest board query ownership", () => {
       workerHomeKeys.assignments("active"),
       workerHomeKeys.assignments("all"),
       workerHomeKeys.participationDetail(questId),
-      workerHomeKeys.liveSnapshot(questId, viewerId),
+      workerHomeKeys.board("", null),
       myQuestsKeys.worker(viewerId),
     ];
     const hirerKeys: QueryKey[] = [homeKeys.hirer(), myQuestsKeys.hirer()];
@@ -309,7 +362,7 @@ describe("quest board query ownership", () => {
       queryClient.setQueryData(key, { cached: true });
     }
 
-    jest.mocked(liveQuestService.applyQuest).mockResolvedValue({} as never);
+    jest.mocked(questApi.applyQuest).mockResolvedValue({} as never);
     const { result } = await renderHook(() => useApplyQuestMutation(), {
       wrapper: wrapper(queryClient),
     });
@@ -379,7 +432,7 @@ describe("quest board query ownership", () => {
       ],
     };
     jest
-      .mocked(liveQuestService.getProofFileLink)
+      .mocked(questApi.getProofFileLink)
       .mockResolvedValueOnce({
         fileId: "file-1",
         contentType: "image/png",
@@ -407,15 +460,15 @@ describe("quest board query ownership", () => {
       "https://files.example.test/file-1?token=temporary",
       "https://files.example.test/file-2?token=temporary",
     ]);
-    expect(liveQuestService.getProofFileLink).toHaveBeenCalledTimes(2);
-    expect(liveQuestService.getProofFileLink).toHaveBeenNthCalledWith(
+    expect(questApi.getProofFileLink).toHaveBeenCalledTimes(2);
+    expect(questApi.getProofFileLink).toHaveBeenNthCalledWith(
       1,
       "quest-1",
       "proof-1",
       "file-1",
       expect.objectContaining({ signal: expect.anything() })
     );
-    expect(liveQuestService.getProofFileLink).toHaveBeenNthCalledWith(
+    expect(questApi.getProofFileLink).toHaveBeenNthCalledWith(
       2,
       "quest-1",
       "proof-1",
@@ -657,10 +710,10 @@ describe("quest board query ownership", () => {
     const queryClient = new QueryClient({
       defaultOptions: { queries: { retry: false } },
     });
-    jest.mocked(liveQuestService.joinCandidateTeam).mockResolvedValue({
+    jest.mocked(questApi.joinCandidateTeam).mockResolvedValue({
       id: "team-1",
     } as never);
-    jest.mocked(liveQuestService.joinCandidateTeamByCode).mockResolvedValue({
+    jest.mocked(questApi.joinCandidateTeamByCode).mockResolvedValue({
       id: "team-2",
     } as never);
 
@@ -676,13 +729,13 @@ describe("quest board query ownership", () => {
       });
     });
 
-    expect(liveQuestService.joinCandidateTeam).toHaveBeenCalledWith(
+    expect(questApi.joinCandidateTeam).toHaveBeenCalledWith(
       "quest-1",
       "team-1",
       "CODE123",
       undefined
     );
-    expect(liveQuestService.joinCandidateTeamByCode).not.toHaveBeenCalled();
+    expect(questApi.joinCandidateTeamByCode).not.toHaveBeenCalled();
 
     await act(async () => {
       await result.current.mutateAsync({
@@ -691,7 +744,7 @@ describe("quest board query ownership", () => {
       });
     });
 
-    expect(liveQuestService.joinCandidateTeamByCode).toHaveBeenCalledWith(
+    expect(questApi.joinCandidateTeamByCode).toHaveBeenCalledWith(
       "quest-1",
       "CODE999",
       undefined
@@ -801,7 +854,8 @@ describe("quest board query ownership", () => {
       workerHomeKeys.assignments("active"),
       workerHomeKeys.assignments("all"),
       workerHomeKeys.participationDetail("quest-1"),
-      workerHomeKeys.liveSnapshot("quest-1", "worker-1"),
+      workerHomeKeys.board("", null),
+      workerHomeKeys.board("quest", "tag-1"),
       myQuestsKeys.worker("worker-1"),
     ];
     keys.forEach((key) => queryClient.setQueryData(key, { cached: true }));
@@ -820,7 +874,7 @@ describe("quest board query ownership", () => {
     const invalidated = () =>
       queryClient.getQueryState(walletKey)?.isInvalidated;
     queryClient.setQueryData(walletKey, { cached: true });
-    jest.mocked(liveQuestService.cancelQuest).mockResolvedValue({} as never);
+    jest.mocked(questApi.cancelQuest).mockResolvedValue({} as never);
     const cancel = await renderHook(() => useCancelQuestMutation(), {
       wrapper: wrapper(queryClient),
     });
@@ -829,7 +883,7 @@ describe("quest board query ownership", () => {
     });
     expect(invalidated()).toBe(true);
     await queryClient.resetQueries({ queryKey: walletKey });
-    jest.mocked(liveQuestService.reviewProof).mockResolvedValue({} as never);
+    jest.mocked(questApi.reviewProof).mockResolvedValue({} as never);
     const review = await renderHook(() => useReviewProofMutation(), {
       wrapper: wrapper(queryClient),
     });
@@ -842,9 +896,7 @@ describe("quest board query ownership", () => {
     });
     expect(invalidated()).toBe(true);
     await queryClient.resetQueries({ queryKey: walletKey });
-    jest
-      .mocked(liveQuestService.selectApplication)
-      .mockResolvedValue({} as never);
+    jest.mocked(questApi.selectApplication).mockResolvedValue({} as never);
     const select = await renderHook(() => useSelectApplicationMutation(), {
       wrapper: wrapper(queryClient),
     });
@@ -865,7 +917,7 @@ describe("quest board query ownership", () => {
     const publicReviewsKey = profileKeys.publicReviews("worker-1");
     queryClient.setQueryData(publicKey, { name: "Worker" });
     queryClient.setQueryData(publicReviewsKey, { items: [] });
-    jest.mocked(liveQuestService.createReview).mockResolvedValue({} as never);
+    jest.mocked(questApi.createReview).mockResolvedValue({} as never);
     const create = await renderHook(() => useCreateReviewMutation(), {
       wrapper: wrapper(queryClient),
     });
@@ -883,7 +935,7 @@ describe("quest board query ownership", () => {
 
     await queryClient.resetQueries({ queryKey: publicKey });
     await queryClient.resetQueries({ queryKey: publicReviewsKey });
-    jest.mocked(liveQuestService.updateReview).mockResolvedValue({} as never);
+    jest.mocked(questApi.updateReview).mockResolvedValue({} as never);
     const update = await renderHook(() => useUpdateReviewMutation(), {
       wrapper: wrapper(queryClient),
     });
