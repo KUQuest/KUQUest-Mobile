@@ -274,6 +274,162 @@ describe("group Quest sheets", () => {
     expect(onSubmit).toHaveBeenCalledTimes(1);
   });
 
+  it("disables review until a proposal note is entered", async () => {
+    const view = await renderWithQueryClient(
+      <TeamAssembleSubmissionPanel
+        acceptedCount={3}
+        canonical
+        files={[]}
+        isReviewing={false}
+        messages={{
+          teamSubmissionUnavailable: "Team submission unavailable",
+          submissionContentRequired:
+            "Add a proposal note to submit. Supporting files are optional.",
+          reviewTitle: "Review team",
+          reviewDescription: "Check proposal",
+          roster: "Roster",
+          rosterCount: (actual, required) => `${actual}/${required}`,
+          partialRosterHint: "Full team",
+          attachedFiles: "Files",
+          proposal: "Proposal",
+          submittingTeam: "Submitting",
+          confirmSubmit: "Confirm submission",
+          cancel: "Cancel",
+          reviewRoster: "Review roster",
+        }}
+        onReviewChange={jest.fn()}
+        onSubmit={jest.fn()}
+        requiredHeadcount={3}
+        submissionReady
+        submitting={false}
+        text="  "
+        uploading={false}
+      />
+    );
+
+    expect(
+      view.getByTestId("team-assemble-review-roster").props.accessibilityState
+        .disabled
+    ).toBe(true);
+  });
+
+  it("enables review once the proposal note is entered", async () => {
+    const view = await renderWithQueryClient(
+      <TeamAssembleSubmissionPanel
+        acceptedCount={3}
+        canonical
+        files={[]}
+        isReviewing={false}
+        messages={{
+          teamSubmissionUnavailable: "Team submission unavailable",
+          submissionContentRequired:
+            "Add a proposal note to submit. Supporting files are optional.",
+          reviewTitle: "Review team",
+          reviewDescription: "Check proposal",
+          roster: "Roster",
+          rosterCount: (actual, required) => `${actual}/${required}`,
+          partialRosterHint: "Full team",
+          attachedFiles: "Files",
+          proposal: "Proposal",
+          submittingTeam: "Submitting",
+          confirmSubmit: "Confirm submission",
+          cancel: "Cancel",
+          reviewRoster: "Review roster",
+        }}
+        onReviewChange={jest.fn()}
+        onSubmit={jest.fn()}
+        requiredHeadcount={3}
+        submissionReady
+        submitting={false}
+        text="We can do the work."
+        uploading={false}
+      />
+    );
+
+    expect(
+      view.getByTestId("team-assemble-review-roster").props.accessibilityState
+        .disabled
+    ).toBe(false);
+  });
+
+  it("blocks review while a proposal file is uploading", async () => {
+    const view = await renderWithQueryClient(
+      <TeamAssembleSubmissionPanel
+        acceptedCount={3}
+        canonical
+        files={[]}
+        isReviewing={false}
+        messages={{
+          teamSubmissionUnavailable: "Team submission unavailable",
+          submissionContentRequired:
+            "Add a proposal note to submit. Supporting files are optional.",
+          reviewTitle: "Review team",
+          reviewDescription: "Check proposal",
+          roster: "Roster",
+          rosterCount: (actual, required) => `${actual}/${required}`,
+          partialRosterHint: "Full team",
+          attachedFiles: "Files",
+          proposal: "Proposal",
+          submittingTeam: "Submitting",
+          confirmSubmit: "Confirm submission",
+          cancel: "Cancel",
+          reviewRoster: "Review roster",
+        }}
+        onReviewChange={jest.fn()}
+        onSubmit={jest.fn()}
+        requiredHeadcount={3}
+        submissionReady
+        submitting={false}
+        text="We can do the work."
+        uploading={true}
+      />
+    );
+
+    expect(
+      view.getByTestId("team-assemble-review-roster").props.accessibilityState
+        .disabled
+    ).toBe(true);
+  });
+
+  it("blocks confirmation while a proposal file is uploading", async () => {
+    const view = await renderWithQueryClient(
+      <TeamAssembleSubmissionPanel
+        acceptedCount={3}
+        canonical
+        files={[]}
+        isReviewing
+        messages={{
+          teamSubmissionUnavailable: "Team submission unavailable",
+          submissionContentRequired:
+            "Add a proposal note to submit. Supporting files are optional.",
+          reviewTitle: "Review team",
+          reviewDescription: "Check proposal",
+          roster: "Roster",
+          rosterCount: (actual, required) => `${actual}/${required}`,
+          partialRosterHint: "Full team",
+          attachedFiles: "Files",
+          proposal: "Proposal",
+          submittingTeam: "Submitting",
+          confirmSubmit: "Confirm submission",
+          cancel: "Cancel",
+          reviewRoster: "Review roster",
+        }}
+        onReviewChange={jest.fn()}
+        onSubmit={jest.fn()}
+        requiredHeadcount={3}
+        submissionReady
+        submitting={false}
+        text="We can do the work."
+        uploading={true}
+      />
+    );
+
+    expect(
+      view.getByTestId("team-assemble-confirm-submit").props.accessibilityState
+        .disabled
+    ).toBe(true);
+  });
+
   it("supports a partial roster, directory search, multi-invite, and review before submit", async () => {
     const onInviteMembers = jest.fn();
     const onSubmit = jest.fn();
