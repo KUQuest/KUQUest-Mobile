@@ -8,6 +8,7 @@ export type WorkerWorkStatusKey =
   | "inProgress"
   | "submitProof"
   | "confirmCompletion"
+  | "completionPending"
   | "respondToEdit"
   | "proofPending"
   | "completed"
@@ -79,6 +80,8 @@ export interface WorkerWorkMessages {
   submittedTitle: string;
   submittedAt: (value: string) => string;
   proofPendingDescription: string;
+  completionPendingDescription: string;
+  completionNotApprovedDescription: string;
   proofApprovedDescription: string;
   proofNotApprovedDescription: string;
   discardProofTitle: string;
@@ -109,6 +112,7 @@ export const workerWorkMessages: Record<SupportedLocale, WorkerWorkMessages> = {
       inProgress: "กำลังทำงาน",
       submitProof: "รอส่งหลักฐาน",
       confirmCompletion: "รอยืนยันงานเสร็จ",
+      completionPending: "รอผู้ว่าจ้างอนุมัติการเสร็จงาน",
       respondToEdit: "มีคำขอแก้ไขเงื่อนไข",
       proofPending: "รอผู้ว่าจ้างตรวจ",
       completed: "สำเร็จ",
@@ -161,6 +165,10 @@ export const workerWorkMessages: Record<SupportedLocale, WorkerWorkMessages> = {
     submittedAt: (value) => `ส่งเมื่อ ${value}`,
     proofPendingDescription:
       "ผู้ว่าจ้างมีเวลาตรวจ 24 ชั่วโมง หากไม่ตรวจภายในเวลา ระบบจะอนุมัติให้อัตโนมัติ",
+    completionPendingDescription:
+      "ส่งยืนยันงานเสร็จแล้ว รอผู้ว่าจ้างอนุมัติก่อนที่เควสต์จะเสร็จ ระบบจะอนุมัติให้อัตโนมัติหลัง 24 ชั่วโมง",
+    completionNotApprovedDescription:
+      "ผู้ว่าจ้างยังไม่อนุมัติการยืนยันงานเสร็จ",
     proofApprovedDescription: "ผู้ว่าจ้างอนุมัติหลักฐานแล้ว",
     proofNotApprovedDescription: "ผู้ว่าจ้างไม่อนุมัติหลักฐานนี้",
     discardProofTitle: "ละทิ้งฉบับร่างหลักฐาน?",
@@ -190,6 +198,7 @@ export const workerWorkMessages: Record<SupportedLocale, WorkerWorkMessages> = {
       inProgress: "In progress",
       submitProof: "Proof due",
       confirmCompletion: "Confirm completion",
+      completionPending: "Awaiting Hirer approval",
       respondToEdit: "Edit request",
       proofPending: "Awaiting review",
       completed: "Completed",
@@ -242,6 +251,10 @@ export const workerWorkMessages: Record<SupportedLocale, WorkerWorkMessages> = {
     submittedAt: (value) => `Sent ${value}`,
     proofPendingDescription:
       "The Hirer has 24 hours to review. If they don't, it is approved automatically.",
+    completionPendingDescription:
+      "You sent a completion confirmation. The Quest stays in progress until the Hirer approves it, or the Server auto-approves it after 24 hours.",
+    completionNotApprovedDescription:
+      "The Hirer did not approve this completion confirmation.",
     proofApprovedDescription: "The Hirer approved this proof.",
     proofNotApprovedDescription: "The Hirer did not approve this proof.",
     discardProofTitle: "Discard proof draft?",

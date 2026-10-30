@@ -1247,6 +1247,31 @@ describe("QuestApi", () => {
         questStatus: "QUEST_COMPLETED",
       },
     };
+    const completionConfirmation = {
+      id: "completion-confirmation-1",
+      questId: "quest-1",
+      workerId: "worker-1",
+      teamId: null,
+      confirmedByUserId: "worker-1",
+      confirmedAt: "2026-09-15T12:00:00Z",
+      reviewStatus: "COMPLETION_CONFIRMATION_PENDING",
+      reviewDeadlineAt: "2026-09-16T12:00:00Z",
+      reviewReason: null,
+      reviewedAt: null,
+      reviewedBy: null,
+    };
+    const completionReview = {
+      success: true,
+      data: {
+        confirmation: {
+          ...completionConfirmation,
+          reviewStatus: "COMPLETION_CONFIRMATION_APPROVED",
+          reviewedAt: "2026-09-15T13:00:00Z",
+          reviewedBy: "HIRER",
+        },
+        questStatus: "QUEST_COMPLETED",
+      },
+    };
     const deletion = {
       success: true,
       data: { deleted: true, proofSubmissionId: "proof-1" },
@@ -1254,15 +1279,24 @@ describe("QuestApi", () => {
     const completion = {
       success: true,
       data: {
+        id: "completion-confirmation-1",
         confirmed: true,
         confirmedAt: "2026-09-15T12:00:00Z",
-        questStatus: "QUEST_COMPLETED",
+        reviewDeadlineAt: "2026-09-16T12:00:00Z",
+        reviewStatus: "COMPLETION_CONFIRMATION_PENDING",
+        questStatus: "QUEST_IN_PROGRESS",
       },
     };
     fetchMock.mockImplementation((url: string, init?: RequestInit) => {
+      if (url.includes("/completion-confirmations/") && url.endsWith("/review"))
+        return Promise.resolve(okJson(completionReview));
       if (url.endsWith("/review")) return Promise.resolve(okJson(proofReview));
       if (url.endsWith("/completion-confirmation"))
         return Promise.resolve(okJson(completion));
+      if (url.endsWith("/completion-confirmations"))
+        return Promise.resolve(
+          okJson({ success: true, data: { items: [completionConfirmation] } })
+        );
       if (
         init?.method === "DELETE" &&
         url.endsWith("/proof-submissions/proof-1")
@@ -1335,10 +1369,24 @@ describe("QuestApi", () => {
     await expect(
       api.confirmCompletion("quest-1", "completion-1")
     ).resolves.toEqual({
+      id: "completion-confirmation-1",
       confirmed: true,
       confirmedAt: "2026-09-15T12:00:00Z",
-      questStatus: "QUEST_COMPLETED",
+      reviewDeadlineAt: "2026-09-16T12:00:00Z",
+      reviewStatus: "COMPLETION_CONFIRMATION_PENDING",
+      questStatus: "QUEST_IN_PROGRESS",
     });
+    await expect(api.listCompletionConfirmations("quest-1")).resolves.toEqual([
+      completionConfirmation,
+    ]);
+    await expect(
+      api.reviewCompletionConfirmation(
+        "quest-1",
+        "completion-confirmation-1",
+        { decision: "COMPLETION_CONFIRMATION_APPROVED" },
+        "completion-review-1"
+      )
+    ).resolves.toEqual(completionReview.data);
 
     expect(fetchMock).toHaveBeenNthCalledWith(
       2,
@@ -1372,6 +1420,24 @@ describe("QuestApi", () => {
         method: "POST",
         body: "{}",
         headers: expect.objectContaining({ "idempotency-key": "completion-1" }),
+      })
+    );
+    expect(fetchMock).toHaveBeenNthCalledWith(
+      8,
+      "https://api.example.test/api/v2/quests/quest-1/completion-confirmations",
+      expect.objectContaining({ method: "GET" })
+    );
+    expect(fetchMock).toHaveBeenNthCalledWith(
+      9,
+      "https://api.example.test/api/v2/quests/quest-1/completion-confirmations/completion-confirmation-1/review",
+      expect.objectContaining({
+        method: "POST",
+        body: JSON.stringify({
+          decision: "COMPLETION_CONFIRMATION_APPROVED",
+        }),
+        headers: expect.objectContaining({
+          "idempotency-key": "completion-review-1",
+        }),
       })
     );
     expect(fetchMock).toHaveBeenNthCalledWith(

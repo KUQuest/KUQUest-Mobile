@@ -21,12 +21,14 @@ import {
   useMyDisputeCaseQuery,
 } from "../../api/questBoardQueries";
 import { disputeMessages } from "@/locales/disputeMessages";
+import { ownCompletionConfirmation } from "../../domain/completionConfirmationOwnership";
 import type { LiveQuestSnapshot } from "../../live/liveQuestService";
 import { FailedQuestNotice } from "../../shared/FailedQuestNotice";
 import { QuestWorkConductReport } from "./QuestWorkConductReport";
 import {
   isWorkerActor,
   QuestAssignmentStatus,
+  QuestCompletionConfirmationStatus,
   QuestEditRequestStatus,
   QuestEditResponseDecision,
   QuestMode,
@@ -138,6 +140,13 @@ export default function QuestWorkActionsCard({
           ? [messages.waitingForTeamLeader]
           : [];
   const unreadLabel = messages.unreadMessages(unreadCount);
+  const completionConfirmation = ownCompletionConfirmation(
+    snapshot,
+    viewerId ?? snapshot.viewerId
+  );
+  const completionPending =
+    completionConfirmation?.reviewStatus ===
+    QuestCompletionConfirmationStatus.COMPLETION_CONFIRMATION_PENDING;
 
   return (
     <>
@@ -347,7 +356,45 @@ export default function QuestWorkActionsCard({
         <Text className={styles.successText}>{editFeedback}</Text>
       ) : null}
 
-      {snapshot.capabilities.canConfirmCompletion ? (
+      {completionPending ? (
+        <View
+          className={styles.mutedCard}
+          testID="completion-confirmation-pending"
+        >
+          <View className={styles.calloutRow}>
+            <View className={styles.calloutIcon}>
+              <CheckCircle2 color={palette.primaryDark} size={20} />
+            </View>
+            <View className={styles.calloutCopy}>
+              <Text className={styles.calloutTitle}>
+                {messages.completionPending}
+              </Text>
+              <Text className={styles.bodyText}>
+                {messages.completionPendingDescription}
+              </Text>
+            </View>
+          </View>
+        </View>
+      ) : null}
+
+      {completionConfirmation?.reviewStatus ===
+      QuestCompletionConfirmationStatus.COMPLETION_CONFIRMATION_NOT_APPROVED ? (
+        <View
+          className={styles.warningCard}
+          testID="completion-confirmation-not-approved"
+        >
+          <Text className={styles.warningTitle}>
+            {messages.completionNotApprovedDescription}
+          </Text>
+          {completionConfirmation.reviewReason ? (
+            <Text className={styles.warningText}>
+              {completionConfirmation.reviewReason}
+            </Text>
+          ) : null}
+        </View>
+      ) : null}
+
+      {snapshot.capabilities.canConfirmCompletion && !completionPending ? (
         <View className={styles.startCard}>
           <View className={styles.calloutRow}>
             <View className={styles.calloutIcon}>

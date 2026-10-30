@@ -860,6 +860,54 @@ describe("QuestWorkScreen", () => {
     expect(view.queryByText("Proof submission")).toBeNull();
   });
 
+  it("waits for Hirer approval after the Worker confirms proof-free completion", async () => {
+    mockedGetSnapshot.mockResolvedValue(
+      makeSnapshot({
+        state: "QUEST_IN_PROGRESS",
+        proofRequired: false,
+        nextAction: "CONFIRM_COMPLETION",
+        quest: {
+          ...defaultQuest,
+          state: "QUEST_IN_PROGRESS",
+          proofRequired: false,
+        },
+        completionConfirmations: [
+          {
+            id: "completion-confirmation-1",
+            questId: "quest-work-1",
+            workerId: "worker-1",
+            teamId: null,
+            confirmedByUserId: "worker-1",
+            confirmedAt: "2026-10-01T10:00:00Z",
+            reviewStatus: "COMPLETION_CONFIRMATION_PENDING",
+            reviewDeadlineAt: "2026-10-02T10:00:00Z",
+            reviewReason: null,
+            reviewedAt: null,
+            reviewedBy: null,
+          },
+        ],
+        capabilities: {
+          ...makeSnapshot().capabilities,
+          canConfirmCompletion: true,
+        },
+      })
+    );
+    const view = await renderWithQueryClient(
+      <QuestWorkScreen questId="quest-work-1" viewerId="worker-1" />
+    );
+
+    expect(
+      await view.findByTestId("completion-confirmation-pending")
+    ).toBeTruthy();
+    expect(view.getAllByText("Awaiting Hirer approval").length).toBeGreaterThan(
+      0
+    );
+    expect(
+      view.queryByRole("button", { name: "Confirm completion" })
+    ).toBeNull();
+    expect(view.queryByText("Completed")).toBeNull();
+  });
+
   it("shows the proof form inline instead of navigating to a separate page", async () => {
     mockedGetSnapshot.mockResolvedValue(
       makeSnapshot({

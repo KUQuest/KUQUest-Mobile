@@ -4,7 +4,7 @@ export type StatusTone = "success" | "warning" | "danger" | "neutral";
 export type CategoryTone = "green" | "blue" | "purple";
 /** Card actions route to existing Quest screens; cancel is handled separately. */
 export type QuestCardAction =
-  "edit" | "manage" | "review" | "proofReview" | "dispute";
+  "edit" | "manage" | "review" | "proofReview" | "completionReview" | "dispute";
 export type QuestSummary = {
   id: string;
   title: string;
@@ -26,6 +26,7 @@ export type QuestSummary = {
   primaryAction: QuestCardAction;
   secondaryAction?: QuestCardAction;
   canReviewProof?: boolean;
+  canReviewCompletion?: boolean;
   /**
    * Set only for ADR 0003 Tier 1 (no penalty) states. Assigned and In Progress
    * cancellation stays behind the Manage screen.

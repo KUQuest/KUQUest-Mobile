@@ -34,6 +34,10 @@ export interface QuestWorkMessages {
   actionUnavailable: string;
   proofCta: string;
   confirmationCta: string;
+  completionPending: string;
+  completionPendingDescription: string;
+  completionNotApproved: string;
+  completionNotApprovedDescription: string;
   confirmationPlaceholder: string;
   archiveDescription: string;
   fileDispute: string;
@@ -139,6 +143,12 @@ export const questWorkMessages: Record<SupportedLocale, QuestWorkMessages> = {
     actionUnavailable: "This action is not available for your Assignment.",
     proofCta: "Proof submission",
     confirmationCta: "Confirm completion",
+    completionPending: "Awaiting Hirer approval",
+    completionPendingDescription:
+      "You sent a completion confirmation. The Quest stays in progress until the Hirer approves it, or the Server auto-approves it after 24 hours.",
+    completionNotApproved: "Completion not approved",
+    completionNotApprovedDescription:
+      "The Hirer did not approve this completion confirmation.",
     confirmationPlaceholder:
       "Completion confirmation will open when this action is enabled.",
     archiveDescription:
@@ -252,6 +262,12 @@ export const questWorkMessages: Record<SupportedLocale, QuestWorkMessages> = {
     actionUnavailable: "การดำเนินการนี้ไม่พร้อมใช้งานสำหรับการมอบหมายของคุณ",
     proofCta: "ส่งหลักฐาน",
     confirmationCta: "ยืนยันการเสร็จสิ้น",
+    completionPending: "รอผู้ว่าจ้างอนุมัติการเสร็จงาน",
+    completionPendingDescription:
+      "ส่งยืนยันงานเสร็จแล้ว รอผู้ว่าจ้างอนุมัติก่อนที่เควสต์จะเสร็จ ระบบจะอนุมัติให้อัตโนมัติหลัง 24 ชั่วโมง",
+    completionNotApproved: "ไม่อนุมัติการยืนยันงานเสร็จ",
+    completionNotApprovedDescription:
+      "ผู้ว่าจ้างยังไม่อนุมัติการยืนยันงานเสร็จ",
     confirmationPlaceholder:
       "หน้ายืนยันการเสร็จสิ้นจะแสดงเมื่อเปิดใช้การดำเนินการนี้",
     archiveDescription:

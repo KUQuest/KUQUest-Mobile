@@ -64,6 +64,14 @@ export const QuestProofStatus = {
 } as const;
 export type QuestProofStatus =
   (typeof QuestProofStatus)[keyof typeof QuestProofStatus];
+export const QuestCompletionConfirmationStatus = {
+  COMPLETION_CONFIRMATION_PENDING: "COMPLETION_CONFIRMATION_PENDING",
+  COMPLETION_CONFIRMATION_APPROVED: "COMPLETION_CONFIRMATION_APPROVED",
+  COMPLETION_CONFIRMATION_NOT_APPROVED: "COMPLETION_CONFIRMATION_NOT_APPROVED",
+  COMPLETION_CONFIRMATION_CANCELLED: "COMPLETION_CONFIRMATION_CANCELLED",
+} as const;
+export type QuestCompletionConfirmationStatus =
+  (typeof QuestCompletionConfirmationStatus)[keyof typeof QuestCompletionConfirmationStatus];
 export const QuestEditRequestStatus = {
   EDIT_REQUEST_PENDING: "EDIT_REQUEST_PENDING",
   /** v2 terminal states: `APPLIED` after consent, `FAILED` on decline/timeout/leave. */

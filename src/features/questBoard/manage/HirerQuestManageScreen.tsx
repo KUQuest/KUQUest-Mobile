@@ -218,6 +218,7 @@ export default function HirerQuestManageScreen({
     error,
     originalConditionItems,
     pendingProof,
+    pendingCompletionConfirmation,
     terminal,
     cancelDescription,
     cancelPreviewText,
@@ -241,6 +242,7 @@ export default function HirerQuestManageScreen({
     selectTeam,
     cancel,
     reviewProof,
+    reviewCompletion,
     submitConditionEdit,
   } = view;
   const { confirmFileDispute } = useFileDispute();
@@ -324,6 +326,7 @@ export default function HirerQuestManageScreen({
   const showCandidateReview = canReviewCandidateProposals && proposalCount > 0;
   const showProofReview =
     Boolean(pendingProof) && snapshot.capabilities.canReviewProof;
+  const showCompletionReview = Boolean(pendingCompletionConfirmation);
   const showUnderfilled =
     snapshot.nextAction === QuestNextAction.DECIDE_UNDERFILLED &&
     snapshot.capabilities.canDecideUnderfilled;
@@ -340,13 +343,15 @@ export default function HirerQuestManageScreen({
     ? "underfilled"
     : showProofReview && snapshot.nextAction === QuestNextAction.REVIEW_PROOF
       ? "proof"
-      : showCandidateReview &&
-          snapshot.nextAction ===
-            (isGroup
-              ? QuestNextAction.SELECT_TEAM
-              : QuestNextAction.SELECT_CANDIDATE)
-        ? "candidate"
-        : null;
+      : showCompletionReview
+        ? "completion"
+        : showCandidateReview &&
+            snapshot.nextAction ===
+              (isGroup
+                ? QuestNextAction.SELECT_TEAM
+                : QuestNextAction.SELECT_CANDIDATE)
+          ? "candidate"
+          : null;
   const editPending =
     snapshot.editRequest?.status ===
     QuestEditRequestStatus.EDIT_REQUEST_PENDING;
@@ -417,6 +422,7 @@ export default function HirerQuestManageScreen({
         {nextStep ||
         showCandidateReview ||
         showProofReview ||
+        showCompletionReview ||
         showDispute ||
         conductReport.canReport ||
         editPending ? (
@@ -443,6 +449,14 @@ export default function HirerQuestManageScreen({
                     label={messages.proofReviewTitle}
                     onPress={reviewProof}
                     testID="hirer-manage-proof-review"
+                  />
+                ) : null}
+                {nextStep === "completion" ? (
+                  <PrimaryAction
+                    icon={ShieldCheck}
+                    label={messages.completionReviewTitle}
+                    onPress={reviewCompletion}
+                    testID="hirer-manage-completion-review"
                   />
                 ) : null}
                 {nextStep === "underfilled" ? (
@@ -474,6 +488,14 @@ export default function HirerQuestManageScreen({
                 label={messages.proofReviewTitle}
                 onPress={reviewProof}
                 testID="hirer-manage-proof-review"
+              />
+            ) : null}
+            {showCompletionReview && nextStep !== "completion" ? (
+              <ActionRow
+                icon={ShieldCheck}
+                label={messages.completionReviewTitle}
+                onPress={reviewCompletion}
+                testID="hirer-manage-completion-review"
               />
             ) : null}
             {showDispute ? (
