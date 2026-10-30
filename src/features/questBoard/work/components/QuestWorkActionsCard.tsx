@@ -376,7 +376,9 @@ export default function QuestWorkActionsCard({
             ) : null}
           </View>
           {unreadCount > 0 ? (
-            <Text className={styles.unreadBadge}>{unreadCount}</Text>
+            <Text className={styles.unreadBadge} maxFontSizeMultiplier={1.5}>
+              {unreadCount}
+            </Text>
           ) : null}
           <ChevronRight color={palette.textSecondary} size={20} />
         </Pressable>
