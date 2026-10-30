@@ -1,5 +1,4 @@
 import React from "react";
-import { cn } from "@/tw/cn";
 import { Text, View } from "@/tw";
 import { defaultAccessibilityLabels, imageSource } from "./profileShared";
 import { useWindowDimensions } from "react-native";
@@ -107,18 +106,13 @@ export function ProfileHeader({
       className={styles.heroCard}
       style={{ padding: metrics.cardPadding }}
     >
-      <View
-        className={cn(
-          styles.identityRow,
-          (width < 360 || fontScale >= 1.3) && "flex-col items-start"
-        )}
-      >
+      <View className={styles.identityRow}>
         <Avatar
           accessibilityLabel={labels.profileImageLabel(data.name)}
           cacheKey={profileImageCacheKey}
           className={styles.photoFrame}
           name={data.name}
-          size={presentation === "public" ? metrics.photoSize : 72}
+          size={presentation === "public" ? metrics.photoSize : 96}
           textClassName={styles.initials}
           uri={profileImageUri}
         />
@@ -173,13 +167,14 @@ export function ProfileHeader({
       ) : null}
       {editProfileLabel && onEditPress ? (
         <Button
+          className="w-auto self-center px-ku-lg"
           onPress={onEditPress}
-          variant="primary"
+          variant="secondary"
           accessibilityLabel={editProfileLabel}
         >
           <Pencil
             accessible={false}
-            color={colors.onPrimary}
+            color={colors.primary}
             size={16}
             strokeWidth={2}
           />
