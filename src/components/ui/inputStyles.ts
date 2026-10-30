@@ -2,7 +2,7 @@ const styles = {
   container: "mb-ku-md w-full",
   label: "font-ku-bold text-ku-label text-ku-text-secondary mb-ku-6",
   input:
-    "font-ku-regular text-ku-body-small text-ku-text-strong border border-ku-border-muted rounded-[10px] px-ku-12 py-ku-10 bg-ku-card min-h-[48px]",
+    "font-ku-regular text-ku-body-small text-ku-text-strong border border-ku-border-muted rounded-[10px] px-ku-md py-ku-10 bg-ku-card min-h-[48px]",
   inputError: "border-ku-danger",
   inputFocused: "border-ku-primary",
   inputSuccess: "border-ku-success",

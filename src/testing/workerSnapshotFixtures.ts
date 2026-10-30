@@ -1,3 +1,4 @@
+import type { QuestV2DisputeWindow } from "@/api/questV2Contracts";
 import type { LiveQuestSnapshot } from "@/features/questBoard/live/liveQuestService";
 
 type SnapshotOverrides = Partial<
@@ -8,6 +9,8 @@ type SnapshotOverrides = Partial<
   assignmentState?: NonNullable<LiveQuestSnapshot["assignment"]>["state"];
   capabilities?: Partial<LiveQuestSnapshot["capabilities"]>;
   workConversationId?: string;
+  startTime?: string;
+  dispute?: QuestV2DisputeWindow | null;
 };
 
 /** Builds a Worker-actor live Quest snapshot for Work Management tests. */
@@ -19,6 +22,8 @@ export function workerSnapshot({
   workConversationId,
   state = "QUEST_IN_PROGRESS",
   dueAt = "2026-10-01T12:00:00Z",
+  startTime = "2026-10-01T09:00:00Z",
+  dispute,
   ...overrides
 }: SnapshotOverrides): LiveQuestSnapshot {
   return {
@@ -39,8 +44,9 @@ export function workerSnapshot({
       questReward: 250,
       headcount: 1,
       activeWorkerCount: 1,
-      startTime: "2026-10-01T09:00:00Z",
+      startTime,
       dueAt,
+      ...(dispute === undefined ? {} : { dispute }),
       proofRequired: true,
       hirerName: "Ploy",
       locations: [],

@@ -17,15 +17,12 @@ export function memberNotificationCopy(
     expiresAt?: string | null;
   },
   locale: SupportedLocale
-): { title: string; body: string; known: boolean } {
+): { title: string; body: string } {
   const messages = memberNotificationMessages[locale];
   const type = memberNotificationTypeSchema.safeParse(notification.type);
-  if (!type.success) return { ...messages.generic, known: false };
+  if (!type.success) return messages.generic;
   const until = notification.expiresAt
     ? formatTimestampDateTime(notification.expiresAt, locale)
     : null;
-  return {
-    ...messages.types[type.data](notification.result ?? null, until),
-    known: true,
-  };
+  return messages.types[type.data](notification.result ?? null, until);
 }

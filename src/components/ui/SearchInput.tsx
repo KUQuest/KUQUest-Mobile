@@ -1,3 +1,4 @@
+import { fontFamily } from "@/theme/typography";
 import { CircleX, Search, X } from "lucide-react-native";
 import type { TextInputProps } from "react-native";
 import { Pressable, TextInput, View } from "@/tw";
@@ -63,6 +64,7 @@ export function SearchInput({
         placeholder={placeholder}
         placeholderTextColor={placeholderTextColor}
         className={inputClassName}
+        style={{ fontFamily: fontFamily.regular }}
         testID={testID}
         value={value}
       />

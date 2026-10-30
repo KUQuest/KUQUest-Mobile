@@ -172,10 +172,15 @@ function toItem(
   };
 }
 
-function compareDueAsc(a: WorkerWorkItem, b: WorkerWorkItem): number {
-  const aKey = a.dueAt ?? a.startTime;
-  const bKey = b.dueAt ?? b.startTime;
-  return aKey.localeCompare(bKey);
+// Wire times can use different offsets, so compare instants, not strings.
+function compareStartAsc(a: WorkerWorkItem, b: WorkerWorkItem): number {
+  return Date.parse(a.startTime) - Date.parse(b.startTime);
+}
+
+function hasPendingDispute({ quest }: LiveQuestSnapshot): boolean {
+  const dispute = "dispute" in quest ? quest.dispute : null;
+  const disputeCase = dispute?.myCase ?? dispute?.teamCase;
+  return disputeCase?.status === "DISPUTE_CASE_PENDING";
 }
 
 function candidateApplicationItem(
@@ -241,6 +246,11 @@ export function projectWorkerWork(
     if (isActive) {
       const item = toItem(snapshot, activeStatus(snapshot));
       (item.needsAction ? needsAction : otherActive).push(item);
+    } else if (hasPendingDispute(snapshot)) {
+      // The Quest has ended, but the case is still open and its money undecided.
+      otherActive.push(
+        toItem(snapshot, { status: "disputing", tone: "progress" })
+      );
     } else if (snapshot.assignment || isTerminalStatus(snapshot.state)) {
       history.push(toItem(snapshot, historyStatus(snapshot)));
     }
@@ -260,9 +270,9 @@ export function projectWorkerWork(
     }
   }
 
-  needsAction.sort(compareDueAsc);
-  otherActive.sort(compareDueAsc);
-  history.sort((a, b) => compareDueAsc(b, a));
+  needsAction.sort(compareStartAsc);
+  otherActive.sort(compareStartAsc);
+  history.sort((a, b) => compareStartAsc(b, a));
 
   return {
     needsAction,
