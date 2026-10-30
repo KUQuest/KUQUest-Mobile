@@ -1,5 +1,4 @@
 import React from "react";
-import { Platform } from "react-native";
 import { Trash2 } from "lucide-react-native";
 import { Input } from "@/components/ui/Input";
 import { Select } from "@/components/ui/Select";
@@ -56,10 +55,7 @@ export function ExperienceEditor({
 }: ExperienceEditorProps) {
   return (
     <ScreenLayout edges={["top", "left", "right"]} className={styles.safeArea}>
-      <KeyboardAvoidingView
-        className={styles.screen}
-        behavior={Platform.OS === "ios" ? "padding" : "height"}
-      >
+      <KeyboardAvoidingView className={styles.screen} behavior="padding">
         <ScrollView
           contentContainerClassName={styles.formContent}
           keyboardShouldPersistTaps="handled"
