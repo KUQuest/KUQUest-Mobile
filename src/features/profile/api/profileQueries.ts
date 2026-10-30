@@ -26,12 +26,23 @@ export const profileKeys = {
   publicReviews: (userId: string) =>
     [...profileKeys.all, "public-reviews", userId] as const,
   editData: () => [...profileKeys.all, "edit-data"] as const,
+  penaltyStatus: () => [...profileKeys.all, "penalty-status"] as const,
 };
 
 export function useProfileQuery(locale: "en" | "th") {
   return useQuery({
     queryKey: profileKeys.detail(locale),
     queryFn: ({ signal }) => profileModule.loadProfile({ locale, signal }),
+  });
+}
+
+export function usePenaltyStatusQuery() {
+  return useQuery({
+    queryKey: profileKeys.penaltyStatus(),
+    queryFn: async ({ signal }) => {
+      const api = await authService.getStudentApi();
+      return api.getPenaltyStatus({ signal });
+    },
   });
 }
 

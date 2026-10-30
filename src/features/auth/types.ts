@@ -1,3 +1,5 @@
+import type { MemberBan } from "../../api/ApiClient";
+
 export type OnboardingStep = 1 | 2 | 3;
 
 export type AuthUser = import("../../api/contracts").AuthUser;
@@ -12,14 +14,17 @@ export type AuthErrorCode =
   | "PLAY_SERVICES_UNAVAILABLE"
   | "OAUTH_FAILED"
   | "API_ERROR"
-  | "SESSION_EXPIRED";
+  | "SESSION_EXPIRED"
+  | "MEMBER_BANNED";
 
 export interface AuthErrorOptions {
   cause?: unknown;
+  memberBan?: MemberBan;
 }
 
 export class AuthError extends Error {
   readonly cause?: unknown;
+  readonly memberBan?: MemberBan;
 
   constructor(
     public code: AuthErrorCode,
@@ -29,6 +34,7 @@ export class AuthError extends Error {
     super(message || code);
     this.name = "AuthError";
     if (options && "cause" in options) this.cause = options.cause;
+    this.memberBan = options?.memberBan;
   }
 }
 

@@ -30,6 +30,7 @@ import { getProfileLayoutMetrics } from "../../theme/profileLayout";
 import { spacing } from "../../theme/spacing";
 import { AuthError } from "../auth/types";
 import { useLocale } from "@/features/preferences/localeStore";
+import { ProfilePenaltyStatus } from "./components/ProfilePenaltyStatus";
 import { ProfileTopBar } from "./components/ProfileTopBar";
 import { ScreenLayout } from "../../components/layout/ScreenLayout";
 
@@ -165,6 +166,7 @@ export default function Profile() {
         accessibilityLabel={messages.statisticsLabel}
         {...reputationNotice}
       />
+      <ProfilePenaltyStatus />
       <ProfileTabs
         activeTab={activeTab}
         labels={tabLabels}

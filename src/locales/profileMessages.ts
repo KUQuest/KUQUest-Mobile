@@ -1,6 +1,19 @@
 import { SupportedLocale } from "./locale";
 
+export type PenaltyResult =
+  | "PENALTY_RED_FLAG"
+  | "PENALTY_TEMPORARY_BAN_7_DAYS"
+  | "PENALTY_TEMPORARY_BAN_1_MONTH"
+  | "PENALTY_PERMANENT_BAN";
+
 export interface ProfileMessages {
+  penaltyStatusTitle: string;
+  penaltyMisconductLadder: string;
+  penaltyReviewLadder: string;
+  penaltyStrikes: (strikeCount: number, ladderLength: number) => string;
+  penaltyNextResult: (result: string) => string;
+  penaltyResults: Record<PenaltyResult, string>;
+  penaltyRedFlagActive: (date: string) => string;
   loading: string;
   error: string;
   retry: string;
@@ -60,6 +73,20 @@ export interface ProfileMessages {
 
 export const profileMessages: Record<SupportedLocale, ProfileMessages> = {
   en: {
+    penaltyStatusTitle: "Penalty status",
+    penaltyMisconductLadder: "Misconduct",
+    penaltyReviewLadder: "Low review average",
+    penaltyStrikes: (strikeCount, ladderLength) =>
+      `${strikeCount} of ${ladderLength} strikes`,
+    penaltyNextResult: (result) => `Next strike: ${result}`,
+    penaltyResults: {
+      PENALTY_RED_FLAG: "Red Flag for 7 days",
+      PENALTY_TEMPORARY_BAN_7_DAYS: "7-day ban",
+      PENALTY_TEMPORARY_BAN_1_MONTH: "1-month ban",
+      PENALTY_PERMANENT_BAN: "Permanent ban",
+    },
+    penaltyRedFlagActive: (date) =>
+      `Red Flag until ${date}. You cannot apply as a Candidate, join FCFS Quests, or publish new Quests. Your existing Quests continue.`,
     loading: "Loading profile...",
     error: "Unable to load your profile.",
     retry: "Try again",
@@ -119,6 +146,20 @@ export const profileMessages: Record<SupportedLocale, ProfileMessages> = {
     reviewsError: "Unable to load reviews.",
   },
   th: {
+    penaltyStatusTitle: "สถานะบทลงโทษ",
+    penaltyMisconductLadder: "การกระทำผิด",
+    penaltyReviewLadder: "คะแนนรีวิวเฉลี่ยต่ำ",
+    penaltyStrikes: (strikeCount, ladderLength) =>
+      `โดนแล้ว ${strikeCount} จาก ${ladderLength} ขั้น`,
+    penaltyNextResult: (result) => `ถ้าโดนอีกครั้ง: ${result}`,
+    penaltyResults: {
+      PENALTY_RED_FLAG: "Red Flag 7 วัน",
+      PENALTY_TEMPORARY_BAN_7_DAYS: "แบน 7 วัน",
+      PENALTY_TEMPORARY_BAN_1_MONTH: "แบน 1 เดือน",
+      PENALTY_PERMANENT_BAN: "แบนถาวร",
+    },
+    penaltyRedFlagActive: (date) =>
+      `ติด Red Flag ถึง ${date} ระหว่างนี้สมัครเป็น Candidate เข้าร่วมเควสต์ FCFS และเผยแพร่เควสต์ใหม่ไม่ได้ เควสต์เดิมทำต่อได้ตามปกติ`,
     loading: "กำลังโหลดโปรไฟล์...",
     error: "ไม่สามารถโหลดโปรไฟล์ของคุณได้",
     retry: "ลองอีกครั้ง",
