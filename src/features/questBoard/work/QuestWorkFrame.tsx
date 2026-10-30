@@ -1,9 +1,9 @@
 import type { ReactNode } from "react";
-import { KeyboardAvoidingView, Platform, RefreshControl } from "react-native";
+import { RefreshControl } from "react-native";
 import { RefreshCw } from "lucide-react-native";
 
 import type { QuestV2Team } from "@/api/questV2Contracts";
-import { Pressable, ScrollView, View } from "@/tw";
+import { KeyboardAvoidingView, Pressable, ScrollView, View } from "@/tw";
 import { ScreenLayout } from "@/components/layout/ScreenLayout";
 import { TopBar } from "@/components/ui/TopBar";
 import { useAppTheme } from "@/features/workspace/AppThemeProvider";
@@ -45,7 +45,7 @@ export function QuestWorkFrame({
 
   return (
     <ScreenLayout
-      edges={["top", "left", "right", "bottom"]}
+      edges={["top", "left", "right"]}
       className="flex-1 bg-ku-background"
     >
       <TopBar
@@ -65,10 +65,7 @@ export function QuestWorkFrame({
           </Pressable>
         }
       />
-      <KeyboardAvoidingView
-        behavior={Platform.OS === "ios" ? "padding" : undefined}
-        style={{ flex: 1 }}
-      >
+      <KeyboardAvoidingView behavior="padding" style={{ flex: 1 }}>
         <ScrollView
           keyboardShouldPersistTaps="handled"
           refreshControl={

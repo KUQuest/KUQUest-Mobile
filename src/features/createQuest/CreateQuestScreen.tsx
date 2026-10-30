@@ -1,5 +1,4 @@
 import { CircleAlert } from "lucide-react-native";
-import { Platform } from "react-native";
 
 import { Button } from "@/components/ui/Button";
 import { colors } from "@/theme/colors";
@@ -84,10 +83,7 @@ export default function CreateQuestScreen({
 
   return (
     <CreateQuestFrame {...frame}>
-      <KeyboardAvoidingView
-        className="flex-1"
-        behavior={Platform.OS === "ios" ? "padding" : "height"}
-      >
+      <KeyboardAvoidingView className="flex-1" behavior="padding">
         <CreateQuestForm {...formProps} />
         <CreateQuestActionBar {...actionBarProps} />
       </KeyboardAvoidingView>
