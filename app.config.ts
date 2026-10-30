@@ -80,16 +80,12 @@ export default function configureApp({ config }: ConfigContext): ExpoConfig {
   const iosUrlScheme = process.env.EXPO_PUBLIC_GOOGLE_IOS_URL_SCHEME;
   // Android debug builds re-enable cleartext (Metro over http) from the template's
   // src/debug manifest, so release builds stay HTTPS-only for every variant.
-  // CI release builds target phones only; x86_64 stays for local emulator builds.
   const buildProperties = [
     "expo-build-properties",
     {
       android: {
         usesCleartextTraffic: false,
-        buildArchs:
-          process.env.NODE_ENV === "production"
-            ? ["arm64-v8a"]
-            : ["arm64-v8a", "x86_64"],
+        buildArchs: ["arm64-v8a", "x86_64"],
       },
     },
   ] as [
