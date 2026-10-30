@@ -3,19 +3,12 @@ import type {
   QuestAvailability,
   QuestBoardFilter,
   QuestBoardQueryOptions,
-  QuestBoardQuest,
+  QuestBoardCard,
   QuestBoardSort,
-  QuestDetailState,
-  QuestLocation,
+  QuestBoardSummary,
   QuestLocationMode,
 } from "../domain/types";
-import {
-  MAX_QUEST_IMAGES,
-  QuestCandidateMode,
-  QuestParticipation,
-  QuestStatus,
-} from "../domain/types";
-import { countAdmitted } from "../domain/questSelectors";
+import { MAX_QUEST_IMAGES, QuestStatus } from "../domain/types";
 
 const DAY_MS = 24 * 60 * 60 * 1000;
 
@@ -35,17 +28,17 @@ function compareText(left: string, right: string): number {
   return left.localeCompare(right);
 }
 
-function comparePostedAt(
-  left: QuestBoardQuest,
-  right: QuestBoardQuest
-): number {
+function comparePostedAt(left: QuestBoardCard, right: QuestBoardCard): number {
   const postedDifference =
     new Date(right.postedAt).getTime() - new Date(left.postedAt).getTime();
   return postedDifference || compareText(left.id, right.id);
 }
 
 export function getQuestAvailability(
-  quest: QuestBoardQuest,
+  quest: Pick<
+    QuestBoardCard,
+    "acceptedParticipants" | "headcount" | "deadline"
+  >,
   now = new Date()
 ): QuestAvailability {
   if (quest.acceptedParticipants >= quest.headcount) return "full";
@@ -53,7 +46,7 @@ export function getQuestAvailability(
   return "available";
 }
 
-function questStartTimestamp(quest: QuestBoardQuest): number {
+function questStartTimestamp(quest: QuestBoardCard): number {
   const startTime = quest.timeRange?.match(/^(\d{2}:\d{2})/)?.[1];
   const value = startTime
     ? `${quest.startDate}T${startTime}:00+07:00`
@@ -62,12 +55,11 @@ function questStartTimestamp(quest: QuestBoardQuest): number {
 }
 
 export function getVisibleQuests(
-  quests: QuestBoardQuest[],
+  quests: QuestBoardCard[],
   options: QuestBoardQueryOptions = {}
-): QuestBoardQuest[] {
+): QuestBoardCard[] {
   const now = options.now ?? new Date();
   return quests.filter((quest) => {
-    if (quest.prototypeOnly) return false;
     if (quest.status !== undefined && quest.status !== QuestStatus.QUEST_OPEN)
       return false;
     if (
@@ -80,11 +72,11 @@ export function getVisibleQuests(
   });
 }
 
-export function getQuestImageCount(quest: QuestBoardQuest): number {
+export function getQuestImageCount(quest: QuestBoardSummary): number {
   return Math.min(quest.imageUris?.length ?? 0, MAX_QUEST_IMAGES);
 }
 
-export function getQuestBoardTags(quests: QuestBoardQuest[]): string[] {
+export function getQuestBoardTags(quests: QuestBoardCard[]): string[] {
   const tags = new Map<string, string>();
   quests
     .flatMap((quest) => quest.tags)
@@ -111,14 +103,14 @@ export function getStartTimeBucket(
   return "evening";
 }
 
-function matchesTags(quest: QuestBoardQuest, tags: string[]): boolean {
+function matchesTags(quest: QuestBoardCard, tags: string[]): boolean {
   if (tags.length === 0) return true;
   const normalizedTags = quest.tags.map((tag) => tag.toLocaleLowerCase());
   return tags.some((tag) => normalizedTags.includes(tag.toLocaleLowerCase()));
 }
 
 function matchesRewardBounds(
-  quest: QuestBoardQuest,
+  quest: QuestBoardCard,
   minimum: number | null,
   maximum: number | null
 ): boolean {
@@ -129,7 +121,7 @@ function matchesRewardBounds(
 }
 
 function matchesStartTimeBucket(
-  quest: QuestBoardQuest,
+  quest: QuestBoardCard,
   buckets: QuestBoardFilter["startTimeBuckets"]
 ): boolean {
   const bucket = getStartTimeBucket(quest.timeRange);
@@ -137,7 +129,7 @@ function matchesStartTimeBucket(
 }
 
 function matchesDeadline(
-  quest: QuestBoardQuest,
+  quest: QuestBoardCard,
   deadline: DeadlineFilter | null,
   now: Date
 ): boolean {
@@ -152,24 +144,23 @@ function matchesDeadline(
 }
 
 function matchesLocationMode(
-  quest: QuestBoardQuest,
+  quest: QuestBoardCard,
   modes: QuestLocationMode[]
 ): boolean {
   return modes.length === 0 || modes.includes(quest.locationMode);
 }
 
 export function applyQuestBoardFilters(
-  quests: QuestBoardQuest[],
+  quests: QuestBoardCard[],
   filter: QuestBoardFilter,
   options: QuestBoardQueryOptions = {}
-): QuestBoardQuest[] {
+): QuestBoardCard[] {
   const now = options.now ?? new Date();
   const query = filter.query.trim().toLocaleLowerCase();
   return getVisibleQuests(quests, options).filter((quest) => {
     const searchableText = [
       quest.title,
       ...quest.tags,
-      quest.description,
       quest.location,
       quest.creator.name,
     ]
@@ -188,9 +179,9 @@ export function applyQuestBoardFilters(
 }
 
 export function sortQuests(
-  quests: QuestBoardQuest[],
+  quests: QuestBoardCard[],
   sort: QuestBoardSort
-): QuestBoardQuest[] {
+): QuestBoardCard[] {
   return [...quests].sort((left, right) => {
     if (sort === "newest") return comparePostedAt(left, right);
     if (sort === "deadline-soonest") {
@@ -207,55 +198,12 @@ export function sortQuests(
     return deadlineDifference || comparePostedAt(left, right);
   });
 }
-export function toBoardQuest(state: QuestDetailState): QuestBoardQuest {
-  const quest = state.quest;
-  const start = new Date(quest.startAt);
-  const end = new Date(quest.endAt ?? quest.deadlineAt);
-  const timeRange =
-    Number.isNaN(start.getTime()) || Number.isNaN(end.getTime())
-      ? undefined
-      : `${start.toISOString().slice(11, 16)}–${end.toISOString().slice(11, 16)}`;
-  const location: QuestLocation = quest.location;
-  const label = location.label ?? "Online";
-  return {
-    id: quest.id,
-    title: quest.title,
-    tags: [...quest.tags],
-    description: quest.description,
-    completionCriteria: quest.completionCriteria,
-    proofRequired: quest.proofRequired,
-    rewardPerPerson: quest.reward.rewardSatang / 100,
-    rewardSatang: quest.reward.rewardSatang,
-    headcount: quest.headcount,
-    acceptedParticipants: countAdmitted(state),
-    startDate: quest.startAt.slice(0, 10),
-    deadline: quest.deadlineAt.slice(0, 10),
-    timeRange,
-    postedAt: quest.postedAt,
-    location: label,
-    locationDetails: location,
-    locationMode: location.label === null ? "online" : "on-campus",
-    participationMode:
-      quest.participation === QuestParticipation.GROUP ? "team" : "single",
-    candidateMode:
-      quest.candidateMode === QuestCandidateMode.CANDIDATE
-        ? "CANDIDATE"
-        : "NO_CANDIDATE",
-    creator: { name: quest.hirerId },
-    imageUris: [...quest.imageUris],
-    studentInterestMatch: false,
-    ownerStudentId: quest.hirerId,
-    prototypeOnly: state.quest.id.endsWith("-demo"),
-    status: quest.status,
-    conversation: state.conversation,
-  };
-}
-export function getQuestRewardSatang(quest: QuestBoardQuest): number {
+export function getQuestRewardSatang(quest: QuestBoardSummary): number {
   return quest.rewardSatang ?? Math.round(quest.rewardPerPerson * 100);
 }
 
 /** Missing live funding is unavailable, never inferred from the net reward. */
-export function getQuestPriceSatang(quest: QuestBoardQuest): number {
+export function getQuestPriceSatang(quest: QuestBoardSummary): number {
   return quest.questFundingTotalSatang === null
     ? Number.NaN
     : (quest.questFundingTotalSatang ?? getQuestRewardSatang(quest));

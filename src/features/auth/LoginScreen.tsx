@@ -20,12 +20,18 @@ import {
 } from "./types";
 import { authService } from "./AuthService";
 import {
+  isStagingTestAuthAvailable,
   signInWithStagingTestAccount,
   STAGING_TEST_ACCOUNTS,
   type StagingTestAccount,
 } from "./stagingTestAuth";
 import { clearSessionCache } from "./sessionQueries";
-import { authMessages, getAuthErrorText } from "../../locales/authMessages";
+import type { MemberBan } from "../../api/ApiClient";
+import {
+  authMessages,
+  getAuthErrorText,
+  getMemberBanText,
+} from "../../locales/authMessages";
 import { useLocale } from "@/features/preferences/localeStore";
 import { useAppTheme } from "@/features/workspace/AppThemeProvider";
 import styles from "./styles/loginStyles";
@@ -35,6 +41,7 @@ type LoginErrorCode = AuthErrorCode | "STAGING_TEST_AUTH_FAILED";
 interface LoginErrorState {
   code: LoginErrorCode;
   retry: () => void;
+  memberBan?: MemberBan;
 }
 
 export interface LoginScreenProps {
@@ -55,9 +62,12 @@ export default function LoginScreen({
   const { locale: currentLocale } = useLocale();
   const queryClient = useQueryClient();
   const messages = authMessages[currentLocale];
-  const { sessionExpired } = useLocalSearchParams<{
-    sessionExpired?: string;
-  }>();
+  const { sessionExpired, memberBanned, memberBannedUntil } =
+    useLocalSearchParams<{
+      sessionExpired?: string;
+      memberBanned?: string;
+      memberBannedUntil?: string;
+    }>();
 
   const [isLoading, setIsLoading] = useState(false);
   const [demoOpen, setDemoOpen] = useState(false);
@@ -71,6 +81,20 @@ export default function LoginScreen({
         }
       : null
   );
+
+  // AuthMiddleware sends a banned Member here with the ban in the route.
+  const shownError: LoginErrorState | null =
+    error ??
+    (memberBanned
+      ? {
+          code: "MEMBER_BANNED",
+          retry: () => undefined,
+          memberBan: {
+            permanent: memberBanned === "permanent",
+            bannedUntil: memberBannedUntil,
+          },
+        }
+      : null);
 
   const completeSignIn = async () => {
     clearSessionCache(queryClient);
@@ -95,7 +119,11 @@ export default function LoginScreen({
       setIsLoading(false);
       const errorCode: LoginErrorCode =
         err instanceof AuthError ? err.code : "OAUTH_FAILED";
-      setError({ code: errorCode, retry: handleAuth });
+      setError({
+        code: errorCode,
+        retry: handleAuth,
+        memberBan: err instanceof AuthError ? err.memberBan : undefined,
+      });
     }
   }
 
@@ -116,10 +144,12 @@ export default function LoginScreen({
     }
   };
 
-  const errorText = error
-    ? error.code === "STAGING_TEST_AUTH_FAILED"
+  const errorText = shownError
+    ? shownError.code === "STAGING_TEST_AUTH_FAILED"
       ? messages.stagingTestSignInFailed
-      : getAuthErrorText(error.code, currentLocale)
+      : shownError.code === "MEMBER_BANNED"
+        ? getMemberBanText(shownError.memberBan, currentLocale)
+        : getAuthErrorText(shownError.code, currentLocale)
     : "";
 
   return (
@@ -152,7 +182,7 @@ export default function LoginScreen({
               </Text>
             </View>
 
-            {error && (
+            {shownError && (
               <View
                 className={styles.errorCard}
                 accessibilityRole="alert"
@@ -168,17 +198,19 @@ export default function LoginScreen({
                   <Text className={styles.errorText} testID="error-message">
                     {errorText}
                   </Text>
-                  <Pressable
-                    className={styles.retryButton}
-                    onPress={error.retry}
-                    accessibilityRole="button"
-                    accessibilityLabel={messages.retryButton}
-                    testID="retry-button"
-                  >
-                    <Text className={styles.retryButtonText}>
-                      {messages.retryButton}
-                    </Text>
-                  </Pressable>
+                  {shownError.code !== "MEMBER_BANNED" && (
+                    <Pressable
+                      className={styles.retryButton}
+                      onPress={shownError.retry}
+                      accessibilityRole="button"
+                      accessibilityLabel={messages.retryButton}
+                      testID="retry-button"
+                    >
+                      <Text className={styles.retryButtonText}>
+                        {messages.retryButton}
+                      </Text>
+                    </Pressable>
+                  )}
                 </View>
               </View>
             )}
@@ -198,7 +230,7 @@ export default function LoginScreen({
               </Host>
             </View>
 
-            {__DEV__ && (
+            {isStagingTestAuthAvailable() && (
               <View className={styles.stagingTestSection}>
                 <Pressable
                   className={styles.stagingTestToggle}

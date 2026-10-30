@@ -1,5 +1,4 @@
 import type {
-  QuestV2Assignment,
   QuestV2CandidateApplication,
   QuestV2CanonicalQuest,
 } from "@/api/questV2Contracts";
@@ -81,10 +80,6 @@ export function getLiveHirerItems(
         status,
         statusTone: liveQuestStatusTone(statusValue),
         primaryAction: isDraft ? "edit" : terminal ? "review" : "manage",
-        secondaryAction:
-          quest.state === QuestStatus.QUEST_FAILED
-            ? ("dispute" as const)
-            : undefined,
         ...(quest.state === QuestStatus.QUEST_FAILED &&
         proofReviewableQuestIds?.has(quest.id) === true
           ? { canReviewProof: true }
@@ -148,13 +143,6 @@ export async function listAllMyHirerQuests(
     cursor = page.nextCursor;
   }
 }
-/** Loads the authenticated Worker's authoritative Assignment roster. */
-export async function listAllMyWorkerAssignments(
-  status?: QuestV2AssignmentMineStatus,
-  options?: RequestOptions
-): Promise<QuestV2Assignment[]> {
-  return questApi.listMyAssignments(status, options);
-}
 /**
  * Loads fresh live Quest snapshots for every Assignment owned by the
  * authenticated Worker. Each snapshot re-reads server state, so a mutation
@@ -165,7 +153,7 @@ export async function listMyWorkerQuestSnapshots(
   status?: QuestV2AssignmentMineStatus,
   options?: RequestOptions
 ): Promise<LiveQuestSnapshot[]> {
-  const assignments = await listAllMyWorkerAssignments(status, options);
+  const assignments = await questApi.listMyAssignments(status, options);
   const questIds = new Set(assignments.map((assignment) => assignment.questId));
   return Promise.all(
     [...questIds].map((questId) =>
@@ -204,18 +192,12 @@ export async function listMyHirerProofReviewableQuestIds(
   return reviewableIds.filter((questId): questId is string => questId !== null);
 }
 
-/** Explicit alias for callers that name the Worker surface first. */
-export const listAllMyWorkerQuestSnapshots = listMyWorkerQuestSnapshots;
-
 export const myQuestService = {
   listAllMyHirerQuests,
   getLiveHirerItems,
   liveQuestStatusTone,
   liveQuestStatusLabel,
   listMyWorkerCandidateApplications,
-  listAllMyWorkerAssignments,
-  listMyWorkerAssignments: listAllMyWorkerAssignments,
   listMyWorkerQuestSnapshots,
-  listAllMyWorkerQuestSnapshots,
   listMyHirerProofReviewableQuestIds,
 };

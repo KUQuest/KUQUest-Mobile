@@ -137,7 +137,7 @@ describe("openServerSocket", () => {
     socket.close();
   });
 
-  it.each([1008, 4401, 4403])("stops after terminal close %i", (code) => {
+  it.each([1000, 1008, 4401, 4403])("stops after terminal close %i", (code) => {
     const onClose = jest.fn();
     openServerSocket("/events", { onFrame: jest.fn(), onClose });
 

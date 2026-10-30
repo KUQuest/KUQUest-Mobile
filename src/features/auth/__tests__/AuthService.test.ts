@@ -238,6 +238,25 @@ describe("AuthService", () => {
     expect(fetchMock).not.toHaveBeenCalled();
   });
 
+  test("reports a Member Ban from sign-in with the ban details", async () => {
+    googleSignin.signIn.mockResolvedValue(
+      nativeSuccess({
+        idToken: "google-id-token",
+        user: { email: "student@ku.th" },
+      })
+    );
+    const memberBan = { permanent: true };
+    betterAuth.signIn.social.mockResolvedValue({
+      data: null,
+      error: { code: "MEMBER_BANNED", message: "banned", memberBan },
+    });
+
+    await expect(auth.authenticate()).rejects.toMatchObject({
+      code: "MEMBER_BANNED",
+      memberBan,
+    });
+  });
+
   test("rejects an email outside the student domain", async () => {
     googleSignin.signIn.mockResolvedValue(
       nativeSuccess({

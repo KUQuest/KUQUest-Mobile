@@ -7,24 +7,17 @@ import { useLocale } from "@/features/preferences/localeStore";
 import { ApiError } from "@/api/ApiClient";
 import { getLocalizedErrorMessage } from "@/utils/error";
 
-import { getChatRouteParams } from "@/features/chat/chatData";
 import type { QuestBoardMessages } from "@/locales/questBoardMessages";
 import { chatMessages } from "@/locales/chatMessages";
 import type { QuestBoardQuest } from "../domain/types";
-import type { BoardPreviewState } from "../fixtures/questBoardHarness";
-import type { QuestDetailProjection } from "./questDetailProjection";
-import type { QuestDetailReadSource } from "./useQuestDetailReadSource";
 
 interface QuestDetailNavigationParams {
   quest: QuestBoardQuest | null;
-  projection: QuestDetailProjection | null;
-  source: QuestDetailReadSource;
   viewerId: string;
   messages: QuestBoardMessages;
   canMessageOwner: boolean;
   createCandidateInquiry: (questId: string) => Promise<{ id: string }>;
-  /** Carried to the Quest Team route so it reads the same source and viewer. */
-  previewState?: BoardPreviewState;
+  /** Carried to the Quest Team route so it reads the same viewer. */
   studentId?: string;
 }
 
@@ -42,13 +35,10 @@ export interface QuestDetailNavigation {
 
 export function useQuestDetailNavigation({
   quest,
-  projection,
-  source,
   viewerId,
   messages,
   canMessageOwner,
   createCandidateInquiry,
-  previewState,
   studentId,
 }: QuestDetailNavigationParams): QuestDetailNavigation {
   const router = useRouter();
@@ -108,22 +98,20 @@ export function useQuestDetailNavigation({
       pathname: "/quest/[id]/team",
       params: {
         id: quest.id,
-        ...(previewState ? { preview: previewState } : {}),
         ...(studentId ? { studentId } : {}),
       },
     });
-  }, [previewState, quest, router, studentId]);
+  }, [quest, router, studentId]);
   const openPartialStart = useCallback(() => {
     if (!quest) return;
     router.push({
       pathname: "/quest/[id]/partial-start",
       params: {
         id: quest.id,
-        ...(previewState ? { preview: previewState } : {}),
         ...(studentId ? { studentId } : {}),
       },
     });
-  }, [previewState, quest, router, studentId]);
+  }, [quest, router, studentId]);
   const openEditPost = useCallback(() => {
     if (!quest) return;
     router.push({
@@ -133,22 +121,6 @@ export function useQuestDetailNavigation({
   }, [quest, router]);
   const openMessageOwner = useCallback(() => {
     if (!quest || !canMessageOwner) return;
-    if (source.kind === "preview") {
-      const capability = projection?.conversationCapability;
-      if (!capability?.conversationId || !capability.canRead) return;
-      router.push({
-        pathname: "/chat/[id]",
-        params: getChatRouteParams({
-          conversationId: capability.conversationId,
-          questId: quest.id,
-          viewerId,
-          ownerName: quest.creator.name,
-          questTitle: quest.title,
-        }),
-      });
-      return;
-    }
-
     void createCandidateInquiry(quest.id)
       .then((inquiry) => {
         router.push({
@@ -179,10 +151,8 @@ export function useQuestDetailNavigation({
     locale,
     messages.actionFailedTitle,
     messages.messageOwnerError,
-    projection,
     quest,
     router,
-    source.kind,
     viewerId,
   ]);
 

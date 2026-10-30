@@ -13,7 +13,6 @@ export interface HirerHomeMessages {
   retry: string;
   partialFailureTitle: string;
   partialFailureDescription: string;
-  prototypeLabel: string;
   emptyTitle: string;
   emptyDescription: string;
   activeQuestTitle: string;
@@ -40,8 +39,6 @@ export interface HirerHomeMessages {
   shortcutsTitle: string;
   shortcutMyQuestsTitle: string;
   shortcutMyQuestsDesc: string;
-  shortcutBoardTitle: string;
-  shortcutBoardDesc: string;
   shortcutTopUpTitle: string;
   shortcutTopUpDesc: string;
   shortcutSettingsTitle: string;
@@ -69,7 +66,6 @@ export const hirerHomeMessages: Record<SupportedLocale, HirerHomeMessages> = {
     partialFailureTitle: "Couldn't load all quest details",
     partialFailureDescription:
       "Some worker, applicant, or proof details failed to load. Try again to refresh.",
-    prototypeLabel: "Prototype preview",
     emptyTitle: "No active Quests yet",
     emptyDescription:
       "Published Quests with accepted Workers will appear here.",
@@ -99,8 +95,6 @@ export const hirerHomeMessages: Record<SupportedLocale, HirerHomeMessages> = {
     shortcutsTitle: "Shortcuts",
     shortcutMyQuestsTitle: "My Quests",
     shortcutMyQuestsDesc: "Every Quest you posted",
-    shortcutBoardTitle: "Quest Board",
-    shortcutBoardDesc: "Browse all Quests",
     shortcutTopUpTitle: "Top up",
     shortcutTopUpDesc: "PromptPay QR deposit",
     shortcutSettingsTitle: "Settings",
@@ -135,7 +129,6 @@ export const hirerHomeMessages: Record<SupportedLocale, HirerHomeMessages> = {
     partialFailureTitle: "โหลดข้อมูลบางส่วนไม่สำเร็จ",
     partialFailureDescription:
       "ข้อมูลผู้ทำงาน ผู้สมัคร หรือการตรวจงานบางส่วนโหลดไม่สำเร็จ ลองใหม่อีกครั้งเพื่อรีเฟรช",
-    prototypeLabel: "ตัวอย่างหน้าจอ",
     emptyTitle: "ยังไม่มีเควสต์ที่กำลังดำเนินการ",
     emptyDescription: "เควสต์ที่เผยแพร่และมีผู้ทำงานตอบรับจะแสดงที่นี่",
     activeQuestTitle: "เควสต์ที่กำลังดำเนินการ",
@@ -163,8 +156,6 @@ export const hirerHomeMessages: Record<SupportedLocale, HirerHomeMessages> = {
     shortcutsTitle: "ทางลัด",
     shortcutMyQuestsTitle: "เควสต์ของฉัน",
     shortcutMyQuestsDesc: "เควสต์ทั้งหมดที่คุณโพสต์",
-    shortcutBoardTitle: "กระดานเควสต์",
-    shortcutBoardDesc: "ดูเควสต์ทั้งหมดในกระดาน",
     shortcutTopUpTitle: "เติมเงิน",
     shortcutTopUpDesc: "เติมเงินผ่านพร้อมเพย์",
     shortcutSettingsTitle: "การตั้งค่า",

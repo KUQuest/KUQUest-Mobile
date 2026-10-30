@@ -13,6 +13,7 @@ const mockPublishQuest = jest.fn();
 const mockRefetch = jest.fn();
 const mockGetPublishCheck = jest.fn();
 const mockGetQuestDetail = jest.fn();
+let mockPublishCheckQueryState: { data?: unknown; error?: unknown } = {};
 
 jest.mock("@/api/QuestApi", () => {
   const actual = jest.requireActual("@/api/QuestApi");
@@ -21,6 +22,7 @@ jest.mock("@/api/QuestApi", () => {
     questApi: {
       ...actual.questApi,
       getDetail: (...args: unknown[]) => mockGetQuestDetail(...args),
+      getPublishCheck: (...args: unknown[]) => mockGetPublishCheck(...args),
     },
   };
 });
@@ -46,8 +48,8 @@ jest.mock("../api/createQuestQueries", () => ({
     mutateAsync: (variables: unknown) => mockPublishQuest(variables),
   }),
   useQuestPublishCheckQuery: () => ({
-    data: undefined,
-    error: null,
+    data: mockPublishCheckQueryState.data,
+    error: mockPublishCheckQueryState.error ?? null,
     isFetching: false,
     refetch: mockRefetch,
   }),
@@ -59,12 +61,6 @@ jest.mock("../../wallet/api/walletQueries", () => ({
 
 jest.mock("../../preferences/localeStore", () => ({
   useLocale: () => ({ locale: "en" }),
-}));
-
-jest.mock("../../questBoard/live/liveQuestService", () => ({
-  liveQuestService: {
-    getPublishCheck: (...args: unknown[]) => mockGetPublishCheck(...args),
-  },
 }));
 
 describe("useQuestPublish", () => {
@@ -91,6 +87,7 @@ describe("useQuestPublish", () => {
     });
     mockGetQuestDetail.mockReset();
     mockGetQuestDetail.mockResolvedValue({ state: QuestStatus.QUEST_DRAFT });
+    mockPublishCheckQueryState = {};
   });
 
   function createProps(enabled = true) {
@@ -248,5 +245,38 @@ describe("useQuestPublish", () => {
     expect(mockUploadImage.mock.invocationCallOrder[1]).toBeLessThan(
       mockPublishQuest.mock.invocationCallOrder[0]
     );
+  });
+
+  it("labels the client fallback as an estimate when the server publish check fails", async () => {
+    mockPublishCheckQueryState = { error: new Error("offline") };
+    const props = createProps();
+    const { result } = await renderHook(() => useQuestPublish(props), {
+      wrapper,
+    });
+
+    expect(result.current.publishCheck?.source).toBe("estimate");
+  });
+
+  it("labels a server publish check as server-sourced", async () => {
+    mockPublishCheckQueryState = {
+      data: {
+        canPublish: true,
+        blockingReasons: [],
+        warnings: [],
+        questFundingTotalSatang: 25000,
+        questRewardSatang: 23809,
+        platformFeeSatang: 1191,
+        escrowRequirementSatang: 25000,
+        headcount: 1,
+        platformFeeBps: 500,
+      },
+    };
+    const props = createProps();
+    const { result } = await renderHook(() => useQuestPublish(props), {
+      wrapper,
+    });
+
+    expect(result.current.publishCheck?.source).toBe("server");
+    expect(result.current.publishCheck?.escrow.totalRequiredSatang).toBe(25000);
   });
 });

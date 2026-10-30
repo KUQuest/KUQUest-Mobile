@@ -8,6 +8,11 @@ import ChatConversationScreen from "../ChatConversationScreen";
 import { useChatConversationController } from "../workflow/useChatConversationController";
 import type { DisplayChatMessage } from "../domain/conversationModule";
 
+jest.mock("expo-router", () => ({
+  useFocusEffect: (effect: () => (() => void) | void) =>
+    jest.requireActual("react").useEffect(effect, []),
+}));
+
 jest.mock("../workflow/useChatConversationController", () => ({
   MAX_MESSAGE_LENGTH: 1000,
   useChatConversationController: jest.fn(),
@@ -19,12 +24,15 @@ const mockedUseChatConversationController =
   >;
 
 const mockRouterBack = jest.fn();
+const mockRouterReplace = jest.fn();
 describe("ChatConversationScreen", () => {
   beforeEach(() => {
+    jest.clearAllMocks();
     mockedUseChatConversationController.mockReturnValue({
       router: {
         back: mockRouterBack,
         canGoBack: () => true,
+        replace: mockRouterReplace,
       } as unknown as ImperativeRouter,
       locale: "en",
       messages: chatMessages.en,
@@ -69,6 +77,14 @@ describe("ChatConversationScreen", () => {
 
   afterEach(() => {
     jest.restoreAllMocks();
+  });
+
+  it("returns to the chat inbox from the conversation back button", async () => {
+    const view = await renderWithAppTheme(<ChatConversationScreen />);
+
+    await fireEvent.press(view.getByLabelText(chatMessages.en.backToChat));
+
+    expect(mockRouterReplace).toHaveBeenCalledWith("/(tabs)/chat");
   });
 
   it("renders the loading shell while the conversation is pending", async () => {

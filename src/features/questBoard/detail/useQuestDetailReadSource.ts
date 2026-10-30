@@ -10,31 +10,20 @@ import {
   type LiveQuestSnapshot,
 } from "../live/liveQuestService";
 import {
-  getQuestDetailFixture,
-  type BoardPreviewState,
-} from "../fixtures/questBoardHarness";
-import { questWorkflow } from "../workflow/questWorkflow";
-import {
   getQuestDetailProjection,
   type QuestDetailProjection,
 } from "./questDetailProjection";
 import {
   QuestActor,
   QuestApplicationStatus,
-  QuestCandidateMode,
   QuestMode,
   QuestParticipation,
   QuestStatus,
   QuestTeamStatus,
   type QuestBoardQuest,
-  type QuestDetailState,
 } from "../domain/types";
 
 export type QuestDetailReadSource =
-  | {
-      kind: "preview";
-      state: QuestDetailState | null;
-    }
   | {
       kind: "live-snapshot";
       snapshot: LiveQuestSnapshot | null;
@@ -55,8 +44,6 @@ export interface QuestDetailReadModel {
 interface QuestDetailReadSourceParams {
   questId?: string;
   viewerId: string;
-  previewState?: BoardPreviewState;
-  explicitPreview: boolean;
   sessionReady: boolean;
 }
 
@@ -80,8 +67,6 @@ function isNotStartedGroupFcfsSnapshot(
 export function useQuestDetailReadSource({
   questId,
   viewerId,
-  previewState,
-  explicitPreview,
   sessionReady,
 }: QuestDetailReadSourceParams): QuestDetailReadModel {
   const liveSnapshotAvailable =
@@ -92,7 +77,7 @@ export function useQuestDetailReadSource({
     questId ?? null,
     viewerId || null,
     {},
-    !explicitPreview && canSelectLiveSnapshot && sessionReady,
+    canSelectLiveSnapshot && sessionReady,
     (snapshot) =>
       snapshot?.state === QuestStatus.QUEST_OPEN &&
       snapshot.mode === QuestMode.FIRST_COME_FIRST_SERVED &&
@@ -100,7 +85,7 @@ export function useQuestDetailReadSource({
         ? 15_000
         : (snapshot?.actor === QuestActor.CANDIDATE ||
               snapshot?.actor === QuestActor.PROSPECTIVE_WORKER) &&
-            snapshot.mode === QuestCandidateMode.CANDIDATE &&
+            snapshot.mode === QuestMode.CANDIDATE &&
             snapshot.state === QuestStatus.QUEST_OPEN &&
             (snapshot.application?.state ===
               QuestApplicationStatus.APPLICATION_APPLIED ||
@@ -110,7 +95,7 @@ export function useQuestDetailReadSource({
   );
   const questDetailQuery = useQuestDetailQuery(
     questId ?? null,
-    !explicitPreview && !canSelectLiveSnapshot
+    !canSelectLiveSnapshot
   );
 
   const liveSnapshot = liveSnapshotQuery.data ?? null;
@@ -121,7 +106,6 @@ export function useQuestDetailReadSource({
 
   useEffect(() => {
     if (
-      explicitPreview ||
       !canSelectLiveSnapshot ||
       !questId ||
       !liveSnapshotIsNotStarted ||
@@ -183,58 +167,25 @@ export function useQuestDetailReadSource({
     };
   }, [
     canSelectLiveSnapshot,
-    explicitPreview,
     liveSnapshotHasUnderfilled,
     liveSnapshotIsNotStarted,
     liveSnapshotStartTime,
     questId,
     refetchLiveSnapshot,
   ]);
-  const fixtureState =
-    explicitPreview && questId
-      ? questWorkflow.getQuestDetailState(questId, viewerId)
-      : null;
-  const fixtureProjection = fixtureState
-    ? getQuestDetailProjection(fixtureState, viewerId, questWorkflow.getNow())
-    : null;
   const liveProjection = liveSnapshot
-    ? getQuestDetailProjection(liveSnapshot, viewerId)
-    : null;
-  const fixtureQuest = explicitPreview
-    ? (getQuestDetailFixture(questId, previewState) ?? null)
+    ? getQuestDetailProjection(liveSnapshot)
     : null;
   const liveQuestCandidate =
     liveProjection?.quest ?? questDetailQuery.data ?? null;
   const liveQuest =
     questId && liveQuestCandidate?.id === questId ? liveQuestCandidate : null;
   const refresh = useCallback(async (): Promise<unknown> => {
-    if (explicitPreview) return undefined;
     if (canSelectLiveSnapshot) return liveSnapshotQuery.refetch();
     return questDetailQuery.refetch();
-  }, [
-    canSelectLiveSnapshot,
-    explicitPreview,
-    liveSnapshotQuery,
-    questDetailQuery,
-  ]);
+  }, [canSelectLiveSnapshot, liveSnapshotQuery, questDetailQuery]);
 
   return useMemo(() => {
-    if (explicitPreview) {
-      return {
-        source: {
-          kind: "preview" as const,
-          state: fixtureState,
-        },
-        quest: fixtureQuest,
-        projection: fixtureProjection,
-        pending: previewState === "loading",
-        error:
-          previewState === "error" ? new Error("Preview unavailable") : null,
-        refreshing: false,
-        refresh,
-      };
-    }
-
     if (canSelectLiveSnapshot) {
       return {
         source: {
@@ -262,10 +213,6 @@ export function useQuestDetailReadSource({
       refresh,
     };
   }, [
-    explicitPreview,
-    fixtureProjection,
-    fixtureQuest,
-    fixtureState,
     liveProjection,
     liveQuest,
     liveSnapshot,
@@ -273,7 +220,6 @@ export function useQuestDetailReadSource({
     liveSnapshotQuery.error,
     liveSnapshotQuery.isPending,
     liveSnapshotQuery.isRefetching,
-    previewState,
     questDetailQuery.error,
     questDetailQuery.isPending,
     questDetailQuery.isRefetching,

@@ -46,6 +46,7 @@ export function QuestLogisticsFields({
   startDateRef,
   deadlineRef,
   locationRef,
+  openQuestEdit,
   updateDraft,
 }: {
   messages: (typeof createQuestMessages)["en"];
@@ -58,6 +59,7 @@ export function QuestLogisticsFields({
   startDateRef: Ref<ComponentRef<typeof RNPressable>>;
   deadlineRef: Ref<ComponentRef<typeof RNPressable>>;
   locationRef: Ref<ComponentRef<typeof RNTextInput>>;
+  openQuestEdit: boolean;
   updateDraft: <K extends keyof QuestDraft>(
     field: K,
     value: QuestDraft[K]
@@ -282,70 +284,80 @@ export function QuestLogisticsFields({
           </View>
         ) : null}
 
-        <View className={styles.logisticsDivider} />
+        {!openQuestEdit ? (
+          <>
+            <View className={styles.logisticsDivider} />
 
-        <View className={styles.fieldGroup}>
-          <FieldLabel optionalLabel={messages.optional}>
-            {messages.images}
-          </FieldLabel>
-          {draft.imageUris.length > 0 ? (
-            <View className={styles.imagePicker} accessible={false}>
-              <View className={styles.imageGrid}>
-                {draft.imageUris.map((uri, index) => (
-                  <View
-                    key={`${uri}-${index}`}
-                    className={styles.imagePreviewContainer}
-                  >
-                    <Image
-                      accessibilityLabel={messages.questImage(index + 1)}
-                      cachePolicy="memory-disk"
-                      onError={() => setImageError(messages.imageError)}
-                      source={{ uri }}
-                      className={styles.previewImage}
-                    />
-                    <Pressable
-                      accessibilityRole="button"
-                      accessibilityLabel={messages.removeImage(index + 1)}
-                      hitSlop={8}
-                      onPress={() => removeImage(index)}
-                      className={styles.removeImageButton}
-                    >
-                      <X color={colors.onHirer} size={15} strokeWidth={2.5} />
-                    </Pressable>
+            <View className={styles.fieldGroup}>
+              <FieldLabel optionalLabel={messages.optional}>
+                {messages.images}
+              </FieldLabel>
+              {draft.imageUris.length > 0 ? (
+                <View className={styles.imagePicker} accessible={false}>
+                  <View className={styles.imageGrid}>
+                    {draft.imageUris.map((uri, index) => (
+                      <View
+                        key={`${uri}-${index}`}
+                        className={styles.imagePreviewContainer}
+                      >
+                        <Image
+                          accessibilityLabel={messages.questImage(index + 1)}
+                          cachePolicy="memory-disk"
+                          onError={() => setImageError(messages.imageError)}
+                          source={{ uri }}
+                          className={styles.previewImage}
+                        />
+                        <Pressable
+                          accessibilityRole="button"
+                          accessibilityLabel={messages.removeImage(index + 1)}
+                          hitSlop={8}
+                          onPress={() => removeImage(index)}
+                          className={styles.removeImageButton}
+                        >
+                          <X
+                            color={colors.onHirer}
+                            size={15}
+                            strokeWidth={2.5}
+                          />
+                        </Pressable>
+                      </View>
+                    ))}
                   </View>
-                ))}
-              </View>
-              <Pressable
-                accessibilityRole="button"
-                accessibilityLabel={messages.changeImages}
-                onPress={() => void pickImages()}
-                className={styles.changeImagesButton}
-              >
-                <Text className={styles.imageTitle}>
-                  {messages.changeImages}
+                  <Pressable
+                    accessibilityRole="button"
+                    accessibilityLabel={messages.changeImages}
+                    onPress={() => void pickImages()}
+                    className={styles.changeImagesButton}
+                  >
+                    <Text className={styles.imageTitle}>
+                      {messages.changeImages}
+                    </Text>
+                  </Pressable>
+                </View>
+              ) : (
+                <Pressable
+                  accessibilityRole="button"
+                  accessibilityLabel={messages.addImages}
+                  onPress={() => void pickImages()}
+                  className={styles.imagePicker}
+                >
+                  <ImagePlus color={colors.hirer} size={28} strokeWidth={1.8} />
+                  <Text className={styles.imageTitle}>
+                    {messages.addImages}
+                  </Text>
+                  <Text className={styles.helperText}>
+                    {messages.imagesOptional}
+                  </Text>
+                </Pressable>
+              )}
+              {imageError ? (
+                <Text accessibilityRole="alert" className={styles.errorText}>
+                  {imageError}
                 </Text>
-              </Pressable>
+              ) : null}
             </View>
-          ) : (
-            <Pressable
-              accessibilityRole="button"
-              accessibilityLabel={messages.addImages}
-              onPress={() => void pickImages()}
-              className={styles.imagePicker}
-            >
-              <ImagePlus color={colors.hirer} size={28} strokeWidth={1.8} />
-              <Text className={styles.imageTitle}>{messages.addImages}</Text>
-              <Text className={styles.helperText}>
-                {messages.imagesOptional}
-              </Text>
-            </Pressable>
-          )}
-          {imageError ? (
-            <Text accessibilityRole="alert" className={styles.errorText}>
-              {imageError}
-            </Text>
-          ) : null}
-        </View>
+          </>
+        ) : null}
       </LogisticsSection>
       {datePickerField ? (
         <CustomDatePickerModal

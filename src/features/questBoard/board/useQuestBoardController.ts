@@ -5,15 +5,13 @@ import { useRouter } from "expo-router";
 import { useSessionQuery } from "@/features/auth/sessionQueries";
 import { useLocale } from "@/features/preferences/localeStore";
 import { questBoardMessages } from "@/locales/questBoardMessages";
-import { getLocalizedQuest } from "../fixtures/questFixtureLocalization";
 import { localizeQuestBoardQuest } from "@/locales/tagLabels";
-import type { BoardPreviewState } from "../fixtures/questBoardHarness";
 import { useQuestBoardQuery } from "../api/questBoardQueries";
 import { useQuestTagsQuery } from "../api/questTagsQueries";
 import {
   emptyQuestBoardFilter,
   type QuestBoardFilter,
-  type QuestBoardQuest,
+  type QuestBoardCard,
   type QuestBoardSort,
   type QuestLocationMode,
   type StartTimeBucket,
@@ -25,7 +23,6 @@ import {
   getVisibleQuests,
   sortQuests,
 } from "../presentation/questBoardViewData";
-import { questWorkflow } from "../workflow/questWorkflow";
 import { getActiveFilterCount, sortOptions } from "./questBoardOptions";
 
 function announce(message: string): void {
@@ -41,10 +38,7 @@ function cloneFilter(filter: QuestBoardFilter): QuestBoardFilter {
   };
 }
 
-export function useQuestBoardController(
-  currentStudentId: string | undefined,
-  initialPreviewState: BoardPreviewState
-) {
+export function useQuestBoardController(currentStudentId: string | undefined) {
   const router = useRouter();
   const { locale } = useLocale();
   const sessionQuery = useSessionQuery();
@@ -59,41 +53,24 @@ export function useQuestBoardController(
     emptyQuestBoardFilter
   );
   const [sort, setSort] = useState<QuestBoardSort>("newest");
-  const [previewState, setPreviewState] =
-    useState<BoardPreviewState>(initialPreviewState);
   const [filterOpen, setFilterOpen] = useState(false);
   const [sortOpen, setSortOpen] = useState(false);
   const [retryAttempt, setRetryAttempt] = useState(0);
-  const [retrying, setRetrying] = useState(false);
 
-  useEffect(() => {
-    if (!retrying || previewState !== "loading") return undefined;
-    const timeout = setTimeout(() => {
-      setPreviewState("populated");
-      setRetrying(false);
-    }, 250);
-    return () => clearTimeout(timeout);
-  }, [previewState, retrying]);
-
-  const boardQuery = useQuestBoardQuery(previewState === "populated");
-  const tagQuery = useQuestTagsQuery(previewState === "populated");
+  const boardQuery = useQuestBoardQuery();
+  const tagQuery = useQuestTagsQuery();
   const tagCatalog = useMemo(() => tagQuery.data ?? [], [tagQuery.data]);
   const liveQuests = boardQuery.data ?? null;
   const refreshing = boardQuery.isRefetching;
   const refreshBoard = useCallback(() => {
-    if (previewState !== "populated") return;
     void boardQuery.refetch({ cancelRefetch: false }).catch(() => undefined);
-  }, [boardQuery, previewState]);
+  }, [boardQuery]);
   const workflowNow = useMemo(() => new Date(), []);
 
   const boardModel = useMemo(() => {
-    if (previewState !== "populated") {
-      return questWorkflow.getQuestBoardSurfaceModel(
-        resolvedStudentId,
-        previewState
-      );
+    if (boardQuery.isError && !boardQuery.isFetching) {
+      return { kind: "error" as const };
     }
-    if (boardQuery.isError) return { kind: "error" as const };
     if (liveQuests !== null) {
       const quests = getVisibleQuests(liveQuests, {
         currentStudentId: resolvedStudentId,
@@ -104,17 +81,20 @@ export function useQuestBoardController(
         : { kind: "empty" as const };
     }
     return { kind: "loading" as const };
-  }, [boardQuery.isError, liveQuests, previewState, resolvedStudentId]);
+  }, [
+    boardQuery.isError,
+    boardQuery.isFetching,
+    liveQuests,
+    resolvedStudentId,
+  ]);
   const localizedQuests = useMemo(
     () =>
       boardModel.kind === "ready"
         ? boardModel.quests.map((quest) =>
-            previewState === "populated"
-              ? localizeQuestBoardQuest(quest, tagCatalog, locale)
-              : getLocalizedQuest(quest, locale)
+            localizeQuestBoardQuest(quest, tagCatalog, locale)
           )
         : [],
-    [boardModel, locale, previewState, tagCatalog]
+    [boardModel, locale, tagCatalog]
   );
   const availableTags = useMemo(
     () =>
@@ -173,25 +153,16 @@ export function useQuestBoardController(
     setFilters(emptyQuestBoardFilter);
   };
   const openQuest = useCallback(
-    (quest: QuestBoardQuest, preview?: BoardPreviewState) => {
-      const applicationPreview =
-        preview ??
-        (previewState === "application-pending" ||
-        previewState === "application-accepted"
-          ? previewState
-          : undefined);
+    (quest: QuestBoardCard) => {
       router.push({
         pathname: "/quest/[id]",
-        params: {
-          id: quest.id,
-          ...(applicationPreview ? { preview: applicationPreview } : {}),
-        },
+        params: { id: quest.id },
       });
     },
-    [previewState, router]
+    [router]
   );
   const openOwnerProfile = useCallback(
-    (quest: QuestBoardQuest, event?: { stopPropagation?: () => void }) => {
+    (quest: QuestBoardCard, event?: { stopPropagation?: () => void }) => {
       event?.stopPropagation?.();
       if (quest.ownerStudentId) {
         router.push(`/profile/${quest.ownerStudentId}`);
@@ -203,8 +174,7 @@ export function useQuestBoardController(
   );
   const retryBoard = () => {
     setRetryAttempt((attempt) => attempt + 1);
-    setRetrying(true);
-    setPreviewState("loading");
+    refreshBoard();
   };
 
   const activeFilterCount = getActiveFilterCount(filters);
@@ -212,10 +182,6 @@ export function useQuestBoardController(
   const sortLabelKey =
     sortOptions.find((option) => option.value === sort)?.labelKey ?? "newest";
   const sortLabel = messages[sortLabelKey];
-  const noMatch =
-    previewState === "populated" ||
-    previewState === "application-pending" ||
-    previewState === "application-accepted";
   const noMatchActionLabel =
     hasActiveFilters && query
       ? messages.clearSearchAndFilters
@@ -288,7 +254,6 @@ export function useQuestBoardController(
     setDraftFilters,
     sort,
     setSort,
-    previewState,
     filterOpen,
     setFilterOpen,
     sortOpen,
@@ -308,7 +273,6 @@ export function useQuestBoardController(
     activeFilterCount,
     hasActiveFilters,
     sortLabel,
-    noMatch,
     noMatchActionLabel,
     noMatchAction,
     removeTag,

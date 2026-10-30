@@ -23,8 +23,10 @@ import {
 import { disputeMessages } from "@/locales/disputeMessages";
 import type { LiveQuestSnapshot } from "../../live/liveQuestService";
 import { FailedQuestNotice } from "../../shared/FailedQuestNotice";
+import { QuestWorkConductReport } from "./QuestWorkConductReport";
 import {
   isWorkerActor,
+  QuestAssignmentStatus,
   QuestEditRequestStatus,
   QuestEditResponseDecision,
   QuestMode,
@@ -82,14 +84,39 @@ export default function QuestWorkActionsCard({
   const { locale } = useLocale();
   const disputeCopy = disputeMessages[locale];
   const viewerId = useSessionQuery().data?.user.id ?? null;
+  // A GROUP + FCFS Quest can end QUEST_COMPLETED while this Worker's own
+  // Assignment is Incomplete; that Worker has the same Dispute window.
   const isFailedWorker =
-    snapshot.state === QuestStatus.QUEST_FAILED &&
-    isWorkerActor(snapshot.actor);
+    isWorkerActor(snapshot.actor) &&
+    (snapshot.state === QuestStatus.QUEST_FAILED ||
+      (snapshot.state === QuestStatus.QUEST_COMPLETED &&
+        snapshot.assignment?.state ===
+          QuestAssignmentStatus.ASSIGNMENT_INCOMPLETE));
+  const serverDispute =
+    "dispute" in snapshot.quest ? snapshot.quest.dispute : undefined;
   const disputeQuery = useMyDisputeCaseQuery(
     snapshot.quest.id,
     viewerId,
-    isFailedWorker
+    isFailedWorker && serverDispute === undefined
   );
+  const pendingDisputeStatus =
+    isFailedWorker && serverDispute === undefined && disputeQuery.isPending;
+  const disputeStatusError =
+    isFailedWorker && serverDispute === undefined && disputeQuery.isError;
+  const filedDispute =
+    serverDispute?.myCase ?? (isFailedWorker ? disputeQuery.data?.case : null);
+  const canFileDispute =
+    serverDispute?.canFile ??
+    (isFailedWorker &&
+      disputeQuery.isSuccess &&
+      disputeQuery.data.case === null);
+  // The snapshot types the case status as a plain string; show only the
+  // statuses the Dispute Case contract names.
+  const filedDisputeStatus = filedDispute
+    ? (disputeCopy.caseStatus as Partial<Record<string, string>>)[
+        filedDispute.status
+      ]
+    : undefined;
   const filingDispute =
     useIsMutating({
       mutationKey: questBoardKeys.disputeFiling(),
@@ -166,10 +193,10 @@ export default function QuestWorkActionsCard({
         </View>
       ) : null}
 
-      {isFailedWorker && !disputeQuery.isPending ? (
+      {isFailedWorker && !pendingDisputeStatus ? (
         <View className={styles.mutedCard}>
           <FailedQuestNotice quest={snapshot.quest} />
-          {disputeQuery.isError ? (
+          {disputeStatusError ? (
             <View className="gap-ku-xs">
               <Text className={styles.bodyText}>{disputeCopy.statusError}</Text>
               <Pressable
@@ -185,17 +212,18 @@ export default function QuestWorkActionsCard({
                 </Text>
               </Pressable>
             </View>
-          ) : disputeQuery.isSuccess && disputeQuery.data.case ? (
-            <Text accessibilityRole="text" className={styles.bodyText}>
-              {disputeCopy.filedStatus}
-            </Text>
-          ) : disputeQuery.isSuccess &&
-            disputeQuery.data.case === null &&
-            onFileDispute &&
-            !(
-              "dispute" in snapshot.quest &&
-              snapshot.quest.dispute?.canFile === false
-            ) ? (
+          ) : filedDispute ? (
+            <View className="gap-ku-xs">
+              <Text accessibilityRole="text" className={styles.bodyText}>
+                {disputeCopy.filedStatus}
+              </Text>
+              <Text accessibilityRole="text" className={styles.bodyText}>
+                {filedDisputeStatus
+                  ? `${disputeCopy.filedCase(filedDispute.displayId)} · ${filedDisputeStatus}`
+                  : disputeCopy.filedCase(filedDispute.displayId)}
+              </Text>
+            </View>
+          ) : canFileDispute && onFileDispute ? (
             <Pressable
               accessibilityRole="button"
               accessibilityLabel={messages.fileDispute}
@@ -353,6 +381,10 @@ export default function QuestWorkActionsCard({
         </View>
       ) : null}
 
+      {isWorkerActor(snapshot.actor) ? (
+        <QuestWorkConductReport snapshot={snapshot} />
+      ) : null}
+
       {canOpenChat ? (
         <Pressable
           accessibilityRole="button"
@@ -376,9 +408,7 @@ export default function QuestWorkActionsCard({
             ) : null}
           </View>
           {unreadCount > 0 ? (
-            <Text className={styles.unreadBadge} maxFontSizeMultiplier={1.5}>
-              {unreadCount}
-            </Text>
+            <Text className={styles.unreadBadge}>{unreadCount}</Text>
           ) : null}
           <ChevronRight color={palette.textSecondary} size={20} />
         </Pressable>

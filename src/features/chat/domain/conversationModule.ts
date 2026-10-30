@@ -64,6 +64,9 @@ export function toDisplayMessage(
     converted;
   return {
     ...convertedWithoutAttachment,
+    ...(message.systemType !== undefined
+      ? { systemType: message.systemType }
+      : {}),
     ...(message.sender?.id != null ? { senderId: message.sender.id } : {}),
     ...(message.sender ? { senderName: message.sender.displayName } : {}),
     sequence: message.sequence,

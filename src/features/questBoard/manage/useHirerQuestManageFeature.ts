@@ -10,8 +10,7 @@ import { useRouter } from "expo-router";
 import { useQueryClient } from "@tanstack/react-query";
 import { ApiError } from "@/api/ApiClient";
 
-import { createQuestIdempotencyKey } from "@/api/QuestApi";
-import { liveQuestService } from "@/features/questBoard/live/liveQuestService";
+import { createQuestIdempotencyKey, questApi } from "@/api/QuestApi";
 import type { QuestV2CancelPreview } from "@/api/questV2Contracts";
 import { useSessionQuery } from "@/features/auth/sessionQueries";
 import { getChatRouteParams } from "@/features/chat/chatData";
@@ -272,7 +271,7 @@ export function useHirerQuestManageFeature(questId?: string) {
     if (tier === null) return;
     // The preview is an aid: if it fails, the real cancel still enforces rules.
     const preview = await Promise.resolve()
-      .then(() => liveQuestService.getCancelPreview(snapshot.quest.id))
+      .then(() => questApi.getCancelPreview(snapshot.quest.id))
       .then((value) => value ?? null)
       .catch(() => null);
     const text = [

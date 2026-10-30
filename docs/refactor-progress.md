@@ -278,15 +278,19 @@ one owner" was true only of the five files phase 4 inspected. Six more sites sti
   default. Pre-existing behavior, preserved deliberately.
 - `attachmentLinkCache` is read synchronously in `MessageBubble` render, so replacing it with
   Query requires restructuring that component's render path.
-- Fixture data ships in the production bundle. `QuestBoardScreen` and
-  `useQuestDetailReadSource` import `questWorkflow`, which imports
-  `questFixtureAdapter` and its seeds at module scope: 3,610 lines of demo data
-  (`questFixtureAdapter.ts` 1,544, `questFixtures.ts` 947, `fixtures/questSeeds.ts` 781,
-  `fixtures/chatSeeds.ts` 298, `fixtures/memberDirectory.ts` 40). Both paths still branch on
-  `previewState !== "populated"`. `HomeScreen` likewise branches on
-  `isPrototypeDemoEnabled()` and imports `hirerHomeQuestFixtures`. Removing this is a product
-  decision about the preview/demo mode, not a state-ownership change, so it was left alone
-  deliberately.
+- ~~Fixture data ships in the production bundle.~~ **Resolved 2026-10-29.** The product
+  owner retired the second, fixture-based Quest lifecycle. Removed: `questBoard/fixtures/`
+  (`questFixtureAdapter`, `questReducer`, seeds, `questFixtures`, harness, localization),
+  `questBoard/workflow/` (`questWorkflow` and its types), `questBoard/store/`,
+  `questBoard/domain/questSelectors.ts` and `questStateUtils.ts`, the dev Roleplay simulator
+  (`features/roleplay/`, `app/dev/roleplay.tsx`, `locales/roleplayMessages.ts`), the prototype
+  scenario/persona menu data, the Hirer Home demo cards, and `locales/prototypeQuestMessages.ts`.
+  Quest Board, Quest Detail, Home, and ProfileEdit no longer branch on `previewState` or
+  `isPrototypeDemoEnabled()`: `useQuestDetailReadSource` now has only the `live-snapshot` and
+  `live-detail` (public-detail fallback when no viewer id exists) sources, and the `/quest/[id]`
+  `preview` route parameter is no longer read. `authEnvironment` keeps only `isDemoEnabled()`
+  (`EXPO_PUBLIC_PROFILE_DEMO`), which still gates the dev auth bypass, the Settings account
+  switcher, and the ProfileEdit Academic Registration lock.
 - Onboarding, chat and profile keep bespoke empty/error presentations rather than the shared
   `StateView`: their icons, copy placement and surrounding layout genuinely differ, and
   forcing them through one component would have changed what users see.

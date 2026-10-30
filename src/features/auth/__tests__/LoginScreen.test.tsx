@@ -6,8 +6,21 @@ import { AuthAdapter, AuthError, type AuthSession } from "../types";
 import { authMessages } from "../../../locales/authMessages";
 import { signInWithStagingTestAccount } from "../stagingTestAuth";
 
+jest.mock("expo-constants", () => ({
+  __esModule: true,
+  default: {
+    expoConfig: { extra: { appVariant: "staging" } },
+  },
+}));
+
 let mockLocale: "en" | "th" = "th";
-let mockSearchParams: { sessionExpired?: string } = {};
+let mockSearchParams: {
+  sessionExpired?: string;
+  memberBanned?: string;
+  memberBannedUntil?: string;
+} = {};
+
+const mockExpoConstants = jest.requireMock("expo-constants").default;
 
 jest.mock("expo-router", () => ({
   useLocalSearchParams: () => mockSearchParams,
@@ -61,6 +74,7 @@ describe("LoginScreen", () => {
     mockLocale = "th";
     mockSearchParams = {};
     mockSignInWithStagingTestAccount.mockReset();
+    mockExpoConstants.expoConfig.extra.appVariant = "staging";
   });
   test("offers one Google sign-in action in Thai", async () => {
     const authAdapter = createAdapter();
@@ -107,6 +121,40 @@ describe("LoginScreen", () => {
     });
   });
 
+  test("shows a permanent Member Ban from sign-in without a retry action", async () => {
+    const authAdapter = createAdapter();
+    authAdapter.authenticate.mockRejectedValue(
+      new AuthError("MEMBER_BANNED", undefined, {
+        memberBan: { permanent: true },
+      })
+    );
+    await renderWithQueryClient(<LoginScreen authAdapter={authAdapter} />);
+
+    await fireEvent.press(screen.getByTestId("signin-button"));
+
+    await waitFor(() => {
+      expect(screen.getByTestId("error-message").props.children).toBe(
+        authMessages.th.memberBannedPermanent
+      );
+    });
+    expect(screen.queryByTestId("retry-button")).toBeNull();
+  });
+
+  test("shows the end of a temporary Member Ban from the route", async () => {
+    mockSearchParams = {
+      memberBanned: "temporary",
+      memberBannedUntil: "2026-11-06T00:00:00.000Z",
+    };
+    await renderWithQueryClient(<LoginScreen authAdapter={createAdapter()} />);
+
+    await waitFor(() => {
+      expect(screen.getByTestId("error-message").props.children).toContain(
+        "2026"
+      );
+    });
+    mockSearchParams = {};
+  });
+
   test("shows a retry action for an authentication failure", async () => {
     const authAdapter = createAdapter();
     authAdapter.authenticate.mockRejectedValue(new AuthError("OAUTH_FAILED"));
@@ -122,7 +170,7 @@ describe("LoginScreen", () => {
     });
   });
 
-  test("offers every staging test account as a debug-only sign-in action", async () => {
+  test("offers every staging test account in staging builds", async () => {
     const authAdapter = createAdapter();
     await renderWithQueryClient(<LoginScreen authAdapter={authAdapter} />);
 
@@ -137,6 +185,14 @@ describe("LoginScreen", () => {
     expect(screen.queryByTestId("staging-test-signin-default")).toBeNull();
     expect(screen.getByText("Nattapong Srisawat")).toBeTruthy();
     expect(screen.getByText("Nichakan Kaewmanee")).toBeTruthy();
+  });
+
+  test("hides staging test accounts in UAT builds", async () => {
+    mockExpoConstants.expoConfig.extra.appVariant = "uat";
+    const authAdapter = createAdapter();
+    await renderWithQueryClient(<LoginScreen authAdapter={authAdapter} />);
+
+    expect(screen.queryByTestId("staging-test-toggle")).toBeNull();
   });
 
   test("signs in with a staging test account and routes to the resolved destination", async () => {

@@ -58,6 +58,7 @@ At `startTime`, an underfilled `GROUP + FIRST_COME_FIRST_SERVED` Quest has fewer
 - The Hirer approves or does not approve each submitted Proof Submission.
 - If the Hirer has not decided 24 hours after a Proof Submission is sent, the Server records `PROOF_APPROVED`.
 - Approved or proof-free Team work makes every Active Worker Assignment in a `GROUP + CANDIDATE` Quest `ASSIGNMENT_COMPLETED`.
+- Successful completion opens a 24-hour Team Reward Allocation window. The Team Leader assigns each teammate a percentage, and receives the remainder; teammate percentages may total no more than 100%. If no allocation is submitted before the deadline, the Server applies an equal split. Payment waits for allocation, then goes directly from Quest Escrow to each member's Earnings Balance.
 - Non-approved Team work makes every Active Worker Assignment in a `GROUP + CANDIDATE` Quest `ASSIGNMENT_INCOMPLETE`.
 - A missing required Team Proof Submission or Team confirmation makes every Active Worker Assignment in a `GROUP + CANDIDATE` Quest `ASSIGNMENT_INCOMPLETE`.
 - Hirer non-approval, a missing required submission, a missing proof-free confirmation, or a missing Start Work action at `dueAt` makes the Quest `QUEST_FAILED`.

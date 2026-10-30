@@ -13,7 +13,7 @@ export interface ProofDraftRef {
 }
 
 export type ProofSendPlan<TFile extends { key: string }> =
-  | { kind: "create"; replaceDraftId: string | null; files: TFile[] }
+  | { kind: "create"; files: TFile[] }
   | { kind: "append"; draftId: string; files: TFile[] }
   | { kind: "existing"; draftId: string }
   | {
@@ -26,20 +26,17 @@ export type ProofSendPlan<TFile extends { key: string }> =
  * Decides how to send the selected files given an existing unsent draft.
  * Failed draft positions are retried one file each (PATCH with
  * `retryPosition`). Unknown ready files stay selected; new files append to
- * that draft. Removing a known file creates a replacement draft.
+ * that draft. Removing a known file creates a replacement draft; the Server
+ * replaces the unsent draft on create.
  */
 export function planProofSend<TFile extends { key: string }>(
   draft: ProofDraftRef | null,
   files: readonly TFile[]
 ): ProofSendPlan<TFile> {
   if (!draft) {
-    return { kind: "create", replaceDraftId: null, files: [...files] };
+    return { kind: "create", files: [...files] };
   }
-  const replace: ProofSendPlan<TFile> = {
-    kind: "create",
-    replaceDraftId: draft.id,
-    files: [...files],
-  };
+  const replace: ProofSendPlan<TFile> = { kind: "create", files: [...files] };
 
   const selectedKeys = new Set(files.map((file) => file.key));
   const draftKeys = new Set(draft.fileKeys.filter((key) => key !== null));

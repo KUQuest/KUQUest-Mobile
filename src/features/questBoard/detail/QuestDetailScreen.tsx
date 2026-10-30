@@ -117,12 +117,30 @@ export default function QuestDetailScreen(props: QuestDetailScreenProps) {
             </Text>
           </Pressable>
         </View>
-      ) : actionBar?.isPostView &&
-        (actionBar.canReviewProof || actionBar.canReview) ? (
+      ) : (actionBar?.isPostView &&
+          (actionBar.canReviewProof || actionBar.canReview)) ||
+        actionBar?.canOpenWorkHub ? (
         <View
           className={styles.actionBar}
           style={{ paddingBottom: getActionBarPaddingBottom(insets.bottom) }}
         >
+          {actionBar.canOpenWorkHub ? (
+            <Pressable
+              accessibilityRole="button"
+              onPress={actionBar.onOpenWorkHub}
+              className={styles.primaryAction}
+              testID="quest-detail-open-work-hub"
+            >
+              <ShieldCheck
+                color={colors.onPrimary}
+                size={19}
+                strokeWidth={2.2}
+              />
+              <Text className={styles.primaryActionText}>
+                {messages.openWorkHub}
+              </Text>
+            </Pressable>
+          ) : null}
           {actionBar.canReviewProof ? (
             <Pressable
               accessibilityRole="button"

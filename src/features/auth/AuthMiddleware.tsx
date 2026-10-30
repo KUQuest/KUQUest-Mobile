@@ -4,7 +4,10 @@ import { useQueryClient } from "@tanstack/react-query";
 
 import { ActivityIndicator, View } from "@/tw";
 import { useAppTheme } from "@/features/workspace/AppThemeProvider";
-import { setUnauthorizedHandler } from "@/api/ApiClient";
+import {
+  setMemberBannedHandler,
+  setUnauthorizedHandler,
+} from "@/api/ApiClient";
 import { closeAllServerSockets } from "@/api/ServerSocket";
 
 import { authEnvironment } from "./authEnvironment";
@@ -53,7 +56,7 @@ function AuthRouteCheck({
   }, [sessionQuery.data]);
 
   useEffect(() => {
-    setUnauthorizedHandler(() => {
+    const endSession = (params: Record<string, string>) => {
       if (expiredRef.current || !sessionRef.current) return;
       expiredRef.current = true;
       closeAllServerSockets();
@@ -62,13 +65,22 @@ function AuthRouteCheck({
         .catch(() => undefined)
         .finally(() => {
           clearSessionCache(queryClient);
-          router.replace({
-            pathname: "/",
-            params: { sessionExpired: "1" },
-          });
+          router.replace({ pathname: "/", params });
         });
-    });
-    return () => setUnauthorizedHandler(null);
+    };
+    setUnauthorizedHandler(() => endSession({ sessionExpired: "1" }));
+    setMemberBannedHandler((memberBan) =>
+      endSession({
+        memberBanned: memberBan?.permanent ? "permanent" : "temporary",
+        ...(memberBan?.bannedUntil
+          ? { memberBannedUntil: memberBan.bannedUntil }
+          : {}),
+      })
+    );
+    return () => {
+      setUnauthorizedHandler(null);
+      setMemberBannedHandler(null);
+    };
   }, [queryClient, router]);
 
   useEffect(() => {
@@ -90,10 +102,6 @@ function AuthRouteCheck({
 }
 
 export default function AuthMiddleware({ children }: PropsWithChildren) {
-  useEffect(() => {
-    void authEnvironment.hydratePersona();
-  }, []);
-
   const segments = useSegments();
   const isDemo = authEnvironment.isDemoEnabled();
   const isPublicRoute = isDemo || isPublicAuthRoute(segments);

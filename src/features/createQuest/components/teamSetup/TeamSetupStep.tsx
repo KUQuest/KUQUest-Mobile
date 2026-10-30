@@ -28,6 +28,7 @@ export function TeamSetupStep({
   locale,
   participationOptions,
   candidateOptions,
+  openQuestEdit,
   useStackedChoices,
   logisticsExpanded,
   logisticsSummary,
@@ -46,6 +47,7 @@ export function TeamSetupStep({
   locale: SupportedLocale;
   participationOptions: ChoiceOption[];
   candidateOptions: ChoiceOption[];
+  openQuestEdit: boolean;
   useStackedChoices: boolean;
   logisticsExpanded: boolean;
   logisticsSummary: string;
@@ -77,6 +79,7 @@ export function TeamSetupStep({
           options={participationOptions}
           variant="format"
           stacked={useStackedChoices}
+          disabled={openQuestEdit}
           onChange={(value) =>
             updateParticipation(value as QuestDraft["participation"])
           }
@@ -105,6 +108,11 @@ export function TeamSetupStep({
           participation={draft.participation}
           candidateMode={draft.candidateMode}
         />
+        {openQuestEdit ? (
+          <Text className={styles.helperText}>
+            {messages.openQuestFieldsLocked}
+          </Text>
+        ) : null}
       </View>
 
       <View className={styles.sectionCard}>
@@ -135,6 +143,7 @@ export function TeamSetupStep({
               updateDraft("headcount", value.replace(/[^0-9]/g, ""))
             }
             error={errors.headcount}
+            editable={!openQuestEdit}
             keyboardType="number-pad"
           />
         )}
@@ -145,6 +154,7 @@ export function TeamSetupStep({
           <View
             className={cn(
               styles.currencyInput,
+              openQuestEdit ? "opacity-60" : null,
               errors.wage ? styles.fieldError : null
             )}
           >
@@ -160,6 +170,8 @@ export function TeamSetupStep({
               }
               keyboardType="decimal-pad"
               accessibilityLabel={`${messages.rewardPerPerson} (THB)`}
+              accessibilityState={{ disabled: openQuestEdit }}
+              editable={!openQuestEdit}
             />
             <Text className={styles.currencyUnit}>THB</Text>
           </View>
@@ -183,6 +195,7 @@ export function TeamSetupStep({
         startDateRef={startDateRef}
         deadlineRef={deadlineRef}
         locationRef={locationRef}
+        openQuestEdit={openQuestEdit}
         updateDraft={updateDraft}
       />
     </>

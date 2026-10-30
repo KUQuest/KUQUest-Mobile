@@ -28,6 +28,8 @@ tags:
     description: "Admin Trust and Safety Report Case queue, evidence, and decisions."
   - name: Admin Search
     description: Searches safe fields within a required Admin resource type.
+  - name: Quest Reward Allocation v2
+    description: Reads and submits the completed Candidate Team reward split.
 components: 
   securitySchemes: 
     betterAuthSession: 
@@ -3259,6 +3261,76 @@ paths:
                       message: 
                         type: string
                 additionalProperties: false
+  /api/v1/profile/penalty-status: 
+    get: 
+      tags: 
+        - Profile
+      summary: Get own Member Penalty status
+      description: "Returns the strike count and the next result on the Misconduct ladder and the Review ladder, and the Red Flag expiry when a Red Flag is active. An exempt violation does not count as a strike. A Member Ban returns 403 MEMBER_BANNED with the ban details."
+      operationId: getOwnPenaltyStatus
+      responses: 
+        "200": 
+          description: Response for status 200
+          content: 
+            application/json: 
+              schema: 
+                type: object
+                required: 
+                  - success
+                  - data
+                properties: 
+                  success: 
+                    const: true
+                    type: boolean
+                  data: 
+                    type: object
+                    required: 
+                      - misconduct
+                      - review
+                      - redFlagExpiresAt
+                    properties: 
+                      misconduct: 
+                        type: object
+                        required: 
+                          - strikeCount
+                          - ladderLength
+                          - nextResult
+                        properties: 
+                          strikeCount: 
+                            minimum: 0
+                            type: integer
+                          ladderLength: 
+                            minimum: 1
+                            type: integer
+                          nextResult: 
+                            type: string
+                            enum: 
+                              - PENALTY_RED_FLAG
+                              - PENALTY_TEMPORARY_BAN_7_DAYS
+                              - PENALTY_PERMANENT_BAN
+                      review: 
+                        type: object
+                        required: 
+                          - strikeCount
+                          - ladderLength
+                          - nextResult
+                        properties: 
+                          strikeCount: 
+                            minimum: 0
+                            type: integer
+                          ladderLength: 
+                            minimum: 1
+                            type: integer
+                          nextResult: 
+                            type: string
+                            enum: 
+                              - PENALTY_TEMPORARY_BAN_7_DAYS
+                              - PENALTY_TEMPORARY_BAN_1_MONTH
+                              - PENALTY_PERMANENT_BAN
+                      redFlagExpiresAt: 
+                        nullable: true
+                        type: string
+                        format: date-time
   /api/v1/profile/reviews: 
     get: 
       tags: 
@@ -24392,6 +24464,567 @@ paths:
                       message: 
                         type: string
                 additionalProperties: false
+  /api/v2/quests/{questId}/reward-allocation:
+    get:
+      tags:
+        - Quest Reward Allocation v2
+      summary: Read a completed Candidate Team Reward Allocation
+      description: A selected Candidate Team Member can read the pending or settled
+        Reward Allocation after the Quest completes. The response shows the
+        Worker Reward pool and each Member share, but no Platform Fee or Wallet
+        details.
+      operationId: getQuestV2RewardAllocation
+      security:
+        - betterAuthSession: []
+      parameters:
+        - name: questId
+          in: path
+          required: true
+          schema:
+            format: uuid
+            type: string
+      responses:
+        "200":
+          description: Response for status 200
+          content:
+            application/json:
+              schema:
+                type: object
+                required:
+                  - success
+                  - data
+                properties:
+                  success:
+                    const: true
+                    type: boolean
+                  data:
+                    type: object
+                    required:
+                      - status
+                      - leaderId
+                      - totalRewardSatang
+                      - deadlineAt
+                      - settledAt
+                      - viewerIsLeader
+                      - members
+                    properties:
+                      status:
+                        type: string
+                        enum:
+                          - PENDING
+                          - SUBMITTED
+                          - AUTO_EQUAL
+                      leaderId:
+                        format: uuid
+                        type: string
+                      totalRewardSatang:
+                        minimum: 1
+                        anyOf:
+                          - format: integer
+                            default: 0
+                            type: string
+                          - minimum: 1
+                            type: integer
+                      deadlineAt:
+                        format: date-time
+                        type: string
+                      settledAt:
+                        nullable: true
+                        anyOf:
+                          - format: date-time
+                            type: string
+                          - type: "null"
+                      viewerIsLeader:
+                        type: boolean
+                      members:
+                        type: array
+                        items:
+                          type: object
+                          required:
+                            - memberId
+                            - displayName
+                            - isLeader
+                            - percentageBasisPoints
+                            - rewardSatang
+                          properties:
+                            memberId:
+                              format: uuid
+                              type: string
+                            displayName:
+                              type: string
+                            isLeader:
+                              type: boolean
+                            percentageBasisPoints:
+                              nullable: true
+                              anyOf:
+                                - minimum: 0
+                                  maximum: 10000
+                                  anyOf:
+                                    - format: integer
+                                      default: 0
+                                      type: string
+                                    - minimum: 0
+                                      maximum: 10000
+                                      type: integer
+                                - type: "null"
+                            rewardSatang:
+                              nullable: true
+                              anyOf:
+                                - minimum: 0
+                                  anyOf:
+                                    - format: integer
+                                      default: 0
+                                      type: string
+                                    - minimum: 0
+                                      type: integer
+                                - type: "null"
+        "401":
+          description: Response for status 401
+          content:
+            application/json:
+              schema:
+                type: object
+                required:
+                  - success
+                  - error
+                properties:
+                  success:
+                    const: false
+                    type: boolean
+                  error:
+                    type: object
+                    required:
+                      - code
+                      - message
+                    properties:
+                      code:
+                        type: string
+                      message:
+                        type: string
+        "404":
+          description: Response for status 404
+          content:
+            application/json:
+              schema:
+                type: object
+                required:
+                  - success
+                  - error
+                properties:
+                  success:
+                    const: false
+                    type: boolean
+                  error:
+                    type: object
+                    required:
+                      - code
+                      - message
+                    properties:
+                      code:
+                        type: string
+                      message:
+                        type: string
+        "409":
+          description: Response for status 409
+          content:
+            application/json:
+              schema:
+                type: object
+                required:
+                  - success
+                  - error
+                properties:
+                  success:
+                    const: false
+                    type: boolean
+                  error:
+                    type: object
+                    required:
+                      - code
+                      - message
+                    properties:
+                      code:
+                        type: string
+                      message:
+                        type: string
+        "500":
+          description: Response for status 500
+          content:
+            application/json:
+              schema:
+                type: object
+                required:
+                  - success
+                  - error
+                properties:
+                  success:
+                    const: false
+                    type: boolean
+                  error:
+                    type: object
+                    required:
+                      - code
+                      - message
+                    properties:
+                      code:
+                        type: string
+                      message:
+                        type: string
+    post:
+      tags:
+        - Quest Reward Allocation v2
+      summary: Submit a Candidate Team Reward Allocation
+      description: Only the Team Leader can submit percentages for every teammate
+        within 24 hours after successful completion. The Leader receives the
+        remaining percentage and the Server settles the full Quest Reward pool
+        atomically.
+      operationId: submitQuestV2RewardAllocation
+      security:
+        - betterAuthSession: []
+      parameters:
+        - name: questId
+          in: path
+          required: true
+          schema:
+            format: uuid
+            type: string
+        - name: idempotency-key
+          in: header
+          required: true
+          schema:
+            minLength: 1
+            maxLength: 200
+            pattern: \S
+            type: string
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              additionalProperties: false
+              type: object
+              required:
+                - teammateShares
+              properties:
+                teammateShares:
+                  minItems: 1
+                  maxItems: 19
+                  type: array
+                  items:
+                    additionalProperties: false
+                    type: object
+                    required:
+                      - memberId
+                      - percentageBasisPoints
+                    properties:
+                      memberId:
+                        format: uuid
+                        type: string
+                      percentageBasisPoints:
+                        minimum: 0
+                        maximum: 10000
+                        anyOf:
+                          - format: integer
+                            default: 0
+                            type: string
+                          - minimum: 0
+                            maximum: 10000
+                            type: integer
+          application/x-www-form-urlencoded:
+            schema:
+              additionalProperties: false
+              type: object
+              required:
+                - teammateShares
+              properties:
+                teammateShares:
+                  minItems: 1
+                  maxItems: 19
+                  type: array
+                  items:
+                    additionalProperties: false
+                    type: object
+                    required:
+                      - memberId
+                      - percentageBasisPoints
+                    properties:
+                      memberId:
+                        format: uuid
+                        type: string
+                      percentageBasisPoints:
+                        minimum: 0
+                        maximum: 10000
+                        anyOf:
+                          - format: integer
+                            default: 0
+                            type: string
+                          - minimum: 0
+                            maximum: 10000
+                            type: integer
+          multipart/form-data:
+            schema:
+              additionalProperties: false
+              type: object
+              required:
+                - teammateShares
+              properties:
+                teammateShares:
+                  minItems: 1
+                  maxItems: 19
+                  type: array
+                  items:
+                    additionalProperties: false
+                    type: object
+                    required:
+                      - memberId
+                      - percentageBasisPoints
+                    properties:
+                      memberId:
+                        format: uuid
+                        type: string
+                      percentageBasisPoints:
+                        minimum: 0
+                        maximum: 10000
+                        anyOf:
+                          - format: integer
+                            default: 0
+                            type: string
+                          - minimum: 0
+                            maximum: 10000
+                            type: integer
+      responses:
+        "200":
+          description: Response for status 200
+          content:
+            application/json:
+              schema:
+                type: object
+                required:
+                  - success
+                  - data
+                properties:
+                  success:
+                    const: true
+                    type: boolean
+                  data:
+                    type: object
+                    required:
+                      - status
+                      - leaderId
+                      - totalRewardSatang
+                      - deadlineAt
+                      - settledAt
+                      - viewerIsLeader
+                      - members
+                    properties:
+                      status:
+                        type: string
+                        enum:
+                          - PENDING
+                          - SUBMITTED
+                          - AUTO_EQUAL
+                      leaderId:
+                        format: uuid
+                        type: string
+                      totalRewardSatang:
+                        minimum: 1
+                        anyOf:
+                          - format: integer
+                            default: 0
+                            type: string
+                          - minimum: 1
+                            type: integer
+                      deadlineAt:
+                        format: date-time
+                        type: string
+                      settledAt:
+                        nullable: true
+                        anyOf:
+                          - format: date-time
+                            type: string
+                          - type: "null"
+                      viewerIsLeader:
+                        type: boolean
+                      members:
+                        type: array
+                        items:
+                          type: object
+                          required:
+                            - memberId
+                            - displayName
+                            - isLeader
+                            - percentageBasisPoints
+                            - rewardSatang
+                          properties:
+                            memberId:
+                              format: uuid
+                              type: string
+                            displayName:
+                              type: string
+                            isLeader:
+                              type: boolean
+                            percentageBasisPoints:
+                              nullable: true
+                              anyOf:
+                                - minimum: 0
+                                  maximum: 10000
+                                  anyOf:
+                                    - format: integer
+                                      default: 0
+                                      type: string
+                                    - minimum: 0
+                                      maximum: 10000
+                                      type: integer
+                                - type: "null"
+                            rewardSatang:
+                              nullable: true
+                              anyOf:
+                                - minimum: 0
+                                  anyOf:
+                                    - format: integer
+                                      default: 0
+                                      type: string
+                                    - minimum: 0
+                                      type: integer
+                                - type: "null"
+        "400":
+          description: Response for status 400
+          content:
+            application/json:
+              schema:
+                type: object
+                required:
+                  - success
+                  - error
+                properties:
+                  success:
+                    const: false
+                    type: boolean
+                  error:
+                    type: object
+                    required:
+                      - code
+                      - message
+                    properties:
+                      code:
+                        type: string
+                      message:
+                        type: string
+        "401":
+          description: Response for status 401
+          content:
+            application/json:
+              schema:
+                type: object
+                required:
+                  - success
+                  - error
+                properties:
+                  success:
+                    const: false
+                    type: boolean
+                  error:
+                    type: object
+                    required:
+                      - code
+                      - message
+                    properties:
+                      code:
+                        type: string
+                      message:
+                        type: string
+        "403":
+          description: Response for status 403
+          content:
+            application/json:
+              schema:
+                type: object
+                required:
+                  - success
+                  - error
+                properties:
+                  success:
+                    const: false
+                    type: boolean
+                  error:
+                    type: object
+                    required:
+                      - code
+                      - message
+                    properties:
+                      code:
+                        type: string
+                      message:
+                        type: string
+        "404":
+          description: Response for status 404
+          content:
+            application/json:
+              schema:
+                type: object
+                required:
+                  - success
+                  - error
+                properties:
+                  success:
+                    const: false
+                    type: boolean
+                  error:
+                    type: object
+                    required:
+                      - code
+                      - message
+                    properties:
+                      code:
+                        type: string
+                      message:
+                        type: string
+        "409":
+          description: Response for status 409
+          content:
+            application/json:
+              schema:
+                type: object
+                required:
+                  - success
+                  - error
+                properties:
+                  success:
+                    const: false
+                    type: boolean
+                  error:
+                    type: object
+                    required:
+                      - code
+                      - message
+                    properties:
+                      code:
+                        type: string
+                      message:
+                        type: string
+        "503":
+          description: Response for status 503
+          content:
+            application/json:
+              schema:
+                type: object
+                required:
+                  - success
+                  - error
+                properties:
+                  success:
+                    const: false
+                    type: boolean
+                  error:
+                    type: object
+                    required:
+                      - code
+                      - message
+                    properties:
+                      code:
+                        type: string
+                      message:
+                        type: string
   "/api/v2/quests/{questId}/reviews": 
     get: 
       tags: 
@@ -25403,6 +26036,496 @@ paths:
                       message: 
                         type: string
                 additionalProperties: false
+  "/api/v2/quests/{questId}/conduct-reports": 
+    get: 
+      tags: 
+        - Quest Conduct Reports v2
+      summary: "Read the caller’s Conduct Report options and filed reports"
+      description: "Returns `reportable`, the Conduct Reports the caller can file now, and `items`, the caller’s own Conduct Reports on the Quest with their status. The caller must be the Hirer or a Worker with an Assignment. A Hirer can report a Worker with CONDUCT_ABANDONED after `dueAt` when the Worker sent no Proof Submission and made no proof-free confirmation; on GROUP + CANDIDATE only the selected Team Leader can be reported. A Worker can report the Hirer with CONDUCT_OUT_OF_SCOPE, and on GROUP + FIRST_COME_FIRST_SERVED another Worker who delivered nothing with CONDUCT_NO_SHOW. The window opens at QUEST_ASSIGNED and closes 1 day after the Quest becomes Terminal (`windowEndsAt`). One Conduct Report per reported Member per Quest."
+      operationId: getQuestConductReportsV2
+      security: 
+        - betterAuthSession: 
+            []
+      parameters: 
+        - name: questId
+          in: path
+          required: true
+          schema: 
+            format: uuid
+            type: string
+      responses: 
+        "200": 
+          description: Response for status 200
+          content: 
+            application/json: 
+              schema: 
+                type: object
+                required: 
+                  - success
+                  - data
+                properties: 
+                  success: 
+                    const: true
+                    type: boolean
+                  data: 
+                    type: object
+                    required: 
+                      - windowEndsAt
+                      - reportable
+                      - items
+                    properties: 
+                      windowEndsAt: 
+                        nullable: true
+                        anyOf: 
+                          - format: date-time
+                            description: One day after the Quest became Terminal. Null while the Quest is not Terminal or before the filing window opens.
+                            type: string
+                          - type: "null"
+                      reportable: 
+                        description: The Conduct Reports the caller can file now. Empty when the filing window is closed.
+                        type: array
+                        items: 
+                          type: object
+                          required: 
+                            - memberId
+                            - reason
+                          properties: 
+                            memberId: 
+                              format: uuid
+                              type: string
+                            reason: 
+                              type: string
+                              enum: 
+                                - CONDUCT_ABANDONED
+                                - CONDUCT_OUT_OF_SCOPE
+                                - CONDUCT_NO_SHOW
+                      items: 
+                        description: "The caller’s own Conduct Reports on this Quest."
+                        type: array
+                        items: 
+                          type: object
+                          required: 
+                            - id
+                            - displayId
+                            - questId
+                            - reportedMemberId
+                            - reason
+                            - detail
+                            - status
+                            - createdAt
+                          properties: 
+                            id: 
+                              format: uuid
+                              type: string
+                            displayId: 
+                              type: string
+                            questId: 
+                              format: uuid
+                              type: string
+                            reportedMemberId: 
+                              format: uuid
+                              type: string
+                            reason: 
+                              type: string
+                              enum: 
+                                - CONDUCT_ABANDONED
+                                - CONDUCT_OUT_OF_SCOPE
+                                - CONDUCT_NO_SHOW
+                            detail: 
+                              nullable: true
+                              anyOf: 
+                                - type: string
+                                - type: "null"
+                            status: 
+                              type: string
+                              enum: 
+                                - CONDUCT_REPORT_PENDING
+                                - CONDUCT_REPORT_UPHELD
+                                - CONDUCT_REPORT_DISMISSED
+                            createdAt: 
+                              format: date-time
+                              type: string
+        "401": 
+          description: Response for status 401
+          content: 
+            application/json: 
+              schema: 
+                type: object
+                required: 
+                  - success
+                  - error
+                properties: 
+                  success: 
+                    const: false
+                    type: boolean
+                  error: 
+                    type: object
+                    required: 
+                      - code
+                      - message
+                    properties: 
+                      code: 
+                        type: string
+                      message: 
+                        type: string
+        "404": 
+          description: Response for status 404
+          content: 
+            application/json: 
+              schema: 
+                type: object
+                required: 
+                  - success
+                  - error
+                properties: 
+                  success: 
+                    const: false
+                    type: boolean
+                  error: 
+                    type: object
+                    required: 
+                      - code
+                      - message
+                    properties: 
+                      code: 
+                        type: string
+                      message: 
+                        type: string
+        "500": 
+          description: Response for status 500
+          content: 
+            application/json: 
+              schema: 
+                type: object
+                required: 
+                  - success
+                  - error
+                properties: 
+                  success: 
+                    const: false
+                    type: boolean
+                  error: 
+                    type: object
+                    required: 
+                      - code
+                      - message
+                    properties: 
+                      code: 
+                        type: string
+                      message: 
+                        type: string
+    post: 
+      tags: 
+        - Quest Conduct Reports v2
+      summary: File a Conduct Report
+      description: "Files one CONDUCT_REPORT_PENDING Conduct Report for Admin review. The pair must be listed in `reportable` of the GET. Filing moves no money, changes no Quest or Assignment state, and sends no notification. The reported Member never learns the filer. A matching Idempotency-Key replays the original result."
+      operationId: createQuestConductReportV2
+      security: 
+        - betterAuthSession: 
+            []
+      parameters: 
+        - name: questId
+          in: path
+          required: true
+          schema: 
+            format: uuid
+            type: string
+        - name: idempotency-key
+          in: header
+          required: true
+          schema: 
+            minLength: 1
+            maxLength: 200
+            pattern: "\\S"
+            description: Non-blank command identity for a replay-safe Conduct Report filing
+            type: string
+      requestBody: 
+        required: true
+        content: 
+          application/json: 
+            schema: 
+              additionalProperties: false
+              type: object
+              required: 
+                - reportedMemberId
+                - reason
+              properties: 
+                reportedMemberId: 
+                  format: uuid
+                  type: string
+                reason: 
+                  type: string
+                  enum: 
+                    - CONDUCT_ABANDONED
+                    - CONDUCT_OUT_OF_SCOPE
+                    - CONDUCT_NO_SHOW
+                detail: 
+                  minLength: 1
+                  maxLength: 1000
+                  pattern: "\\S"
+                  type: string
+          application/x-www-form-urlencoded: 
+            schema: 
+              additionalProperties: false
+              type: object
+              required: 
+                - reportedMemberId
+                - reason
+              properties: 
+                reportedMemberId: 
+                  format: uuid
+                  type: string
+                reason: 
+                  type: string
+                  enum: 
+                    - CONDUCT_ABANDONED
+                    - CONDUCT_OUT_OF_SCOPE
+                    - CONDUCT_NO_SHOW
+                detail: 
+                  minLength: 1
+                  maxLength: 1000
+                  pattern: "\\S"
+                  type: string
+          multipart/form-data: 
+            schema: 
+              additionalProperties: false
+              type: object
+              required: 
+                - reportedMemberId
+                - reason
+              properties: 
+                reportedMemberId: 
+                  format: uuid
+                  type: string
+                reason: 
+                  type: string
+                  enum: 
+                    - CONDUCT_ABANDONED
+                    - CONDUCT_OUT_OF_SCOPE
+                    - CONDUCT_NO_SHOW
+                detail: 
+                  minLength: 1
+                  maxLength: 1000
+                  pattern: "\\S"
+                  type: string
+      responses: 
+        "200": 
+          description: Response for status 200
+          content: 
+            application/json: 
+              schema: 
+                type: object
+                required: 
+                  - success
+                  - data
+                properties: 
+                  success: 
+                    const: true
+                    type: boolean
+                  data: 
+                    type: object
+                    required: 
+                      - id
+                      - displayId
+                      - questId
+                      - reportedMemberId
+                      - reason
+                      - detail
+                      - status
+                      - createdAt
+                    properties: 
+                      id: 
+                        format: uuid
+                        type: string
+                      displayId: 
+                        type: string
+                      questId: 
+                        format: uuid
+                        type: string
+                      reportedMemberId: 
+                        format: uuid
+                        type: string
+                      reason: 
+                        type: string
+                        enum: 
+                          - CONDUCT_ABANDONED
+                          - CONDUCT_OUT_OF_SCOPE
+                          - CONDUCT_NO_SHOW
+                      detail: 
+                        nullable: true
+                        anyOf: 
+                          - type: string
+                          - type: "null"
+                      status: 
+                        type: string
+                        enum: 
+                          - CONDUCT_REPORT_PENDING
+                          - CONDUCT_REPORT_UPHELD
+                          - CONDUCT_REPORT_DISMISSED
+                      createdAt: 
+                        format: date-time
+                        type: string
+        "400": 
+          description: Response for status 400
+          content: 
+            application/json: 
+              schema: 
+                type: object
+                required: 
+                  - success
+                  - error
+                properties: 
+                  success: 
+                    const: false
+                    type: boolean
+                  error: 
+                    type: object
+                    required: 
+                      - code
+                      - message
+                    properties: 
+                      code: 
+                        type: string
+                      message: 
+                        type: string
+        "401": 
+          description: Response for status 401
+          content: 
+            application/json: 
+              schema: 
+                type: object
+                required: 
+                  - success
+                  - error
+                properties: 
+                  success: 
+                    const: false
+                    type: boolean
+                  error: 
+                    type: object
+                    required: 
+                      - code
+                      - message
+                    properties: 
+                      code: 
+                        type: string
+                      message: 
+                        type: string
+        "403": 
+          description: Response for status 403
+          content: 
+            application/json: 
+              schema: 
+                type: object
+                required: 
+                  - success
+                  - error
+                properties: 
+                  success: 
+                    const: false
+                    type: boolean
+                  error: 
+                    type: object
+                    required: 
+                      - code
+                      - message
+                    properties: 
+                      code: 
+                        type: string
+                      message: 
+                        type: string
+        "404": 
+          description: Response for status 404
+          content: 
+            application/json: 
+              schema: 
+                type: object
+                required: 
+                  - success
+                  - error
+                properties: 
+                  success: 
+                    const: false
+                    type: boolean
+                  error: 
+                    type: object
+                    required: 
+                      - code
+                      - message
+                    properties: 
+                      code: 
+                        type: string
+                      message: 
+                        type: string
+        "409": 
+          description: Response for status 409
+          content: 
+            application/json: 
+              schema: 
+                type: object
+                required: 
+                  - success
+                  - error
+                properties: 
+                  success: 
+                    const: false
+                    type: boolean
+                  error: 
+                    type: object
+                    required: 
+                      - code
+                      - message
+                    properties: 
+                      code: 
+                        type: string
+                      message: 
+                        type: string
+        "500": 
+          description: Response for status 500
+          content: 
+            application/json: 
+              schema: 
+                type: object
+                required: 
+                  - success
+                  - error
+                properties: 
+                  success: 
+                    const: false
+                    type: boolean
+                  error: 
+                    type: object
+                    required: 
+                      - code
+                      - message
+                    properties: 
+                      code: 
+                        type: string
+                      message: 
+                        type: string
+        "503": 
+          description: Response for status 503
+          content: 
+            application/json: 
+              schema: 
+                type: object
+                required: 
+                  - success
+                  - error
+                properties: 
+                  success: 
+                    const: false
+                    type: boolean
+                  error: 
+                    type: object
+                    required: 
+                      - code
+                      - message
+                    properties: 
+                      code: 
+                        type: string
+                      message: 
+                        type: string
   /api/v2/quests/board/events: 
     ws: 
       tags: 
@@ -29657,7 +30780,7 @@ paths:
       tags: 
         - Quests v2
       summary: Get a v2 Quest detail
-      description: "Returns a Quest owned by the authenticated Hirer through the v2 contract. `dispute` and `moneyHold` are null unless the Quest is QUEST_FAILED. `dispute.canFile` is true while the 1-day self-file window is open and the Hirer has no case; a closed window answers 409 DISPUTE_CASE_WINDOW_EXPIRED. `moneyHold.releasesAt` is failedAt + 7 days; a Dispute Case never moves it, so there is no ON_DISPUTE_HOLD state. `heldSatang` is what the Funding Reservation still holds."
+      description: "Returns a Quest owned by the authenticated Hirer through the v2 contract. `dispute` and `moneyHold` are null unless the Quest is QUEST_FAILED. `dispute.canFile` is true while the 1-day self-file window is open and the Hirer has no case; a closed window answers 409 DISPUTE_CASE_WINDOW_EXPIRED. `moneyHold.releasesAt` is failedAt + 7 days; a Dispute Case never moves it, so there is no ON_DISPUTE_HOLD state. `heldSatang` is what the Funding Reservation still holds. `pendingEditRequest` names the unexpired EDIT_REQUEST_PENDING Quest Edit Request that waits for Active Worker responses, or is null; read it with getQuestV2EditRequest."
       operationId: getQuestV2Detail
       security: 
         - betterAuthSession: 
@@ -29953,6 +31076,22 @@ paths:
                                       - minimum: 0
                                         type: integer
                                   - type: "null"
+                          - type: "null"
+                      pendingEditRequest: 
+                        nullable: true
+                        anyOf: 
+                          - description: The Quest Edit Request that waits for the caller. Null unless an EDIT_REQUEST_PENDING request has not expired and the caller is the Hirer or an Active Worker who must respond to it. Read the request with getQuestV2EditRequest.
+                            type: object
+                            required: 
+                              - requestId
+                              - expiresAt
+                            properties: 
+                              requestId: 
+                                format: uuid
+                                type: string
+                              expiresAt: 
+                                format: date-time
+                                type: string
                           - type: "null"
         "400": 
           description: Response for status 400
@@ -32276,14 +33415,19 @@ paths:
         Assignment on it, in every Quest State and while the Quest is hidden,
         together with that Member's own Assignment. `activeWorkerCount` and
         `startedWorkerCount` count the Active Assignments and the ones that started
-        Work, without naming other Workers. `dispute` is null unless the Quest is
+        Work. On GROUP + FIRST_COME_FIRST_SERVED Quests, `workers` names every
+        Worker whose Assignment was not cancelled, the caller included, in
+        acceptance order and also after settlement; it is null for every other
+        Quest shape. `dispute` is null unless the Quest is
         QUEST_FAILED; then it tells the viewer whether they can still self-file
         (`canFile`, 1 day after failure, one Dispute Case per Member per Quest) and
         shows their own case. A closed window answers 409
         DISPUTE_CASE_WINDOW_EXPIRED. `moneyHold` is null unless the Quest is
         QUEST_FAILED; then `releasesAt` is failedAt + 7 days and a Dispute Case
         never moves it. Terminal Quests are read-only. Admin actions and Finance
-        internals are excluded.
+        internals are excluded. `pendingEditRequest` names the unexpired
+        EDIT_REQUEST_PENDING Quest Edit Request the caller, as an Active Worker,
+        must answer, or is null; read it with getQuestV2EditRequest.
       operationId: getQuestV2ParticipationDetail
       security:
         - betterAuthSession: []
@@ -32334,6 +33478,7 @@ paths:
                       - workerSettlement
                       - assignment
                       - startedWorkerCount
+                      - workers
                       - capabilities
                     properties:
                       id:
@@ -32579,7 +33724,7 @@ paths:
                         maximum: 20
                         description: How many Active Assignments on this Quest have a Start Work time.
                           Pair it with activeWorkerCount to show GROUP progress
-                          without a roster read; no Worker identity is exposed.
+                          this count names no Worker.
                         anyOf:
                           - format: integer
                             default: 0
@@ -32588,8 +33733,27 @@ paths:
                             maximum: 20
                             description: How many Active Assignments on this Quest have a Start Work time.
                               Pair it with activeWorkerCount to show GROUP progress
-                              without a roster read; no Worker identity is exposed.
+                              this count names no Worker.
                             type: integer
+                      workers:
+                        nullable: true
+                        description: "GROUP + FIRST_COME_FIRST_SERVED only: every Worker whose
+                          Assignment was not cancelled, the caller included, in
+                          acceptance order. It stays complete after settlement, so
+                          a finished Quest still names the Workers who worked it.
+                          null for every other Quest shape."
+                        type: array
+                        items:
+                          type: object
+                          required:
+                            - id
+                            - displayName
+                          properties:
+                            id:
+                              format: uuid
+                              type: string
+                            displayName:
+                              type: string
                       capabilities:
                         type: object
                         required:
@@ -32674,6 +33838,22 @@ paths:
                                       - minimum: 0
                                         type: integer
                                   - type: "null"
+                          - type: "null"
+                      pendingEditRequest:
+                        nullable: true
+                        anyOf:
+                          - description: The Quest Edit Request that waits for the caller. Null unless an EDIT_REQUEST_PENDING request has not expired and the caller is the Hirer or an Active Worker who must respond to it. Read the request with getQuestV2EditRequest.
+                            type: object
+                            required:
+                              - requestId
+                              - expiresAt
+                            properties:
+                              requestId:
+                                format: uuid
+                                type: string
+                              expiresAt:
+                                format: date-time
+                                type: string
                           - type: "null"
         "400":
           description: Response for status 400
@@ -48355,6 +49535,7 @@ paths:
                                   required: 
                                     - id
                                     - kind
+                                    - systemType
                                     - preview
                                     - createdAt
                                   properties: 
@@ -50612,6 +51793,7 @@ paths:
                                   required: 
                                     - id
                                     - kind
+                                    - systemType
                                     - preview
                                     - createdAt
                                   properties: 
@@ -50624,6 +51806,9 @@ paths:
                                           type: string
                                         - const: SYSTEM
                                           type: string
+                                    systemType:
+                                      nullable: true
+                                      type: string
                                     preview: 
                                       type: string
                                     createdAt: 

@@ -9,7 +9,7 @@ import {
 import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
 
 import type { UploadAsset } from "@/api/fileUpload";
-import { liveQuestService } from "@/features/questBoard/live/liveQuestService";
+import { questApi } from "@/api/QuestApi";
 import { workerHomeKeys } from "@/features/workerHome/api/workerHomeKeys";
 import { renderWithQueryClient } from "@/testing/queryTestUtils";
 import type { ProofSendPlan } from "../../proofDraftPlan";
@@ -20,10 +20,7 @@ import {
 
 jest.mock("@/api/QuestApi", () => ({
   createQuestIdempotencyKey: jest.fn(() => "idempotency-key"),
-}));
-
-jest.mock("@/features/questBoard/live/liveQuestService", () => ({
-  liveQuestService: {
+  questApi: {
     createProofDraft: jest.fn(),
     deleteProofDraft: jest.fn(),
     submitProofDraft: jest.fn(),
@@ -31,7 +28,7 @@ jest.mock("@/features/questBoard/live/liveQuestService", () => ({
   },
 }));
 
-const mockedService = liveQuestService as jest.Mocked<typeof liveQuestService>;
+const mockedQuestApi = questApi as jest.Mocked<typeof questApi>;
 type TestFile = UploadAsset & { key: string };
 type TestPlan = ProofSendPlan<TestFile>;
 
@@ -60,7 +57,6 @@ function SubmitProbe({
 
 const replacementPlan: TestPlan = {
   kind: "create",
-  replaceDraftId: "draft-old",
   files: [
     {
       key: "local-proof",
@@ -76,31 +72,12 @@ describe("useSubmitProofMutation", () => {
     jest.clearAllMocks();
   });
 
-  it("keeps old draft when replacement creation fails", async () => {
-    mockedService.createProofDraft.mockRejectedValue(new Error("offline"));
-    const onError = jest.fn();
-    const view = await renderWithQueryClient(
-      createElement(SubmitProbe, { plan: replacementPlan, onError })
-    );
-
-    await act(async () => {
-      await fireEvent.press(view.getByTestId("submit-proof"));
-    });
-    await waitFor(() =>
-      expect(onError).toHaveBeenCalledWith(expect.any(Error))
-    );
-
-    expect(mockedService.deleteProofDraft).not.toHaveBeenCalled();
-  });
-
-  it("cleans up replacement when old draft deletion fails", async () => {
-    mockedService.createProofDraft.mockResolvedValue({
+  it("lets the Server replace the old draft without a client delete", async () => {
+    mockedQuestApi.createProofDraft.mockResolvedValue({
       id: "draft-new",
-      files: [],
+      files: [{ uploadStatus: "PROOF_FILE_READY", fileId: "file-1" }],
     } as never);
-    mockedService.deleteProofDraft
-      .mockRejectedValueOnce(new Error("offline"))
-      .mockResolvedValueOnce({} as never);
+    mockedQuestApi.submitProofDraft.mockResolvedValue({} as never);
     const onError = jest.fn();
     const view = await renderWithQueryClient(
       createElement(SubmitProbe, { plan: replacementPlan, onError })
@@ -110,29 +87,24 @@ describe("useSubmitProofMutation", () => {
       await fireEvent.press(view.getByTestId("submit-proof"));
     });
     await waitFor(() =>
-      expect(onError).toHaveBeenCalledWith(expect.any(Error))
+      expect(mockedQuestApi.submitProofDraft).toHaveBeenCalledWith(
+        "quest-1",
+        "draft-new",
+        "idempotency-key"
+      )
     );
 
-    expect(mockedService.deleteProofDraft).toHaveBeenNthCalledWith(
-      1,
-      "quest-1",
-      "draft-old",
-      "idempotency-key"
-    );
-    expect(mockedService.deleteProofDraft).toHaveBeenNthCalledWith(
-      2,
-      "quest-1",
-      "draft-new",
-      "idempotency-key"
-    );
+    expect(onError).not.toHaveBeenCalled();
+    expect(mockedQuestApi.deleteProofDraft).not.toHaveBeenCalled();
   });
+
   it("invalidates the participation detail after submitting proof", async () => {
     const queryClient = new QueryClient();
     const key = workerHomeKeys.participationDetail("quest-1");
     queryClient.setQueryData(key, { draft: true });
     const wrapper = ({ children }: { children: React.ReactNode }) =>
       createElement(QueryClientProvider, { client: queryClient }, children);
-    mockedService.submitProofDraft.mockResolvedValue({} as never);
+    mockedQuestApi.submitProofDraft.mockResolvedValue({} as never);
     const { result } = await renderHook(() => useSubmitProofMutation(), {
       wrapper,
     });
@@ -153,7 +125,7 @@ describe("useSubmitProofMutation", () => {
     queryClient.setQueryData(key, { draft: true });
     const wrapper = ({ children }: { children: React.ReactNode }) =>
       createElement(QueryClientProvider, { client: queryClient }, children);
-    mockedService.updateProofDraft.mockResolvedValue({} as never);
+    mockedQuestApi.updateProofDraft.mockResolvedValue({} as never);
     const { result } = await renderHook(() => useRemoveProofFileMutation(), {
       wrapper,
     });

@@ -6,13 +6,12 @@ import { isTerminalStatus } from "@/domain/questLifecycle";
 import {
   QuestApplicationStatus,
   QuestAssignmentStatus,
-  QuestMode,
   QuestNextAction,
-  QuestParticipation,
   QuestProofStatus,
   QuestStatus,
   QuestTeamStatus,
 } from "@/features/questBoard/domain/types";
+import { isOwnProofSubmission } from "@/features/questBoard/domain/proofOwnership";
 import type { LiveQuestSnapshot } from "@/features/questBoard/live/liveQuestTypes";
 import type { WorkerWorkItem, WorkerWorkProjection } from "./workerWorkTypes";
 
@@ -23,15 +22,13 @@ export type {
 } from "./workerWorkTypes";
 
 function proofOwnership(snapshot: LiveQuestSnapshot, viewerId: string) {
-  const teamId =
-    snapshot.mode === QuestMode.CANDIDATE &&
-    snapshot.participation === QuestParticipation.GROUP
-      ? snapshot.team?.id
-      : undefined;
   return (proof: QuestV2ProofSubmission) =>
-    proof.submittedByUserId === viewerId ||
-    proof.workerId === viewerId ||
-    (teamId !== undefined && proof.teamId === teamId);
+    isOwnProofSubmission(proof, {
+      viewerId,
+      mode: snapshot.mode,
+      participation: snapshot.participation,
+      team: snapshot.team,
+    });
 }
 
 /** Latest sent Proof Submission belonging to this Worker's Assignment. */

@@ -6,7 +6,7 @@ Android and iOS are the product targets. A web run is not evidence for native be
 
 - Read `README.md` for the environment contract before starting Metro.
 - The normal connected flow uses `bun run staging:start`, which targets the develop staging API and the development client.
-- Use `bun run dev:local` or demo scripts only when the task explicitly requires that environment.
+- Use `bun run dev:local` only when the task explicitly requires that environment.
 - Build and install with `bun android` or `bun ios`; Expo Go is not evidence for native modules.
 
 ### Android device selection and Metro reverse

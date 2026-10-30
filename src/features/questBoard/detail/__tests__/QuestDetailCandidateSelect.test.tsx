@@ -3,11 +3,8 @@ import { CircleAlert } from "lucide-react-native";
 
 import { groupQuestMessages } from "@/locales/groupQuestMessages";
 import { questBoardMessages } from "@/locales/questBoardMessages";
-import { QuestCandidateMode, QuestStatus } from "../../domain/types";
-import type {
-  QuestDetailLiveActions,
-  QuestDetailPreviewActions,
-} from "../questDetailActions";
+import { QuestMode, QuestParticipation, QuestStatus } from "../../domain/types";
+import type { QuestDetailLiveActions } from "../questDetailActions";
 import { useQuestDetailCandidateActions } from "../useQuestDetailCandidateActions";
 import type { QuestDetailPresentationFacts } from "../questDetailPresentation";
 import type { QuestDetailNavigation } from "../useQuestDetailNavigation";
@@ -18,11 +15,6 @@ const mockShowConfirm = jest.fn();
 jest.mock("@/components/ui/SweetAlert", () => ({
   showConfirmModal: (options: unknown) => mockShowConfirm(options),
 }));
-
-const failedFixtureResult = {
-  ok: false as const,
-  error: { code: "NOT_FOUND" as const, message: "not used" },
-};
 
 function makeFacts(): QuestDetailPresentationFacts {
   return {
@@ -42,16 +34,13 @@ function makeFacts(): QuestDetailPresentationFacts {
       postedAt: "2026-09-20T09:00:00.000Z",
       location: "KU Library",
       locationMode: "on-campus",
-      participationMode: "single",
-      candidateMode: QuestCandidateMode.NO_CANDIDATE,
+      participation: QuestParticipation.SINGLE,
+      mode: QuestMode.FIRST_COME_FIRST_SERVED,
       creator: { name: "Hirer" },
-      studentInterestMatch: false,
-      ownerStudentId: "hirer-1",
       status: QuestStatus.QUEST_OPEN,
     },
     source: { kind: "live-snapshot", snapshot: null },
     projection: null,
-    activePrototypeState: null,
     liveSnapshot: null,
     locale: "en",
     messages: questBoardMessages.en,
@@ -66,7 +55,7 @@ function makeFacts(): QuestDetailPresentationFacts {
     imageUris: [],
     participants: [],
     participantCount: 0,
-    previewApplicationStatus: "none",
+    applicationStatus: "none",
     availability: "available",
     joinedStatus: undefined,
     canApply: false,
@@ -80,8 +69,7 @@ function makeFacts(): QuestDetailPresentationFacts {
     statusIsUnavailable: false,
     statusIcon: CircleAlert,
     statusIconColor: "",
-    teamSheetTeam: undefined,
-    teamDirectory: [],
+    statusActionLabel: "",
     liveTeamSheetTeam: null,
     liveTeamSurface: false,
     refreshing: false,
@@ -136,30 +124,13 @@ describe("live Candidate selection from Quest Detail", () => {
       dismissIntent: jest.fn(),
       openCandidateReview: jest.fn(),
       closeCandidateReview,
-      setTeamSearchQuery: jest.fn(),
-      setTeamSelectedMemberIds: jest.fn(),
       setTeamReviewing: jest.fn(),
       selectProposal: jest.fn(),
-      markFixtureChanged: jest.fn(),
-    };
-    const previewActions: QuestDetailPreviewActions = {
-      directJoin: () => failedFixtureResult,
-      apply: () => failedFixtureResult,
-      withdraw: () => failedFixtureResult,
-      createTeam: () => failedFixtureResult,
-      inviteMembers: () => failedFixtureResult,
-      submitTeam: () => failedFixtureResult,
-      respondInvitation: () => failedFixtureResult,
-      votePartialStart: () => failedFixtureResult,
-      selectProposal: () => failedFixtureResult,
-      rejectProposal: () => failedFixtureResult,
-      searchMembers: () => [],
     };
     const { result } = await renderHook(() =>
       useQuestDetailCandidateActions({
         facts: makeFacts(),
         liveActions,
-        previewActions,
         navigation,
         transitions,
       })

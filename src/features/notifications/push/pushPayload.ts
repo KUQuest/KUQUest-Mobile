@@ -2,6 +2,7 @@ import { z } from "zod";
 import { serverNow } from "@/api/serverClock";
 import {
   QuestV2PushTypeValue,
+  questV2PushFailureReasonSchema,
   questV2PushTypeSchema,
   questV2UnderfilledCancellationReasonSchema,
 } from "@/api/questV2Contracts";
@@ -20,6 +21,8 @@ export const pushPayloadSchema = z.object({
   transitionId: z.string().trim().min(1),
   expiresAt: z.string().datetime({ offset: true }).optional(),
   cancellationReason: questV2UnderfilledCancellationReasonSchema.optional(),
+  assignmentId: uuidSchema.optional(),
+  failureReason: questV2PushFailureReasonSchema.optional(),
 });
 export type PushPayload = z.infer<typeof pushPayloadSchema>;
 
@@ -66,6 +69,7 @@ export function localizedPushCopy(
   return pushMessage(locale, payload.type, {
     remaining: remaining ?? undefined,
     cancellationReason: payload.cancellationReason,
+    failureReason: payload.failureReason,
   });
 }
 

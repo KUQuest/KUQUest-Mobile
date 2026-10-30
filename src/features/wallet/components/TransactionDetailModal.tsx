@@ -54,9 +54,9 @@ const styles = {
   detailLabel: "flex-1 font-ku-regular text-ku-meta text-ku-text-muted",
   detailValue:
     "flex-[1.5] text-right font-ku-medium text-ku-meta text-ku-text-strong",
-  monoText: "font-ku-regular text-ku-label text-ku-text-secondary",
+  monoText: "font-ku-regular text-[11px] text-ku-text-secondary",
   sourceTag: "self-end rounded-[6px] bg-ku-surface-success px-ku-sm py-ku-2",
-  sourceTagText: "font-ku-medium text-ku-label text-ku-primary-deep",
+  sourceTagText: "font-ku-medium text-[11px] text-ku-primary-deep",
   actionButton:
     "items-center justify-center rounded-[14px] bg-ku-primary px-ku-13 py-ku-13",
   actionButtonText: "font-ku-bold text-ku-control text-ku-on-primary",

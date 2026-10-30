@@ -69,6 +69,8 @@ export default function QuestWorkScreen(props: QuestWorkScreenProps) {
     confirmCompletion,
     startWork,
     startWorkSending,
+    submitTeamRewardAllocation,
+    allocationSending,
   } = useQuestWorkFeature(props);
   const tagQuery = useQuestTagsQuery();
   const tagCatalog = tagQuery.data ?? [];
@@ -261,8 +263,8 @@ export default function QuestWorkScreen(props: QuestWorkScreenProps) {
     />
   );
 
-  // The Team is only readable while the Quest is QUEST_OPEN, so the Leader and
-  // Member screens appear only when the server exposes the Team Leader.
+  // Candidate Teams are exposed to their participants after selection so the
+  // completed Work Hub can show each member's final reward allocation.
   const { team, teamRole } = snapshot;
   if (team && teamRole === QuestTeamRole.LEADER) {
     return (
@@ -275,6 +277,8 @@ export default function QuestWorkScreen(props: QuestWorkScreenProps) {
         settlementCard={settlementCard}
         proofForm={proofForm}
         actionsCard={actionsCard}
+        onSubmitAllocation={submitTeamRewardAllocation}
+        allocationSending={allocationSending}
       />
     );
   }

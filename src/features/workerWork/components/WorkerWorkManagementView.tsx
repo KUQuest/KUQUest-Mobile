@@ -207,7 +207,6 @@ export function WorkerWorkManagementView({
                       )}
                     >
                       <Text
-                        maxFontSizeMultiplier={1.5}
                         className={cn(
                           styles.tabBadgeText,
                           selected && styles.tabBadgeTextSelected

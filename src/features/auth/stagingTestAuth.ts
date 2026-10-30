@@ -1,3 +1,4 @@
+import Constants from "expo-constants";
 import { fetch as expoFetch } from "expo/fetch";
 import * as SecureStore from "expo-secure-store";
 
@@ -53,6 +54,10 @@ export const STAGING_TEST_ACCOUNTS = [
 export type StagingTestAccount =
   "default" | (typeof STAGING_TEST_ACCOUNTS)[number]["id"];
 
+export function isStagingTestAuthAvailable(): boolean {
+  return Constants.expoConfig?.extra?.appVariant === "staging";
+}
+
 export interface StagingTestAuthOptions {
   apiBaseUrl?: string;
   fetchImpl?: typeof fetch;
@@ -94,7 +99,7 @@ async function signOutOfStagingTestAccount(
 }
 
 /**
- * Debug-build-only Login screen action. Calls the Staging API's test-auth
+ * Staging-build Login screen action. Calls the Staging API's test-auth
  * sign-in route for `accountId`
  * (`POST /api/staging/test-auth/sign-in/<account-1|...|account-10>`,
  * only enabled when the API has `STAGING_TEST_AUTH_ENABLED=true`), signing
@@ -107,8 +112,10 @@ export async function signInWithStagingTestAccount(
   accountId: StagingTestAccount,
   options: StagingTestAuthOptions = {}
 ): Promise<void> {
-  if (!__DEV__) {
-    throw new Error("Staging test sign-in is only available in debug builds.");
+  if (!isStagingTestAuthAvailable()) {
+    throw new Error(
+      "Staging test sign-in is only available in staging builds."
+    );
   }
 
   const baseUrl = resolveBaseUrl(options.apiBaseUrl);

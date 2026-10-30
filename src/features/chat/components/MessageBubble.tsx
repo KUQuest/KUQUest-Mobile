@@ -7,7 +7,6 @@ import { Avatar } from "@/components/ui/Avatar";
 import { cn } from "@/tw/cn";
 import { useAppTheme } from "@/features/workspace/AppThemeProvider";
 import { chatApi } from "@/api/ChatApi";
-import { liveQuestService } from "@/features/questBoard/live/liveQuestService";
 import type { ChatMessages } from "@/locales/chatMessages";
 import type { ChatConversation } from "../chatTypes";
 import { localizedText } from "./ChatConversationPresentation";
@@ -17,6 +16,10 @@ import {
   type RenderAttachment,
 } from "../domain/conversationModule";
 import { attachmentLinkCache } from "../api/attachmentLinkCache";
+import {
+  getChatParticipantProfile,
+  type ChatParticipantProfile,
+} from "../api/chatProfile";
 import { formatTimeInBangkok } from "@/domain/datetime";
 
 import styles from "../chatStyles";
@@ -166,7 +169,7 @@ export function InlineImageAttachment({
 
     const fetcher = async () => {
       if (isCandidateInquiry) {
-        return liveQuestService.getCandidateInquiryAttachmentLink(
+        return chatApi.getCandidateInquiryAttachmentLink(
           conversationId,
           attachment.id
         );
@@ -240,7 +243,7 @@ export function InlineImageAttachment({
           attachmentLinkCache.delete(attachment.id);
           const fetcher = async () => {
             if (isCandidateInquiry) {
-              return liveQuestService.getCandidateInquiryAttachmentLink(
+              return chatApi.getCandidateInquiryAttachmentLink(
                 conversationId,
                 attachment.id
               );
@@ -322,6 +325,19 @@ export function MessageBubble({
   const isSystem = message.kind === "SYSTEM";
   const mine = message.sender === "me" && !isSystem;
   const senderId = message.senderId;
+  const [senderProfile, setSenderProfile] =
+    useState<ChatParticipantProfile | null>(null);
+  useEffect(() => {
+    if (mine || isSystem || !senderId) return;
+    let active = true;
+    void getChatParticipantProfile(senderId).then((profile) => {
+      if (active) setSenderProfile(profile);
+    });
+    return () => {
+      active = false;
+    };
+  }, [senderId, mine, isSystem]);
+  const profile = senderProfile?.id === senderId ? senderProfile : null;
   const senderName = message.senderName ?? conversation.participantName;
   const onAvatarPress =
     senderId && onProfilePress ? () => onProfilePress(senderId) : undefined;
@@ -361,6 +377,8 @@ export function MessageBubble({
           className={styles.messageAvatar}
           imageTestID={`chat-avatar-image-${senderId ?? `${senderName}-${message.id}`}`}
           name={senderName}
+          uri={profile?.avatarUrl}
+          cacheKey={profile?.avatarFileId}
           onPress={onAvatarPress}
           size={32}
           style={{ backgroundColor: conversation.avatarColor }}

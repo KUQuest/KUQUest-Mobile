@@ -9,6 +9,7 @@ import type {
   QuestV2ParticipationDetail,
   QuestV2ProofSubmission,
   QuestV2Team,
+  QuestV2RewardAllocation,
   QuestV2Underfilled,
   QuestV2EditRequest,
 } from "@/api/questV2Contracts";
@@ -16,6 +17,7 @@ import type { ServerChatConversation } from "@/api/ChatApi";
 import {
   QuestActor,
   type QuestNextAction,
+  type QuestPermissionFlags,
   type QuestTeamRole,
 } from "../domain/types";
 
@@ -30,35 +32,7 @@ export type LiveQuestActor =
  */
 export type LiveQuestNextAction = QuestNextAction;
 
-export interface LiveQuestCapabilities {
-  canJoin: boolean;
-  canApply: boolean;
-  canWithdrawApplication: boolean;
-  canCreateTeam: boolean;
-  canJoinTeam: boolean;
-  canUpdateTeam: boolean;
-  canLeaveTeam: boolean;
-  canRemoveTeamMember: boolean;
-  canRegenerateTeamCode: boolean;
-  canSubmitTeam: boolean;
-  canSelectCandidate: boolean;
-  canSelectTeam: boolean;
-  canRejectCandidate: boolean;
-  canRejectTeam: boolean;
-  canDecideUnderfilled: boolean;
-  canConsentUnderfilled: boolean;
-  canRequestEdit: boolean;
-  canRespondToEdit: boolean;
-  canReadWorkChat: boolean;
-  canWriteWorkChat: boolean;
-  canSubmitProof: boolean;
-  /** Required starter with an Active Assignment who has not recorded Start Work; the startTime gate is checked against the clock. */
-  canStartWork: boolean;
-  canConfirmCompletion: boolean;
-  canCancel: boolean;
-  canReviewProof: boolean;
-  canCreateReview: boolean;
-}
+export type LiveQuestCapabilities = QuestPermissionFlags;
 
 export type LiveQuestAssignment = Omit<
   QuestV2Assignment,
@@ -89,6 +63,7 @@ export interface LiveQuestSnapshot {
   team: QuestV2Team | null;
   /** Viewer's role on a `GROUP + CANDIDATE` Team; null on every other Quest and for the Hirer. */
   teamRole: QuestTeamRole | null;
+  teamRewardAllocation?: QuestV2RewardAllocation | null;
   teams: QuestV2Team[];
   underfilled: QuestV2Underfilled | null;
   editRequest: QuestV2EditRequest | null;

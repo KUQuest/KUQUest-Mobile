@@ -32,13 +32,19 @@ export function shouldSuppressHirerQuestNotice(
 }
 
 export type WorkerQuestNoticeKind =
-  "RESPONSE_REQUIRED" | "DECISION_PENDING" | "FULL_OR_ASSIGNED" | "CANCELLED";
+  | "RESPONSE_REQUIRED"
+  | "DECISION_PENDING"
+  | "FULL_OR_ASSIGNED"
+  | "CANCELLED"
+  | "FAILED"
+  | "INCOMPLETE"
+  | "PROOF_NOT_APPROVED";
 
 export interface WorkerQuestNoticeTransition {
   questId: string;
   kind: WorkerQuestNoticeKind;
   cancellationReason: QuestV2UnderfilledCancellationReason | null;
-  href: "/quest/[id]" | "/quest/[id]/partial-start";
+  href: "/quest/[id]" | "/quest/[id]/partial-start" | "/quest/[id]/work";
 }
 
 export function getWorkerAssignmentNoticeKind(
@@ -47,6 +53,33 @@ export function getWorkerAssignmentNoticeKind(
   const underfilled = assignment.underfilled;
   if (underfilled?.state === QuestUnderfilledState.UNDERFILLED_CANCELLED) {
     return "CANCELLED";
+  }
+  // The one-day Dispute window opens at failure; a Worker whose work was not
+  // completed would otherwise learn of it only by opening History. The Server
+  // leaves a Worker who never got to submit `ASSIGNMENT_ACTIVE` on a failed
+  // Quest (staging, 2026-10-30), and that Worker can dispute too.
+  if (
+    assignment.questState === QuestStatus.QUEST_FAILED &&
+    (assignment.state === QuestAssignmentStatus.ASSIGNMENT_INCOMPLETE ||
+      assignment.state === QuestAssignmentStatus.ASSIGNMENT_ACTIVE)
+  ) {
+    return "FAILED";
+  }
+  // GROUP + FCFS: the Quest ended QUEST_COMPLETED but the Hirer did not approve
+  // this Worker's Proof, so this Assignment earned nothing.
+  if (
+    assignment.questState === QuestStatus.QUEST_COMPLETED &&
+    assignment.state === QuestAssignmentStatus.ASSIGNMENT_INCOMPLETE
+  ) {
+    return "INCOMPLETE";
+  }
+  // GROUP + FCFS: the Hirer did not approve this Worker's Proof, but other
+  // Workers keep the Quest in progress, so no terminal notice covers it yet.
+  if (
+    assignment.questState === QuestStatus.QUEST_IN_PROGRESS &&
+    assignment.state === QuestAssignmentStatus.ASSIGNMENT_INCOMPLETE
+  ) {
+    return "PROOF_NOT_APPROVED";
   }
   if (assignment.state !== QuestAssignmentStatus.ASSIGNMENT_ACTIVE) return null;
   if (
@@ -72,6 +105,19 @@ export function getWorkerAssignmentNoticeKind(
     : null;
 }
 
+const WORKER_NOTICE_HREF: Record<
+  WorkerQuestNoticeKind,
+  WorkerQuestNoticeTransition["href"]
+> = {
+  RESPONSE_REQUIRED: "/quest/[id]/partial-start",
+  DECISION_PENDING: "/quest/[id]",
+  FULL_OR_ASSIGNED: "/quest/[id]",
+  CANCELLED: "/quest/[id]",
+  FAILED: "/quest/[id]/work",
+  INCOMPLETE: "/quest/[id]/work",
+  PROOF_NOT_APPROVED: "/quest/[id]",
+};
+
 export function detectWorkerQuestTransitions(
   previous: ReadonlyMap<string, WorkerQuestNoticeKind | null> | null,
   assignments: readonly QuestV2MyAssignment[]
@@ -85,10 +131,7 @@ export function detectWorkerQuestTransitions(
       questId: assignment.questId,
       kind,
       cancellationReason: assignment.underfilled?.cancellationReason ?? null,
-      href:
-        kind === "RESPONSE_REQUIRED"
-          ? "/quest/[id]/partial-start"
-          : "/quest/[id]",
+      href: WORKER_NOTICE_HREF[kind],
     });
   }
   return transitions;
@@ -105,7 +148,9 @@ export function shouldSuppressWorkerQuestNotice(
     segments[1] === questId &&
     (href === "/quest/[id]/partial-start"
       ? segments[2] === "partial-start"
-      : segments.length === 2)
+      : href === "/quest/[id]/work"
+        ? segments[2] === "work"
+        : segments.length === 2)
   );
 }
 

@@ -9,6 +9,7 @@ import {
   CalendarClock,
   ChevronRight,
   FileEdit,
+  Flag,
   Hourglass,
   Lock,
   MessageSquare,
@@ -38,6 +39,13 @@ import { questWorkMessages } from "@/locales/questWorkMessages";
 import { useHirerQuestManageFeature } from "./useHirerQuestManageFeature";
 import { getCancelTier } from "./cancelQuestGuardrail";
 import { useFileDispute } from "@/features/questBoard/dispute/useFileDispute";
+import { ConductReportSheet } from "@/features/questBoard/conductReport/ConductReportSheet";
+import { FiledConductReports } from "@/features/questBoard/conductReport/FiledConductReports";
+import {
+  ConductReportRole,
+  useConductReport,
+} from "@/features/questBoard/conductReport/useConductReport";
+import type { LiveQuestAssignment } from "@/features/questBoard/live/liveQuestService";
 import { FailedQuestNotice } from "@/features/questBoard/shared/FailedQuestNotice";
 import { useAppTheme } from "@/features/workspace/AppThemeProvider";
 import {
@@ -50,6 +58,8 @@ import {
   QuestStatus,
   QuestTeamStatus,
 } from "../domain/types";
+
+const NO_ASSIGNMENTS: readonly LiveQuestAssignment[] = [];
 
 export interface HirerQuestManageScreenProps {
   questId?: string;
@@ -108,27 +118,36 @@ function PrimaryAction({
 function ActionRow({
   icon: Icon,
   label,
+  description,
   onPress,
   testID,
 }: {
   icon: LucideIcon;
   label: string;
+  description?: string;
   onPress: () => void;
   testID: string;
 }) {
   const { colors } = useAppTheme();
   return (
     <Pressable
-      accessibilityLabel={label}
+      accessibilityLabel={description ? `${label}. ${description}` : label}
       accessibilityRole="button"
       testID={testID}
       onPress={onPress}
       className="min-h-[60px] flex-row items-center gap-ku-12 rounded-ku-card border border-ku-border bg-ku-surface px-ku-md py-ku-sm active:opacity-80"
     >
       <Icon color={colors.hirer} size={20} strokeWidth={2} />
-      <Text className="flex-1 font-ku-medium text-ku-body text-ku-text-strong">
-        {label}
-      </Text>
+      <View className="flex-1 gap-ku-xs">
+        <Text className="font-ku-medium text-ku-body text-ku-text-strong">
+          {label}
+        </Text>
+        {description ? (
+          <Text className="text-ku-body-small text-ku-text-secondary">
+            {description}
+          </Text>
+        ) : null}
+      </View>
       <ChevronRight color={colors.textSecondary} size={20} strokeWidth={2} />
     </Pressable>
   );
@@ -225,6 +244,14 @@ export default function HirerQuestManageScreen({
     submitConditionEdit,
   } = view;
   const { confirmFileDispute } = useFileDispute();
+  const conductReport = useConductReport({
+    role: ConductReportRole.HIRER,
+    questId: questId ?? null,
+    viewerId,
+    assignments: snapshot?.assignments ?? NO_ASSIGNMENTS,
+    participants: snapshot?.participants,
+    questState: snapshot?.state,
+  });
   const topBar = (
     <TopBar
       title={messages.manageQuestTitle}
@@ -302,11 +329,13 @@ export default function HirerQuestManageScreen({
     snapshot.capabilities.canDecideUnderfilled;
   const serverDispute = "dispute" in quest ? quest.dispute : undefined;
   const showDispute =
-    snapshot.state === QuestStatus.QUEST_FAILED &&
-    (serverDispute
-      ? serverDispute.canFile
-      : snapshot.actor === QuestActor.HIRER ||
-        (snapshot.actor === QuestActor.WORKER && snapshot.assignment !== null));
+    snapshot.actor === QuestActor.WORKER &&
+    ((snapshot.state === QuestStatus.QUEST_FAILED &&
+      (serverDispute ? serverDispute.canFile : snapshot.assignment !== null)) ||
+      // A completed GROUP + FCFS Quest may hold Incomplete Workers; only the
+      // Server's `dispute.canFile` says whether this viewer can still file.
+      (snapshot.state === QuestStatus.QUEST_COMPLETED &&
+        serverDispute?.canFile === true));
   const nextStep = showUnderfilled
     ? "underfilled"
     : showProofReview && snapshot.nextAction === QuestNextAction.REVIEW_PROOF
@@ -356,7 +385,10 @@ export default function HirerQuestManageScreen({
         refreshControl={
           <RefreshControl
             refreshing={snapshotQuery.isRefetching}
-            onRefresh={() => void snapshotQuery.refetch()}
+            onRefresh={() => {
+              void snapshotQuery.refetch();
+              conductReport.refresh();
+            }}
           />
         }
         contentContainerClassName="w-full max-w-[720px] gap-ku-lg self-center px-ku-lg pt-ku-md pb-ku-48"
@@ -386,6 +418,7 @@ export default function HirerQuestManageScreen({
         showCandidateReview ||
         showProofReview ||
         showDispute ||
+        conductReport.canReport ||
         editPending ? (
           <View className="gap-ku-12">
             {nextStep ? (
@@ -452,6 +485,15 @@ export default function HirerQuestManageScreen({
                 tone="danger"
               />
             ) : null}
+            {conductReport.canReport ? (
+              <ActionRow
+                icon={Flag}
+                label={conductReport.copy.entry}
+                description={conductReport.copy.entryHint}
+                onPress={conductReport.openReport}
+                testID="hirer-manage-conduct-report"
+              />
+            ) : null}
             {editPending && snapshot.editRequest ? (
               <QuestConditionEditStatusCard
                 editRequest={snapshot.editRequest}
@@ -461,9 +503,14 @@ export default function HirerQuestManageScreen({
           </View>
         ) : null}
 
-        {snapshot.state === QuestStatus.QUEST_FAILED ? (
+        {snapshot.state === QuestStatus.QUEST_FAILED ||
+        snapshot.state === QuestStatus.QUEST_COMPLETED ? (
           <FailedQuestNotice quest={quest} />
         ) : null}
+        <FiledConductReports
+          messages={conductReport.messages}
+          reports={conductReport.filedReports}
+        />
         {snapshot.state === QuestStatus.QUEST_OPEN ? (
           <StartsIn
             startTime={quest.startTime}
@@ -660,6 +707,7 @@ export default function HirerQuestManageScreen({
           locale={locale}
         />
       </BottomSheet>
+      <ConductReportSheet {...conductReport} />
       <CancelQuestGuardrailSheet
         visible={guardrailTier !== null}
         tier={guardrailTier ?? 2}

@@ -169,8 +169,18 @@ export const questV2CanonicalQuestSchema = z.object({
 });
 export type QuestV2CanonicalQuest = z.infer<typeof questV2CanonicalQuestSchema>;
 
+/** The pending Quest Edit Request that waits for the viewer. Optional until every environment returns it. */
+export const questV2PendingEditRequestSchema = z.object({
+  requestId: questV2IdSchema,
+  expiresAt: z.string(),
+});
+export type QuestV2PendingEditRequest = z.infer<
+  typeof questV2PendingEditRequestSchema
+>;
+
 export const questV2DetailSchema = questV2CanonicalQuestSchema.extend({
   images: z.array(questV2ImageSchema),
+  pendingEditRequest: questV2PendingEditRequestSchema.nullable().optional(),
 });
 export type QuestV2Detail = z.infer<typeof questV2DetailSchema>;
 
@@ -220,12 +230,53 @@ export const questV2ParticipationDetailSchema =
     }),
     dispute: questV2DisputeWindowSchema.nullable().optional(),
     moneyHold: questV2MoneyHoldSchema.nullable().optional(),
+    pendingEditRequest: questV2PendingEditRequestSchema.nullable().optional(),
     /** Active Assignments with a Start Work time; names no one. */
     startedWorkerCount: z.number().int().nonnegative().optional(),
+    /**
+     * GROUP + FIRST_COME_FIRST_SERVED only: every Worker whose Assignment was not
+     * cancelled, in acceptance order, also after settlement. null otherwise.
+     */
+    workers: z
+      .array(z.object({ id: z.string(), displayName: z.string() }))
+      .nullable()
+      .optional(),
   });
 export type QuestV2ParticipationDetail = z.infer<
   typeof questV2ParticipationDetailSchema
 >;
+
+export const questV2RewardAllocationSchema = z.object({
+  status: z.enum(["PENDING", "SUBMITTED", "AUTO_EQUAL"]),
+  leaderId: z.string().uuid(),
+  totalRewardSatang: z.number().int().positive(),
+  deadlineAt: z.string().datetime(),
+  settledAt: z.string().datetime().nullable(),
+  viewerIsLeader: z.boolean(),
+  members: z.array(
+    z.object({
+      memberId: z.string().uuid(),
+      displayName: z.string(),
+      isLeader: z.boolean(),
+      percentageBasisPoints: z.number().int().min(0).max(10_000).nullable(),
+      rewardSatang: z.number().int().nonnegative().nullable(),
+    })
+  ),
+});
+export type QuestV2RewardAllocation = z.infer<
+  typeof questV2RewardAllocationSchema
+>;
+export const questV2RewardAllocationPayloadSchema = z.object({
+  teammateShares: z
+    .array(
+      z.object({
+        memberId: z.string().uuid(),
+        percentageBasisPoints: z.number().int().min(0).max(10_000),
+      })
+    )
+    .min(1)
+    .max(19),
+});
 
 export const questV2ImagesDataSchema = z.object({
   images: z.array(questV2ImageSchema),
@@ -310,6 +361,15 @@ export type QuestV2UnderfilledCancellationReason = z.infer<
 export const QuestV2CancellationReason =
   questV2UnderfilledCancellationReasonSchema.enum;
 
+/** `failureReason` of a `QUEST_FAILED` push. */
+export const questV2PushFailureReasonSchema = z.enum([
+  "PROOF_NOT_APPROVED",
+  "DUE_AT_MISSED",
+]);
+export type QuestV2PushFailureReason = z.infer<
+  typeof questV2PushFailureReasonSchema
+>;
+
 /** `type` of an Android FCM data-only message sent by the underfilled lifecycle. */
 export const questV2PushTypeSchema = z.enum([
   "UNDERFILLED_DECISION_PENDING",
@@ -317,6 +377,9 @@ export const questV2PushTypeSchema = z.enum([
   "UNDERFILLED_COMPLETED",
   "UNDERFILLED_CANCELLED",
   "QUEST_ASSIGNED",
+  "PROOF_NOT_APPROVED",
+  "QUEST_COMPLETED_DISPUTE_WINDOW_OPEN",
+  "QUEST_FAILED",
 ]);
 export type QuestV2PushType = z.infer<typeof questV2PushTypeSchema>;
 export const QuestV2PushTypeValue = questV2PushTypeSchema.enum;
@@ -887,7 +950,6 @@ export const questV2TeamSubmitPayloadSchema = z
     text: questV2NonBlankString(1000),
     fileIds: z
       .array(questV2IdSchema)
-      .min(1)
       .refine((fileIds) => new Set(fileIds).size === fileIds.length, {
         message: "Expected unique file IDs",
       }),

@@ -169,6 +169,7 @@ export function useCreateQuestController({
   // A server Quest that is still a Draft finishes like a new Quest: Review
   // offers Publish. Published Quests only save changes.
   const publishable = !isServerEditMode(mode) || editState.isDraft;
+  const openQuestEdit = isServerEditMode(mode) && editState.isOpenQuest;
   const resetSaveState = useCallback(() => {
     localPersistence.resetSaveState();
     publishState.resetSaveState();
@@ -489,6 +490,7 @@ export function useCreateQuestController({
       candidateOptions,
       draft,
       errors,
+      openQuestEdit,
       isCheckingPublish: publishState.isCheckingPublish,
       layout,
       locale,

@@ -6,7 +6,6 @@ import type {
   CanonicalHirerQuestStatus,
   TimelineStageKey,
   QuestProgressStage,
-  HirerHomeQuestFixture,
   LiveHirerQuestCardData,
   HirerAttentionItem,
 } from "./hirerHomeTypes";
@@ -17,8 +16,6 @@ export type {
   TimelineStageKey,
   TimelineStageState,
   QuestProgressStage,
-  LocalizedHirerCopy,
-  HirerHomeQuestFixture,
   QuestMemberProfile,
   LiveHirerQuestCardData,
   HirerHomeData,
@@ -149,69 +146,3 @@ export function getHirerAttentionItems(
     return [];
   });
 }
-
-export const hirerHomeQuestFixtures: HirerHomeQuestFixture[] = [
-  {
-    id: "hirer-home-progress-demo",
-    title: {
-      en: "Sweep the area around campus",
-      th: "กวาดขยะรอบมหาวิทยาลัย",
-    },
-    status: QuestStatus.QUEST_IN_PROGRESS,
-    worker: {
-      id: "demo-worker-1",
-      displayName: {
-        en: "Nattaphon Jaidee",
-        th: "ณัฐพล ใจดี",
-      },
-      faculty: {
-        en: "Faculty of Engineering",
-        th: "คณะวิศวกรรมศาสตร์",
-      },
-    },
-    startTime: "2026-09-19T09:00:00+07:00",
-    dueAt: "2026-09-19T18:00:00+07:00",
-  },
-  {
-    id: "clean-fan",
-    title: {
-      en: "Clean a dorm fan",
-      th: "ล้างพัดลมหอพัก 13",
-    },
-    status: QuestStatus.QUEST_ASSIGNED,
-    worker: {
-      id: "demo-worker-2",
-      displayName: {
-        en: "Ploy Kittisuk",
-        th: "พลอย กิตติสุข",
-      },
-      faculty: {
-        en: "Faculty of Science",
-        th: "คณะวิทยาศาสตร์",
-      },
-    },
-    startTime: "2026-09-20T08:00:00+07:00",
-    dueAt: "2026-09-20T12:00:00+07:00",
-  },
-  {
-    id: "print-documents",
-    title: {
-      en: "Photocopy course documents",
-      th: "ถ่ายเอกสารประกอบการเรียน",
-    },
-    status: QuestStatus.QUEST_COMPLETED,
-    worker: {
-      id: "demo-worker-3",
-      displayName: {
-        en: "Somchai Meesook",
-        th: "สมชาย มีสุข",
-      },
-      faculty: {
-        en: "Faculty of Agriculture",
-        th: "คณะเกษตร",
-      },
-    },
-    startTime: "2026-09-18T10:00:00+07:00",
-    dueAt: "2026-09-18T16:00:00+07:00",
-  },
-];
