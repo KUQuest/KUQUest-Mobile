@@ -40,7 +40,7 @@ const styles = {
     "font-ku-regular text-ku-text-faint text-ku-nav text-center px-ku-xs",
   formScroll: "flex-1",
   formContent:
-    "px-ku-lg pt-ku-md pb-ku-132 gap-ku-md self-center w-full max-w-[720px]",
+    "px-ku-lg pt-ku-md pb-ku-lg gap-ku-md self-center w-full max-w-[720px]",
   formGroup:
     "bg-ku-card border border-ku-border-subtle rounded-ku-card p-ku-md gap-ku-sm",
   formGroupTitle: "font-ku-bold text-ku-text-strong text-ku-subtitle mb-ku-xs",
@@ -73,6 +73,7 @@ const styles = {
   errorText: "font-ku-regular text-ku-danger-dark text-ku-meta flex-1",
   saveBar:
     "absolute bottom-0 left-0 right-0 bg-ku-surface-nav-translucent border-t border-ku-border-nav",
+  saveBarDocked: "bg-ku-surface-nav-translucent border-t border-ku-border-nav",
   saveBarContent: "px-ku-lg pt-ku-sm pb-ku-sm",
   saveBarInner: "self-center w-full max-w-[720px]",
 } as const;
