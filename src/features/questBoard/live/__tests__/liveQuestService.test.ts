@@ -38,6 +38,7 @@ jest.mock("@/api/QuestApi", () => ({
     listQuestAssignments: jest.fn(),
     listApplications: jest.fn(),
     listCandidateTeams: jest.fn(),
+    getTeamRewardAllocation: jest.fn(),
     createCandidateTeam: jest.fn(),
     getUnderfilled: jest.fn(),
     listProofSubmissions: jest.fn(),
@@ -695,6 +696,65 @@ describe("LiveQuestService", () => {
       "worker-1"
     );
     expect(afterStart.capabilities.canJoinTeam).toBe(false);
+  });
+
+  it("reads the Team Reward Allocation of a cancelled Candidate Team Quest", async () => {
+    const allocation = { status: "PENDING", viewerIsLeader: true, members: [] };
+    mockedQuestApi.getDetail.mockRejectedValue(
+      new ApiError(403, "FORBIDDEN", "Forbidden")
+    );
+    mockedQuestApi.getPublicDetail.mockResolvedValue({
+      id: "quest-team-cancelled",
+      title: "Team Quest",
+      description: "Team work.",
+      condition: { items: [{ id: "condition-1", text: "Do the work." }] },
+      tag: null,
+      mode: "CANDIDATE",
+      participation: "GROUP",
+      state: "QUEST_CANCELLED",
+      questReward: 100,
+      headcount: 2,
+      activeWorkerCount: 0,
+      startTime: "2099-08-26T09:00:00+07:00",
+      dueAt: null,
+      proofRequired: true,
+      hirerName: "Hirer Alice",
+      locations: [],
+      images: [],
+    } as never);
+    mockedQuestApi.listQuestAssignments.mockResolvedValue([]);
+    mockedQuestApi.listApplications.mockResolvedValue([]);
+    mockedQuestApi.listCandidateTeams.mockResolvedValue([
+      {
+        id: "team-1",
+        questId: "quest-team-cancelled",
+        leaderId: "worker-1",
+        name: "Team",
+        headcount: 2,
+        state: "TEAM_SELECTED",
+        joinCode: null,
+        joinCodeExpiresAt: null,
+        members: [{ memberId: "worker-1" }, { memberId: "worker-2" }],
+        submission: null,
+        createdAt: "2099-08-25T09:00:00+07:00",
+      },
+    ] as never);
+    mockedQuestApi.getTeamRewardAllocation.mockResolvedValue(
+      allocation as never
+    );
+    mockedQuestApi.getUnderfilled.mockResolvedValue(null as never);
+    mockedQuestApi.listProofSubmissions.mockResolvedValue([]);
+    mockedChatApi.listConversations.mockResolvedValue({
+      items: [],
+      nextCursor: null,
+    } as never);
+
+    const snapshot = await liveQuestService.getLiveSnapshot(
+      "quest-team-cancelled",
+      "worker-1"
+    );
+
+    expect(snapshot.teamRewardAllocation).toEqual(allocation);
   });
 
   it("keeps the issued Join Code for the Team Leader after the list read hides it", async () => {

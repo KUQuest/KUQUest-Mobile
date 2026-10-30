@@ -1,7 +1,9 @@
 # Team Reward Allocation
 
 For a successful `GROUP + CANDIDATE` Quest, the Quest becomes completed when
-the work succeeds. Reward settlement waits for the Team Leader's split.
+the work succeeds. Reward settlement waits for the Team Leader's split. A
+cancellation from `QUEST_ASSIGNED` or `QUEST_IN_PROGRESS` that leaves a Worker
+Reward pool uses the same split; the Quest stays `QUEST_CANCELLED`.
 
 - The Leader has 24 hours to enter a percentage for every teammate. Percentages
   support two decimal places (0.01%); teammate shares may total at most 100%,
@@ -17,8 +19,9 @@ the work succeeds. Reward settlement waits for the Team Leader's split.
   pool equally. Integer-satang remainder is distributed deterministically.
 - Each member sees their own percentage and amount after settlement. The server
   credits each member directly from Quest Escrow to Earnings Balance.
-- The split applies only to successful `GROUP + CANDIDATE` work. Other Quest
-  modes and cancellation/failure settlement keep their routed contracts.
+- The split applies only to `GROUP + CANDIDATE` work that succeeds or is
+  cancelled with a pool. The Hirer's cancellation refund arrives after the split
+  settles. Other Quest modes and failure settlement keep their routed contracts.
 
 The API behavior is owned by the mirrored Quest lifecycle and reward-money
 contracts; the Leader and Member Work Hub surfaces are described here.
