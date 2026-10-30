@@ -90,6 +90,7 @@ describe("PayoutDestinationModal", () => {
       "•••• 1234"
     );
     expect(view.getByText("ธนาคารกสิกรไทย (KBANK)")).toBeTruthy();
+    expect(view.getByTestId("bank-logo-KBANK", { hidden: true })).toBeTruthy();
   });
 
   it("shows an empty state and opens the form from Add account", async () => {

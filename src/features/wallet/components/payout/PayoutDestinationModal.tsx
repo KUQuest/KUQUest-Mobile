@@ -1,8 +1,9 @@
 import React, { useState } from "react";
-import { Modal, StyleSheet } from "react-native";
+import { Modal, Platform, StyleSheet } from "react-native";
 import type { ViewStyle } from "react-native";
 import {
   ActivityIndicator,
+  KeyboardAvoidingView,
   Pressable,
   ScrollView,
   Text,
@@ -23,8 +24,11 @@ import {
   useRetirePayoutDestinationMutation,
   useSavePayoutDestinationMutation,
 } from "../../api/walletQueries";
+import { BankLogo } from "./BankLogo";
 import payoutStyles from "./payoutStyles";
 import { getThaiBankLabel, getThaiBankOptions } from "./thaiBanks";
+
+const MAX_ACCOUNT_DIGITS = 15;
 
 interface PayoutDestinationModalProps {
   visible: boolean;
@@ -96,7 +100,7 @@ export function PayoutDestinationModal({
       surname: form.surname.trim(),
       accountHolderName: form.accountHolderName.trim(),
       bankCode: form.bankCode,
-      accountNumber: form.accountNumber.replace(/[\s-]/g, ""),
+      accountNumber: form.accountNumber,
     };
     const nextErrors: FormErrors = {};
     for (const field of Object.keys(trimmed) as (keyof DestinationForm)[]) {
@@ -187,19 +191,27 @@ export function PayoutDestinationModal({
         label={m.destinationBankLabel}
         noResultsMessage={m.destinationBankNoResults}
         onValueChange={setField("bankCode")}
-        options={getThaiBankOptions(locale)}
+        options={getThaiBankOptions(locale).map((option) => ({
+          ...option,
+          icon: <BankLogo code={option.value} size={28} />,
+        }))}
         placeholder={m.destinationBankPlaceholder}
         searchable
         searchPlaceholder={m.destinationBankSearch}
         value={form.bankCode}
       />
       <Input
+        autoComplete="off"
         autoCorrect={false}
         editable={!busy}
         error={errors.accountNumber}
+        inputMode="numeric"
         keyboardType="number-pad"
         label={m.destinationAccountNumberLabel}
-        onChangeText={setField("accountNumber")}
+        maxLength={MAX_ACCOUNT_DIGITS}
+        onChangeText={(value) =>
+          setField("accountNumber")(value.replace(/\D/g, ""))
+        }
         testID="payout-destination-account-number"
         value={form.accountNumber}
       />
@@ -262,11 +274,14 @@ export function PayoutDestinationModal({
           <Text className={payoutStyles.rowLabel}>
             {m.destinationBankLabel}
           </Text>
-          <Text className={payoutStyles.rowValue}>
-            {destination.bankCode
-              ? getThaiBankLabel(destination.bankCode, locale)
-              : "-"}
-          </Text>
+          <View className="flex-1 flex-row items-center justify-end gap-ku-sm">
+            <BankLogo code={destination.bankCode} size={24} />
+            <Text className={payoutStyles.rowValue}>
+              {destination.bankCode
+                ? getThaiBankLabel(destination.bankCode, locale)
+                : "-"}
+            </Text>
+          </View>
         </View>
         <View className={payoutStyles.row}>
           <Text className={payoutStyles.rowLabel}>
@@ -309,140 +324,148 @@ export function PayoutDestinationModal({
           style={StyleSheet.absoluteFill}
           testID="payout-destination-backdrop"
         />
-        <View
-          accessibilityViewIsModal
-          className={payoutStyles.modalCard}
-          style={modalCardShadow}
-          testID="payout-destination-modal"
+        <KeyboardAvoidingView
+          behavior={Platform.OS === "ios" ? "padding" : "height"}
+          className="w-full"
         >
-          <View className={payoutStyles.header}>
-            <Landmark color={colors.workerDeep} size={20} strokeWidth={2.2} />
-            <Text
-              accessibilityRole="header"
-              className={payoutStyles.headerTitle}
-            >
-              {m.destinationTitle}
-            </Text>
-            <TouchableOpacity
-              accessibilityLabel={m.closeButton}
-              accessibilityRole="button"
-              accessibilityState={{ disabled: busy }}
-              className={payoutStyles.closeBtn}
-              disabled={busy}
-              onPress={handleClose}
-              testID="payout-destination-close-btn"
-            >
-              <X color={colors.textSecondary} size={20} strokeWidth={2} />
-            </TouchableOpacity>
-          </View>
-
-          <ScrollView
-            contentContainerClassName={payoutStyles.scrollContent}
-            keyboardShouldPersistTaps="handled"
-            showsVerticalScrollIndicator={false}
+          <View
+            accessibilityViewIsModal
+            className={payoutStyles.modalCard}
+            style={modalCardShadow}
+            testID="payout-destination-modal"
           >
-            <Text className={payoutStyles.desc}>{m.destinationDesc}</Text>
-
-            {showForm ? renderForm() : renderDestination()}
-
-            {actionError ? (
+            <View className={payoutStyles.header}>
+              <Landmark color={colors.workerDeep} size={20} strokeWidth={2.2} />
               <Text
-                accessibilityRole="alert"
-                className={payoutStyles.hintError}
-                testID="payout-destination-action-error"
+                accessibilityRole="header"
+                className={payoutStyles.headerTitle}
               >
-                {actionError}
+                {m.destinationTitle}
               </Text>
-            ) : null}
+              <TouchableOpacity
+                accessibilityLabel={m.closeButton}
+                accessibilityRole="button"
+                accessibilityState={{ disabled: busy }}
+                className={payoutStyles.closeBtn}
+                disabled={busy}
+                onPress={handleClose}
+                testID="payout-destination-close-btn"
+              >
+                <X color={colors.textSecondary} size={20} strokeWidth={2} />
+              </TouchableOpacity>
+            </View>
 
-            <View className={payoutStyles.actionRow}>
-              {showForm ? (
-                <>
-                  <TouchableOpacity
-                    accessibilityLabel={m.destinationSave}
-                    accessibilityRole="button"
-                    accessibilityState={{ disabled: busy, busy }}
-                    className={cn(
-                      payoutStyles.primaryBtn,
-                      busy && payoutStyles.primaryBtnDisabled
-                    )}
-                    disabled={busy}
-                    onPress={() => void handleSave()}
-                    testID="payout-destination-save-btn"
-                  >
-                    {busy ? (
-                      <ActivityIndicator color={colors.onWorker} size="small" />
-                    ) : null}
-                    <Text className={payoutStyles.primaryBtnText}>
-                      {saveMutation.isPending
-                        ? m.destinationSaving
-                        : m.destinationSave}
-                    </Text>
-                  </TouchableOpacity>
-                  {
+            <ScrollView
+              contentContainerClassName={payoutStyles.scrollContent}
+              keyboardShouldPersistTaps="handled"
+              showsVerticalScrollIndicator={false}
+            >
+              <Text className={payoutStyles.desc}>{m.destinationDesc}</Text>
+
+              {showForm ? renderForm() : renderDestination()}
+
+              {actionError ? (
+                <Text
+                  accessibilityRole="alert"
+                  className={payoutStyles.hintError}
+                  testID="payout-destination-action-error"
+                >
+                  {actionError}
+                </Text>
+              ) : null}
+
+              <View className={payoutStyles.actionRow}>
+                {showForm ? (
+                  <>
                     <TouchableOpacity
-                      accessibilityLabel={m.destinationBackToDetails}
+                      accessibilityLabel={m.destinationSave}
+                      accessibilityRole="button"
+                      accessibilityState={{ disabled: busy, busy }}
+                      className={cn(
+                        payoutStyles.primaryBtn,
+                        busy && payoutStyles.primaryBtnDisabled
+                      )}
+                      disabled={busy}
+                      onPress={() => void handleSave()}
+                      testID="payout-destination-save-btn"
+                    >
+                      {busy ? (
+                        <ActivityIndicator
+                          color={colors.onWorker}
+                          size="small"
+                        />
+                      ) : null}
+                      <Text className={payoutStyles.primaryBtnText}>
+                        {saveMutation.isPending
+                          ? m.destinationSaving
+                          : m.destinationSave}
+                      </Text>
+                    </TouchableOpacity>
+                    {
+                      <TouchableOpacity
+                        accessibilityLabel={m.destinationBackToDetails}
+                        accessibilityRole="button"
+                        className={payoutStyles.secondaryBtn}
+                        disabled={busy}
+                        onPress={reset}
+                        testID="payout-destination-cancel-edit-btn"
+                      >
+                        <Text className={payoutStyles.secondaryBtnText}>
+                          {m.destinationBackToDetails}
+                        </Text>
+                      </TouchableOpacity>
+                    }
+                  </>
+                ) : destination ? (
+                  <>
+                    <TouchableOpacity
+                      accessibilityLabel={m.destinationReplace}
                       accessibilityRole="button"
                       className={payoutStyles.secondaryBtn}
                       disabled={busy}
-                      onPress={reset}
-                      testID="payout-destination-cancel-edit-btn"
+                      onPress={() => setEditing(true)}
+                      testID="payout-destination-replace-btn"
                     >
                       <Text className={payoutStyles.secondaryBtnText}>
-                        {m.destinationBackToDetails}
+                        {m.destinationReplace}
                       </Text>
                     </TouchableOpacity>
-                  }
-                </>
-              ) : destination ? (
-                <>
+                    <TouchableOpacity
+                      accessibilityLabel={m.destinationRetire}
+                      accessibilityRole="button"
+                      accessibilityState={{
+                        disabled: busy,
+                        busy: retireMutation.isPending,
+                      }}
+                      className={payoutStyles.dangerBtn}
+                      disabled={busy}
+                      onPress={handleRetire}
+                      testID="payout-destination-retire-btn"
+                    >
+                      <Text className={payoutStyles.dangerBtnText}>
+                        {retireMutation.isPending
+                          ? m.destinationRetiring
+                          : m.destinationRetire}
+                      </Text>
+                    </TouchableOpacity>
+                  </>
+                ) : canAdd ? (
                   <TouchableOpacity
-                    accessibilityLabel={m.destinationReplace}
+                    accessibilityLabel={m.destinationAdd}
                     accessibilityRole="button"
-                    className={payoutStyles.secondaryBtn}
-                    disabled={busy}
+                    className={payoutStyles.primaryBtn}
                     onPress={() => setEditing(true)}
-                    testID="payout-destination-replace-btn"
+                    testID="payout-destination-add-btn"
                   >
-                    <Text className={payoutStyles.secondaryBtnText}>
-                      {m.destinationReplace}
+                    <Text className={payoutStyles.primaryBtnText}>
+                      {m.destinationAdd}
                     </Text>
                   </TouchableOpacity>
-                  <TouchableOpacity
-                    accessibilityLabel={m.destinationRetire}
-                    accessibilityRole="button"
-                    accessibilityState={{
-                      disabled: busy,
-                      busy: retireMutation.isPending,
-                    }}
-                    className={payoutStyles.dangerBtn}
-                    disabled={busy}
-                    onPress={handleRetire}
-                    testID="payout-destination-retire-btn"
-                  >
-                    <Text className={payoutStyles.dangerBtnText}>
-                      {retireMutation.isPending
-                        ? m.destinationRetiring
-                        : m.destinationRetire}
-                    </Text>
-                  </TouchableOpacity>
-                </>
-              ) : canAdd ? (
-                <TouchableOpacity
-                  accessibilityLabel={m.destinationAdd}
-                  accessibilityRole="button"
-                  className={payoutStyles.primaryBtn}
-                  onPress={() => setEditing(true)}
-                  testID="payout-destination-add-btn"
-                >
-                  <Text className={payoutStyles.primaryBtnText}>
-                    {m.destinationAdd}
-                  </Text>
-                </TouchableOpacity>
-              ) : null}
-            </View>
-          </ScrollView>
-        </View>
+                ) : null}
+              </View>
+            </ScrollView>
+          </View>
+        </KeyboardAvoidingView>
       </View>
     </Modal>
   );

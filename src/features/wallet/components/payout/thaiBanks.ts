@@ -1,3 +1,4 @@
+import type { ImageSource } from "expo-image";
 import type { SupportedLocale } from "@/locales/locale";
 
 // ponytail: mirrors the API Server's supportedThaiBankCodes; api.yaml exposes
@@ -49,4 +50,28 @@ export function getThaiBankOptions(locale: SupportedLocale) {
 export function getThaiBankLabel(code: string, locale: SupportedLocale) {
   const bank = THAI_BANKS.find((item) => item.code === code);
   return bank ? `${bank[locale]} (${bank.code})` : code;
+}
+
+// Logos from https://github.com/omise/banks-logo (assets/images/banks/LICENSE).
+// EXIM has no published logo.
+const BANK_LOGOS: Record<string, ImageSource> = {
+  BBL: require("@/assets/images/banks/bbl.svg"),
+  KBANK: require("@/assets/images/banks/kbank.svg"),
+  KTB: require("@/assets/images/banks/ktb.svg"),
+  SCB: require("@/assets/images/banks/scb.svg"),
+  BAY: require("@/assets/images/banks/bay.svg"),
+  TTB: require("@/assets/images/banks/ttb.svg"),
+  GSB: require("@/assets/images/banks/gsb.svg"),
+  BAAC: require("@/assets/images/banks/baac.svg"),
+  GHB: require("@/assets/images/banks/ghb.svg"),
+  CIMBT: require("@/assets/images/banks/cimb.svg"),
+  UOBT: require("@/assets/images/banks/uob.svg"),
+  KKP: require("@/assets/images/banks/kk.svg"),
+  TISCO: require("@/assets/images/banks/tisco.svg"),
+  LHBANK: require("@/assets/images/banks/lhb.svg"),
+  ICBC: require("@/assets/images/banks/icbc.svg"),
+};
+
+export function getThaiBankLogo(code: string | null | undefined) {
+  return code ? BANK_LOGOS[code.trim().toUpperCase()] : undefined;
 }
