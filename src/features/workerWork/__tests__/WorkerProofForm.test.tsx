@@ -265,6 +265,82 @@ describe("WorkerProofForm", () => {
     expect(screen.getByText("receipt.pdf")).toBeTruthy();
   });
 
+  it("sends a picked PDF as an application/pdf proof file", async () => {
+    mockedFilePicker.mockResolvedValue({
+      canceled: false,
+      result: [
+        {
+          uri: "file:///receipt.pdf",
+          name: "receipt.pdf",
+          type: "",
+          size: 1024,
+        },
+      ],
+    } as never);
+    mockedQuestApi.createProofDraft.mockResolvedValue({
+      id: "draft-pdf",
+      files: [{ uploadStatus: "PROOF_FILE_READY", fileId: "file-pdf" }],
+    } as never);
+    mockedQuestApi.submitProofDraft.mockResolvedValue({
+      id: "draft-pdf",
+    } as never);
+    const onSubmitted = jest.fn();
+    const screen = await renderForm(submittable, onSubmitted);
+
+    await fireEvent.press(screen.getByRole("button", { name: "Add PDF" }));
+    await waitFor(() => expect(screen.getByText("1/5 files")).toBeTruthy());
+    await fireEvent.press(screen.getByRole("button", { name: "Submit proof" }));
+    await fireEvent.press(screen.getByRole("button", { name: "Confirm" }));
+
+    await waitFor(() => expect(onSubmitted).toHaveBeenCalled());
+    expect(mockedQuestApi.createProofDraft).toHaveBeenCalledWith(
+      "quest-1",
+      {
+        assets: [
+          {
+            uri: "file:///receipt.pdf",
+            name: "receipt.pdf",
+            type: "application/pdf",
+          },
+        ],
+        description: undefined,
+      },
+      expect.any(String)
+    );
+  });
+
+  it("treats an already sent Proof as sent instead of showing an error", async () => {
+    mockedFilePicker.mockResolvedValue({
+      canceled: false,
+      result: [
+        {
+          uri: "file:///receipt.pdf",
+          name: "receipt.pdf",
+          type: "application/pdf",
+          size: 1024,
+        },
+      ],
+    } as never);
+    mockedQuestApi.createProofDraft.mockRejectedValue(
+      new ApiError(
+        409,
+        "PROOF_SUBMISSION_ALREADY_EXISTS",
+        "The required submitter already has a Proof Submission"
+      )
+    );
+    const onSubmitted = jest.fn();
+    const screen = await renderForm(submittable, onSubmitted);
+
+    await fireEvent.press(screen.getByRole("button", { name: "Add PDF" }));
+    await waitFor(() => expect(screen.getByText("1/5 files")).toBeTruthy());
+    await fireEvent.press(screen.getByRole("button", { name: "Submit proof" }));
+    await fireEvent.press(screen.getByRole("button", { name: "Confirm" }));
+
+    await waitFor(() => expect(onSubmitted).toHaveBeenCalled());
+    expect(screen.queryByTestId("worker-proof-notice")).toBeNull();
+    expect(mockedQuestApi.submitProofDraft).not.toHaveBeenCalled();
+  });
+
   it("keeps the draft input and does not send when a file upload fails", async () => {
     mockedPicker.mockResolvedValue({
       canceled: false,

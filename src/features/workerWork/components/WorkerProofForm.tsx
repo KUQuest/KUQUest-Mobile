@@ -42,6 +42,11 @@ import { ProofFilePicker, type ProofFile } from "./ProofFilePicker";
 const MAX_PROOF_FILES = 5;
 const MAX_PROOF_FILE_BYTES = 10 * 1024 * 1024;
 const MAX_DESCRIPTION_LENGTH = 1000;
+/** The Server already holds a sent Proof Submission for this submitter. */
+const PROOF_ALREADY_SENT_CODES = new Set([
+  "PROOF_SUBMISSION_ALREADY_EXISTS",
+  "PROOF_SUBMISSION_LOCKED",
+]);
 
 const card =
   "gap-ku-md rounded-ku-card border border-ku-border bg-ku-surface p-ku-md";
@@ -85,6 +90,8 @@ export function WorkerProofForm({
   const [failedDraft, setFailedDraft] = useState<ProofDraftRef | null>(null);
   const fileKeySeed = useRef(0);
   const submittedRef = useRef(false);
+  // Blocks a second send (double tap, stacked confirm) until the first settles.
+  const sendingRef = useRef(false);
   const serverDraft = unsentProofDraft(snapshot, viewerId);
 
   useEffect(() => {
@@ -246,7 +253,17 @@ export function WorkerProofForm({
     }
   };
 
+  const finishSent = async () => {
+    submittedRef.current = true;
+    setFiles([]);
+    setDescription("");
+    setFailedDraft(null);
+    await onSubmitted?.();
+  };
+
   const sendProof = async () => {
+    if (sendingRef.current) return;
+    sendingRef.current = true;
     setNotice(null);
     const plan = planProofSend(
       failedDraft ??
@@ -264,12 +281,15 @@ export function WorkerProofForm({
         plan,
         description: description.trim() || undefined,
       });
-      submittedRef.current = true;
-      setFiles([]);
-      setDescription("");
-      setFailedDraft(null);
-      await onSubmitted?.();
+      await finishSent();
     } catch (error) {
+      if (
+        error instanceof ApiError &&
+        PROOF_ALREADY_SENT_CODES.has(error.code)
+      ) {
+        await finishSent();
+        return;
+      }
       if (error instanceof ProofFileUploadError && error.draft) {
         const fileKeys =
           plan.kind === "create"
@@ -315,6 +335,8 @@ export function WorkerProofForm({
               })
             : messages.submitFailed
       );
+    } finally {
+      sendingRef.current = false;
     }
   };
 
@@ -342,7 +364,7 @@ export function WorkerProofForm({
   };
 
   const confirmAndSend = () => {
-    if (submitDisabled) return;
+    if (submitDisabled || sendingRef.current) return;
     showConfirmModal({
       title: messages.confirmSubmitTitle,
       message: messages.confirmSubmitMessage,
