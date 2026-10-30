@@ -212,6 +212,7 @@ export interface ClassifiedHirerTransaction {
   sourceApiLabel: string;
   reference?: string;
   destinationInfo?: string;
+  payoutId?: string;
   createdAt: string;
 }
 
@@ -333,6 +334,7 @@ export function classifyHirerTransaction(
     sourceApiLabel,
     reference: tx.reference,
     destinationInfo: tx.destinationInfo,
+    payoutId: tx.payoutId,
     createdAt: tx.createdAt,
   };
 }

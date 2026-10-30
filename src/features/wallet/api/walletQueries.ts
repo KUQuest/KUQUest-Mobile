@@ -6,7 +6,10 @@ import {
 } from "@tanstack/react-query";
 import { useEffect } from "react";
 
-import { walletApi } from "@/api/WalletApi";
+import {
+  walletApi,
+  type CreatePayoutDestinationPayload,
+} from "@/api/WalletApi";
 import { openServerSocket } from "@/api/ServerSocket";
 
 export const walletKeys = {
@@ -17,6 +20,11 @@ export const walletKeys = {
   topUpStatus: (topUpId: string) =>
     [...walletKeys.all, "top-up-status", topUpId] as const,
   topUps: (limit: number) => [...walletKeys.all, "top-ups", limit] as const,
+  payoutDestination: () => [...walletKeys.all, "payout-destination"] as const,
+  payout: (payoutId: string) =>
+    [...walletKeys.all, "payout", payoutId] as const,
+  payoutStatusHistory: (payoutId: string) =>
+    [...walletKeys.all, "payout-status-history", payoutId] as const,
 };
 
 export function invalidateWalletQueries(
@@ -124,6 +132,79 @@ export function useConvertEarningsMutation() {
       void queryClient.invalidateQueries({
         queryKey: [...walletKeys.all, "transactions"],
       });
+    },
+  });
+}
+
+export function usePayoutDestinationQuery(enabled = true) {
+  return useQuery({
+    enabled,
+    queryKey: walletKeys.payoutDestination(),
+    queryFn: ({ signal }) => walletApi.getActivePayoutDestination({ signal }),
+  });
+}
+
+export function useSavePayoutDestinationMutation() {
+  const queryClient = useQueryClient();
+  return useMutation({
+    mutationFn: (payload: CreatePayoutDestinationPayload) =>
+      walletApi.createPayoutDestination(payload),
+    onSuccess: (destination) => {
+      queryClient.setQueryData(walletKeys.payoutDestination(), destination);
+    },
+  });
+}
+
+export function useRetirePayoutDestinationMutation() {
+  const queryClient = useQueryClient();
+  return useMutation({
+    mutationFn: () => walletApi.retireActivePayoutDestination(),
+    onSuccess: () => {
+      queryClient.setQueryData(walletKeys.payoutDestination(), null);
+    },
+  });
+}
+
+export function useQuotePayoutMutation() {
+  return useMutation({
+    mutationFn: (receiptSatang: number) => walletApi.quotePayout(receiptSatang),
+  });
+}
+
+export function useCreatePayoutMutation() {
+  const queryClient = useQueryClient();
+  return useMutation({
+    mutationFn: ({
+      quoteId,
+      idempotencyKey,
+    }: {
+      quoteId: string;
+      idempotencyKey: string;
+    }) => walletApi.createPayout(quoteId, idempotencyKey),
+    onSuccess: () => {
+      void invalidateWalletQueries(queryClient);
+    },
+  });
+}
+
+export function usePayoutQuery(payoutId: string | null) {
+  return useQuery({
+    enabled: Boolean(payoutId),
+    queryKey: walletKeys.payout(payoutId ?? ""),
+    queryFn: ({ signal }) => {
+      if (!payoutId) throw new Error("A Payout ID is required");
+      return walletApi.getPayout(payoutId, { signal });
+    },
+  });
+}
+
+export function usePayoutStatusHistoryQuery(payoutId: string | null) {
+  return useQuery({
+    enabled: Boolean(payoutId),
+    queryKey: walletKeys.payoutStatusHistory(payoutId ?? ""),
+    queryFn: ({ signal }) => {
+      if (!payoutId) throw new Error("A Payout ID is required");
+      return walletApi.listPayoutStatusHistory(payoutId, { signal });
     },
   });
 }

@@ -230,6 +230,47 @@ describe("WalletApi", () => {
     );
   });
 
+  it("carries the Payout record id on payout history rows for status lookups", async () => {
+    const respond = (data: unknown) =>
+      Promise.resolve({
+        ok: true,
+        status: 200,
+        headers: new Headers({ "content-type": "application/json" }),
+        text: async () => JSON.stringify({ success: true, data }),
+      });
+    fetchMock.mockImplementation((url: string) => {
+      if (url.includes("/api/v1/payouts")) {
+        return respond({
+          items: [
+            {
+              id: "payout-9",
+              payoutStatus: "PENDING_ADMIN_APPROVAL",
+              maximumDebitSatang: 11545,
+              createdAt: "2026-09-14T10:00:00Z",
+            },
+          ],
+        });
+      }
+      return respond(
+        url.includes("/api/v1/wallet/activities")
+          ? { activities: [] }
+          : { items: [] }
+      );
+    });
+
+    const history = await api.getTransactionHistory(30);
+
+    expect(history.items).toHaveLength(1);
+    expect(history.items[0]).toEqual(
+      expect.objectContaining({
+        id: "payout-9",
+        sourceApi: "PAYOUTS",
+        payoutId: "payout-9",
+        status: "PENDING_ADMIN_APPROVAL",
+      })
+    );
+  });
+
   it("lists payout destinations", async () => {
     const destinationsResponse = {
       success: true,

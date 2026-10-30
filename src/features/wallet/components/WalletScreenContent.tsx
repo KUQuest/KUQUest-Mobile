@@ -22,6 +22,8 @@ import { HirerTransactionItem } from "./HirerTransactionItem";
 import { HirerWalletHeader } from "./HirerWalletHeader";
 import { TransactionDetailModal } from "./TransactionDetailModal";
 import { TransferEarningsModal } from "./TransferEarningsModal";
+import { PayoutDestinationModal } from "./payout/PayoutDestinationModal";
+import { RequestPayoutModal } from "./payout/RequestPayoutModal";
 import type { ClassifiedHirerTransaction } from "../walletModule";
 
 const MemoizedHirerTransactionItem = React.memo(HirerTransactionItem);
@@ -46,6 +48,12 @@ interface WalletScreenContentProps {
     onOpenTransfer: () => void;
     onCloseTransfer: () => void;
     transferModalOpen: boolean;
+    onOpenPayout: () => void;
+    onClosePayout: () => void;
+    payoutModalOpen: boolean;
+    onOpenPayoutDestination: () => void;
+    onClosePayoutDestination: () => void;
+    payoutDestinationModalOpen: boolean;
     selectedTransaction: ClassifiedHirerTransaction | null;
     onSelectTransaction: (transaction: ClassifiedHirerTransaction) => void;
     onCloseTransaction: () => void;
@@ -68,6 +76,12 @@ export function WalletScreenContent({
     onOpenTransfer,
     onCloseTransfer,
     transferModalOpen,
+    onOpenPayout,
+    onClosePayout,
+    payoutModalOpen,
+    onOpenPayoutDestination,
+    onClosePayoutDestination,
+    payoutDestinationModalOpen,
     selectedTransaction,
     onSelectTransaction,
     onCloseTransaction,
@@ -115,6 +129,8 @@ export function WalletScreenContent({
         topUpLabel={m.sendMoneyAction}
         onTopUp={onTopUp}
         onTransferEarnings={onOpenTransfer}
+        onRequestPayout={onOpenPayout}
+        payoutButtonLabel={m.payoutAction}
         transferButtonLabel={m.convertEarnings}
       />
       <HirerHistoryFilter
@@ -191,6 +207,19 @@ export function WalletScreenContent({
         onClose={onCloseTransfer}
         onSuccess={onRefresh}
         visible={transferModalOpen}
+      />
+      <RequestPayoutModal
+        balances={balances}
+        messages={m}
+        onClose={onClosePayout}
+        onManageDestination={onOpenPayoutDestination}
+        onSuccess={onRefresh}
+        visible={payoutModalOpen && !payoutDestinationModalOpen}
+      />
+      <PayoutDestinationModal
+        messages={m}
+        onClose={onClosePayoutDestination}
+        visible={payoutDestinationModalOpen}
       />
     </ScreenLayout>
   );
