@@ -6,6 +6,11 @@ import {
   questV2PushTypeSchema,
   questV2UnderfilledCancellationReasonSchema,
 } from "@/api/questV2Contracts";
+import {
+  memberNotificationTypeSchema,
+  memberPenaltyResultSchema,
+} from "@/api/NotificationApi";
+import { memberNotificationCopy } from "@/features/notifications/inbox/memberNotificationCopy";
 import { pushMessage } from "@/locales/pushMessages";
 import type { SupportedLocale } from "@/locales/locale";
 import type { KeyValueStorage } from "@/infrastructure/storage/keyValueStorage";
@@ -29,6 +34,36 @@ export type PushPayload = z.infer<typeof pushPayloadSchema>;
 export function parsePushPayload(value: unknown): PushPayload | null {
   const result = pushPayloadSchema.safeParse(value);
   return result.success ? result.data : null;
+}
+
+/**
+ * Member-level penalty Push (ADR 0035): no `questId`, deduped by `eventKey`.
+ * `notificationId` can be absent for `CONDUCT_REPORT_UPHELD`.
+ */
+export const memberPushPayloadSchema = z.object({
+  type: memberNotificationTypeSchema,
+  eventKey: z.string().trim().min(1),
+  notificationId: uuidSchema.optional(),
+  result: memberPenaltyResultSchema.optional(),
+  expiresAt: z.string().datetime({ offset: true }).optional(),
+});
+export type MemberPushPayload = z.infer<typeof memberPushPayloadSchema>;
+
+export function parseMemberPushPayload(
+  value: unknown
+): MemberPushPayload | null {
+  const result = memberPushPayloadSchema.safeParse(value);
+  return result.success ? result.data : null;
+}
+
+export const MEMBER_PUSH_ROUTE = "/notifications" as const;
+
+export function localizedMemberPushCopy(
+  payload: MemberPushPayload,
+  locale: SupportedLocale
+): { title: string; body: string } {
+  const { title, body } = memberNotificationCopy(payload, locale);
+  return { title, body };
 }
 
 export function routeForPush(payload: Pick<PushPayload, "type" | "questId">) {

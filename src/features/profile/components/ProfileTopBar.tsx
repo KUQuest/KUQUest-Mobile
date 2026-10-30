@@ -1,6 +1,6 @@
 import React from "react";
 import { useRouter } from "expo-router";
-import { Settings } from "lucide-react-native";
+import { Bell, Settings } from "lucide-react-native";
 import { useWindowDimensions } from "react-native";
 import { useSafeAreaInsets } from "react-native-safe-area-context";
 import { useAnimatedStyle, withTiming } from "react-native-reanimated";
@@ -10,6 +10,8 @@ import { Pressable, Text, View } from "@/tw";
 import { useLocale } from "@/features/preferences/localeStore";
 import { navigationMessages } from "@/locales/navigationMessages";
 import { settingsMessages } from "@/locales/settingsMessages";
+import { memberNotificationMessages } from "@/locales/memberNotificationMessages";
+import { useUnreadNotificationCountQuery } from "@/features/notifications/inbox/notificationQueries";
 import { useAppTheme } from "@/features/workspace/AppThemeProvider";
 import { getAppChromeMetrics } from "@/theme/layout";
 import { useNavigationVisibility } from "@/features/navigation/navigationUiStore";
@@ -20,6 +22,9 @@ const styles = {
   title: "text-ku-text-strong font-ku-semibold text-ku-subtitle",
   settingsButton:
     "absolute items-center justify-center min-h-[48px] min-w-[48px]",
+  badge:
+    "absolute right-[4px] top-[6px] min-w-[18px] h-[18px] items-center justify-center rounded-ku-pill bg-ku-danger px-[4px]",
+  badgeText: "text-ku-on-primary font-ku-bold text-[11px] leading-[14px]",
 } as const;
 
 export function ProfileTopBar() {
@@ -29,6 +34,7 @@ export function ProfileTopBar() {
   const { locale } = useLocale();
   const { navigationVisible } = useNavigationVisibility();
   const { colors } = useAppTheme();
+  const unreadCount = useUnreadNotificationCountQuery().data ?? 0;
   const metrics = getAppChromeMetrics(width, fontScale);
   const topBarHeight = metrics.headerHeight + insets.top;
   const shouldHide = !metrics.isTablet && !navigationVisible;
@@ -71,6 +77,30 @@ export function ProfileTopBar() {
         >
           {navigationMessages[locale].profile}
         </Text>
+        <Pressable
+          accessibilityLabel={memberNotificationMessages[locale].openInbox(
+            unreadCount
+          )}
+          accessibilityRole="button"
+          hitSlop={8}
+          onPress={() => router.push("/notifications")}
+          className={styles.settingsButton}
+          style={{ left: 0 }}
+          testID="open-notifications"
+        >
+          <Bell color={colors.primary} size={24} strokeWidth={2.2} />
+          {unreadCount > 0 ? (
+            <View
+              className={styles.badge}
+              importantForAccessibility="no-hide-descendants"
+              testID="notifications-unread-badge"
+            >
+              <Text className={styles.badgeText} maxFontSizeMultiplier={1.3}>
+                {unreadCount > 99 ? "99+" : unreadCount}
+              </Text>
+            </View>
+          ) : null}
+        </Pressable>
         <Pressable
           accessibilityLabel={settingsMessages[locale].title}
           accessibilityRole="button"

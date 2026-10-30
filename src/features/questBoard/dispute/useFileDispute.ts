@@ -13,6 +13,7 @@ import {
 } from "@/features/questBoard/api/questBoardQueries";
 import { useLocale } from "@/features/preferences/localeStore";
 import { disputeMessages } from "@/locales/disputeMessages";
+import { teamSplitMessages } from "@/locales/teamSplitMessages";
 import { getLocalizedErrorMessage } from "@/utils/error";
 
 /**
@@ -62,9 +63,12 @@ export function useFileDispute() {
                       : error instanceof ApiError &&
                           error.code === "DISPUTE_CASE_WINDOW_EXPIRED"
                         ? messages.windowClosed
-                        : getLocalizedErrorMessage(error, locale, {
-                            fallback: messages.errorFallback,
-                          }),
+                        : error instanceof ApiError &&
+                            error.code === "DISPUTE_CASE_TEAM_LEADER_ONLY"
+                          ? teamSplitMessages[locale].teamCaseLeaderOnly
+                          : getLocalizedErrorMessage(error, locale, {
+                              fallback: messages.errorFallback,
+                            }),
                     variant: SweetAlertVariant.Error,
                   });
                 },

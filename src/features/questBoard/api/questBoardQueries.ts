@@ -916,7 +916,10 @@ export function useFileDisputeMutation() {
       );
     },
     onError: async (error, { questId, viewerId }) => {
-      if (error instanceof ApiError && error.status === 409) {
+      if (
+        error instanceof ApiError &&
+        (error.status === 409 || error.code === "DISPUTE_CASE_TEAM_LEADER_ONLY")
+      ) {
         // The Work Hub reads the Dispute window from the snapshot and keeps
         // the case lookup disabled, so a plain invalidation would not refetch
         // it. Fetch the case directly and reload the snapshot's window.
