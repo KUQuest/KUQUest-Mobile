@@ -27330,7 +27330,7 @@ paths:
       tags: 
         - Quest Proof v2
       summary: List v2 Proof Submissions
-      description: Returns role-filtered Proof Submission views. Drafts are visible only to their submitter.
+      description: Returns role-filtered Proof Submission views. Drafts are visible only to their submitter. FULL-visible file rows include a short-lived `url` and `urlExpiresAt`; both are null when the file is failed, missing, deleted, or its link is unavailable. SUMMARY views do not include file rows.
       operationId: listQuestV2ProofSubmissions
       security: 
         - betterAuthSession: 
@@ -27535,6 +27535,20 @@ paths:
                                     anyOf: 
                                       - minLength: 1
                                         maxLength: 64
+                                        type: string
+                                      - type: "null"
+                                  url:
+                                    nullable: true
+                                    anyOf:
+                                      - format: uri
+                                        description: Short-lived file link for a ready Proof file; null when unavailable.
+                                        type: string
+                                      - type: "null"
+                                  urlExpiresAt:
+                                    nullable: true
+                                    anyOf:
+                                      - format: date-time
+                                        description: Expiry time for url; null when no file link is available.
                                         type: string
                                       - type: "null"
                 additionalProperties: false

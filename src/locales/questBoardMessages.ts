@@ -253,6 +253,8 @@ export interface QuestBoardMessages {
     contentType: string | null,
     size: string
   ) => string;
+  proofReviewFileExpiresAt: (value: string) => string;
+  proofReviewFileRefresh: string;
   proofReviewFileStatus: (status: string) => string;
   proofReviewPreview: string;
   proofReviewPreviewUnavailable: string;
@@ -676,6 +678,8 @@ export const questBoardMessages: Record<SupportedLocale, QuestBoardMessages> = {
     proofReviewNoEvidence: "No evidence files were attached.",
     proofReviewFileLabel: (position, contentType, size) =>
       `File ${position}${contentType ? ` · ${contentType}` : ""}${size ? ` · ${size}` : ""}`,
+    proofReviewFileExpiresAt: (value) => `Link expires ${value}`,
+    proofReviewFileRefresh: "Refresh link",
     proofReviewPreview: "Preview",
     proofReviewPreviewUnavailable:
       "A preview link is not available for this private file.",
@@ -1136,6 +1140,8 @@ export const questBoardMessages: Record<SupportedLocale, QuestBoardMessages> = {
     proofReviewNoEvidence: "ไม่ได้แนบไฟล์หลักฐาน",
     proofReviewFileLabel: (position, contentType, size) =>
       `ไฟล์ที่ ${position}${contentType ? ` · ${contentType}` : ""}${size ? ` · ${size}` : ""}`,
+    proofReviewFileExpiresAt: (value) => `ลิงก์หมดอายุ ${value}`,
+    proofReviewFileRefresh: "โหลดลิงก์ใหม่",
     proofReviewPreview: "ดูตัวอย่าง",
     proofReviewPreviewUnavailable: "ไม่มีลิงก์ตัวอย่างสำหรับไฟล์ส่วนตัวนี้",
     proofReviewPreviewError: "ไม่สามารถเปิดหลักฐานนี้ได้",

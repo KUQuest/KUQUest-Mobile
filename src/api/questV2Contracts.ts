@@ -745,6 +745,7 @@ export const questV2ProofFileSchema = z.object({
   uploadStatus: questV2ProofFileStatusSchema,
   failureCode: z.string().nullable(),
   url: z.string().url().nullable().optional(),
+  urlExpiresAt: z.string().nullable().optional(),
 });
 export const questV2ProofFileLinkSchema = z.object({
   fileId: questV2IdSchema,
