@@ -16,16 +16,21 @@ type MemberNotificationMessages = {
   back: string;
   markAllRead: string;
   markingAllRead: string;
-  unreadOnly: string;
+  unreadOnly: (count: number) => string;
   all: string;
+  today: string;
+  yesterday: string;
   loading: string;
   error: string;
   errorDescription: string;
   retry: string;
   empty: string;
+  emptyDescription: string;
   emptyUnread: string;
+  emptyUnreadDescription: string;
   loadMore: string;
   unread: string;
+  opensProfile: string;
   openInbox: (count: number) => string;
   generic: Copy;
   types: Record<MemberNotificationType, CopyBuilder>;
@@ -40,16 +45,22 @@ export const memberNotificationMessages: Record<
     back: "Back",
     markAllRead: "Mark all read",
     markingAllRead: "Marking…",
-    unreadOnly: "Unread",
+    unreadOnly: (count) => (count > 0 ? `Unread · ${count}` : "Unread"),
     all: "All",
+    today: "Today",
+    yesterday: "Yesterday",
     loading: "Loading notifications",
     error: "Unable to load notifications.",
     errorDescription: "Check your connection and try again.",
     retry: "Try again",
-    empty: "No notifications yet.",
-    emptyUnread: "You have read every notification.",
+    empty: "No notifications yet",
+    emptyDescription:
+      "Updates about your account, such as a Red Flag or a ban, show up here.",
+    emptyUnread: "You're all caught up",
+    emptyUnreadDescription: "You have read every notification.",
     loadMore: "Load more",
     unread: "Unread",
+    opensProfile: "Opens your profile",
     openInbox: (count) =>
       count > 0 ? `Notifications, ${count} unread` : "Notifications",
     generic: {
@@ -94,16 +105,22 @@ export const memberNotificationMessages: Record<
     back: "ย้อนกลับ",
     markAllRead: "อ่านทั้งหมด",
     markingAllRead: "กำลังบันทึก…",
-    unreadOnly: "ยังไม่อ่าน",
+    unreadOnly: (count) => (count > 0 ? `ยังไม่อ่าน · ${count}` : "ยังไม่อ่าน"),
     all: "ทั้งหมด",
+    today: "วันนี้",
+    yesterday: "เมื่อวาน",
     loading: "กำลังโหลดการแจ้งเตือน",
     error: "ไม่สามารถโหลดการแจ้งเตือนได้",
     errorDescription: "ตรวจสอบการเชื่อมต่อแล้วลองอีกครั้ง",
     retry: "ลองอีกครั้ง",
     empty: "ยังไม่มีการแจ้งเตือน",
-    emptyUnread: "คุณอ่านการแจ้งเตือนครบแล้ว",
+    emptyDescription:
+      "การอัปเดตเกี่ยวกับบัญชีของคุณ เช่น Red Flag หรือการแบน จะแสดงที่นี่",
+    emptyUnread: "คุณอ่านครบแล้ว",
+    emptyUnreadDescription: "คุณอ่านการแจ้งเตือนครบทุกรายการแล้ว",
     loadMore: "โหลดเพิ่ม",
     unread: "ยังไม่อ่าน",
+    opensProfile: "เปิดโปรไฟล์ของคุณ",
     openInbox: (count) =>
       count > 0 ? `การแจ้งเตือน ยังไม่อ่าน ${count} รายการ` : "การแจ้งเตือน",
     generic: {

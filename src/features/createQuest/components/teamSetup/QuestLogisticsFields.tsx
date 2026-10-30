@@ -13,6 +13,7 @@ import type {
 } from "react-native";
 
 import { Image, Pressable, Text, TextInput, View } from "@/tw";
+import { fontFamily } from "@/theme/typography";
 import { cn } from "@/tw/cn";
 import { createQuestMessages } from "@/locales/createQuestMessages";
 import type { SupportedLocale } from "@/locales/locale";
@@ -270,6 +271,7 @@ export function QuestLogisticsFields({
               <TextInput
                 ref={locationRef}
                 className={styles.iconInput}
+                style={{ fontFamily: fontFamily.regular }}
                 placeholder={messages.locationPlaceholder}
                 placeholderTextColor={colors.textMuted}
                 value={draft.location}

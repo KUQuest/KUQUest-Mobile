@@ -7,12 +7,13 @@ import { workerSnapshot } from "@/testing/workerSnapshotFixtures";
 import { projectWorkerWork } from "../workerWorkProjection";
 
 describe("projectWorkerWork", () => {
-  it("puts Worker actions first and orders active work by due time", () => {
+  it("puts Worker actions first and orders active work by soonest start", () => {
     const projection = projectWorkerWork([
       workerSnapshot({
         id: "later",
         title: "Later proof",
         nextAction: "SUBMIT_PROOF",
+        startTime: "2026-10-03T09:00:00Z",
         dueAt: "2026-10-03T12:00:00Z",
       }),
       workerSnapshot({
@@ -25,6 +26,7 @@ describe("projectWorkerWork", () => {
         id: "sooner",
         title: "Sooner completion",
         nextAction: "CONFIRM_COMPLETION",
+        startTime: "2026-10-02T09:00:00Z",
         dueAt: "2026-10-02T12:00:00Z",
       }),
     ]);
@@ -42,6 +44,116 @@ describe("projectWorkerWork", () => {
     ]);
     expect(projection.activeCount).toBe(3);
     expect(projection.history).toEqual([]);
+  });
+
+  it("orders history newest first and compares instants across offsets", () => {
+    const ended = {
+      state: "QUEST_COMPLETED",
+      assignmentState: "ASSIGNMENT_COMPLETED",
+    } as const;
+    const projection = projectWorkerWork([
+      workerSnapshot({
+        ...ended,
+        id: "oldest",
+        title: "Oldest",
+        startTime: "2026-10-01T09:00:00Z",
+      }),
+      workerSnapshot({
+        ...ended,
+        id: "newest",
+        title: "Newest",
+        // 03:00 UTC on 3 October: a string compare would put this last.
+        startTime: "2026-10-03T10:00:00.000+07:00",
+      }),
+      workerSnapshot({
+        ...ended,
+        id: "middle",
+        title: "Middle",
+        startTime: "2026-10-02T23:00:00Z",
+      }),
+    ]);
+
+    expect(projection.history.map((item) => item.questId)).toEqual([
+      "newest",
+      "middle",
+      "oldest",
+    ]);
+  });
+
+  describe("Dispute Case", () => {
+    const disputeCase = (status: string) => ({
+      id: "case-1",
+      displayId: "DSP-000001",
+      status,
+      createdAt: "2026-10-02T09:00:00Z",
+    });
+    const failed = {
+      id: "failed",
+      title: "Failed",
+      state: "QUEST_FAILED",
+      assignmentState: "ASSIGNMENT_INCOMPLETE",
+    } as const;
+
+    it("keeps a Quest with an open case in active work as In dispute", () => {
+      const projection = projectWorkerWork([
+        workerSnapshot({
+          ...failed,
+          dispute: {
+            canFile: false,
+            windowEndsAt: null,
+            myCase: disputeCase("DISPUTE_CASE_PENDING"),
+          },
+        }),
+      ]);
+
+      expect(projection.history).toEqual([]);
+      expect(projection.needsAction).toEqual([]);
+      expect(projection.otherActive).toEqual([
+        expect.objectContaining({
+          questId: "failed",
+          status: "disputing",
+          destination: "workHub",
+        }),
+      ]);
+      expect(projection.activeCount).toBe(1);
+    });
+
+    it("shows a Team Member the Team's open case", () => {
+      const projection = projectWorkerWork([
+        workerSnapshot({
+          ...failed,
+          dispute: {
+            canFile: false,
+            windowEndsAt: null,
+            myCase: null,
+            teamCase: disputeCase("DISPUTE_CASE_PENDING"),
+          },
+        }),
+      ]);
+
+      expect(projection.otherActive[0]?.status).toBe("disputing");
+    });
+
+    it.each(["DISPUTE_CASE_DISMISSED", "DISPUTE_CASE_RESOLVED"])(
+      "returns the Quest to history after %s",
+      (status) => {
+        const projection = projectWorkerWork([
+          workerSnapshot({
+            ...failed,
+            dispute: {
+              canFile: false,
+              windowEndsAt: null,
+              myCase: disputeCase(status),
+            },
+          }),
+        ]);
+
+        expect(projection.otherActive).toEqual([]);
+        expect(projection.history).toEqual([
+          expect.objectContaining({ questId: "failed", status: "incomplete" }),
+        ]);
+      }
+    );
   });
 
   it("shows a sent proof as awaiting Hirer review", () => {

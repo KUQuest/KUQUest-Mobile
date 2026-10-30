@@ -18,6 +18,7 @@ import styles from "./selectStyles";
 export interface Option {
   label: string;
   value: string;
+  icon?: React.ReactNode;
 }
 
 export interface SelectProps {
@@ -137,8 +138,10 @@ export const Select = React.forwardRef<
           accessibilityLabel={`${fieldAccessibilityLabel}: ${item.label}`}
           accessibilityState={{ selected: item.value === value }}
         >
+          {item.icon ? <View className="mr-ku-12">{item.icon}</View> : null}
           <Text
             className={cn(
+              "flex-1",
               styles.optionText,
               item.value === value && styles.optionTextSelected
             )}
@@ -185,8 +188,12 @@ export const Select = React.forwardRef<
         }}
         testID="select-trigger"
       >
+        {selectedOption?.icon ? (
+          <View className="mr-ku-12">{selectedOption.icon}</View>
+        ) : null}
         <Text
           className={cn(
+            "flex-1",
             styles.selectText,
             !selectedOption && styles.placeholderText
           )}
