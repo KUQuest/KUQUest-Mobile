@@ -14,6 +14,7 @@ export type WorkerWorkStatusKey =
   | "completed"
   | "incomplete"
   | "cancelled"
+  | "disputing"
   | "failed"
   | "pendingSelection"
   | "teamForming"
@@ -118,6 +119,7 @@ export const workerWorkMessages: Record<SupportedLocale, WorkerWorkMessages> = {
       completed: "สำเร็จ",
       incomplete: "ไม่ผ่าน",
       cancelled: "ยกเลิก",
+      disputing: "กำลังพิพาท",
       failed: "ล้มเหลว",
       pendingSelection: "รอพิจารณา",
       teamForming: "กำลังรวบรวมทีม",
@@ -204,6 +206,7 @@ export const workerWorkMessages: Record<SupportedLocale, WorkerWorkMessages> = {
       completed: "Completed",
       incomplete: "Not approved",
       cancelled: "Cancelled",
+      disputing: "In dispute",
       failed: "Failed",
       pendingSelection: "Pending selection",
       teamForming: "Team forming",
