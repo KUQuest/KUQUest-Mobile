@@ -7,6 +7,7 @@ export type PenaltyResult =
   | "PENALTY_PERMANENT_BAN";
 
 export interface ProfileMessages {
+  penaltyStatusUnavailable: string;
   penaltyMisconductLadder: string;
   penaltyReviewLadder: string;
   penaltyStrikes: (strikeCount: number, ladderLength: number) => string;
@@ -75,6 +76,7 @@ export interface ProfileMessages {
 
 export const profileMessages: Record<SupportedLocale, ProfileMessages> = {
   en: {
+    penaltyStatusUnavailable: "Penalty status is temporarily unavailable.",
     penaltyMisconductLadder: "Misconduct",
     penaltyReviewLadder: "Low review average",
     penaltyStrikes: (strikeCount, ladderLength) =>
@@ -153,6 +155,7 @@ export const profileMessages: Record<SupportedLocale, ProfileMessages> = {
     reviewsError: "Unable to load reviews.",
   },
   th: {
+    penaltyStatusUnavailable: "สถานะบทลงโทษไม่พร้อมใช้งานชั่วคราว",
     penaltyMisconductLadder: "การกระทำผิด",
     penaltyReviewLadder: "คะแนนรีวิวเฉลี่ยต่ำ",
     penaltyStrikes: (strikeCount, ladderLength) =>

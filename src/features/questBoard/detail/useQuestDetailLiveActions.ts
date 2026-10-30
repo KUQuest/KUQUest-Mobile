@@ -11,6 +11,7 @@ import { useCallback } from "react";
 
 import { getLocalizedErrorMessage } from "@/utils/error";
 import { useLocale } from "@/features/preferences/localeStore";
+import { invalidatePenaltyStatus } from "@/features/profile/api/profileQueries";
 import { createQuestIdempotencyKey } from "@/api/QuestApi";
 import type { UploadAsset } from "@/api/fileUpload";
 import type { LiveQuestSnapshot } from "../live/liveQuestTypes";
@@ -133,6 +134,12 @@ export function useQuestDetailLiveActions(
         );
       }
       await invalidateQuestReads(queryClient, questId, viewerId, "worker");
+      if (
+        error instanceof ApiError &&
+        error.code === QuestV2JoinErrorCode.MEMBER_RED_FLAGGED
+      ) {
+        void invalidatePenaltyStatus(queryClient);
+      }
       if (
         error instanceof ApiError &&
         error.code === QuestV2JoinErrorCode.QUEST_NOT_OPEN

@@ -31,6 +31,7 @@ import type { QuestDetailLiveActionContext } from "../questDetailActions";
 import { QuestDetailBody } from "../components/QuestDetailBody";
 import { QuestDetailSheets } from "../components/QuestDetailSheets";
 import * as questBoardQueries from "../../api/questBoardQueries";
+import { profileKeys } from "@/features/profile/api/profileQueries";
 import { useQuestDetailLiveActions } from "../useQuestDetailLiveActions";
 import type { QuestDetailSurfaceTransitions } from "../useQuestDetailSurfaceState";
 
@@ -1351,6 +1352,48 @@ describe("QuestDetailScreen smoke", () => {
       expect(closeConfirmation).toHaveBeenCalledTimes(
         code === "QUEST_NOT_OPEN" ? 1 : 0
       );
+    } finally {
+      queryClient.clear();
+      showError.mockRestore();
+    }
+  });
+  it("marks the Member's penalty status outdated on MEMBER_RED_FLAGGED", async () => {
+    const queryClient = new QueryClient();
+    const questId = "quest-join-red-flagged";
+    const viewerId = "worker-red-flagged";
+    queryClient.setQueryData(profileKeys.penaltyStatus(), {
+      redFlagExpiresAt: null,
+    });
+    mockGetLiveSnapshot.mockResolvedValue(undefined);
+    mockJoinQuest.mockRejectedValueOnce(
+      new ApiError(409, "MEMBER_RED_FLAGGED", "rejected")
+    );
+    const showError = jest.spyOn(sweetAlert, "showErrorAlert");
+    const context = {
+      questId,
+      viewerId,
+      quest: null,
+      messages: questBoardMessages.en,
+      transitions: {
+        beginLiveAction: jest.fn(() => true),
+        endLiveAction: jest.fn(),
+        closeConfirmation: jest.fn(),
+      },
+    } as never;
+    const wrapper = ({ children }: { children: ReactNode }) => (
+      <QueryClientProvider client={queryClient}>{children}</QueryClientProvider>
+    );
+
+    try {
+      const hook = await renderHook(() => useQuestDetailLiveActions(context), {
+        wrapper,
+      });
+      await act(async () => {
+        await hook.result.current.join();
+      });
+      expect(
+        queryClient.getQueryState(profileKeys.penaltyStatus())?.isInvalidated
+      ).toBe(true);
     } finally {
       queryClient.clear();
       showError.mockRestore();
