@@ -12,6 +12,7 @@ import {
   useChatNotificationConversationsQuery,
   useHasUnreadChatQuery,
   useMessagesQuery,
+  useOlderMessages,
   useSendChatMessageMutation,
 } from "../api/chatQueries";
 import {
@@ -207,6 +208,63 @@ describe("chat message transport", () => {
         "socket-message",
       ])
     );
+  });
+
+  it("loads older history through the page cursor until the start is reached", async () => {
+    const getMessages = jest
+      .spyOn(chatApi, "getMessages")
+      .mockImplementation(async (_conversationId, params = {}) =>
+        params.before === "cursor-older"
+          ? {
+              items: [
+                makeServerMessage("message-1", 1),
+                makeServerMessage("message-2", 2),
+              ],
+              nextCursor: null,
+              hasMore: false,
+            }
+          : {
+              items: [
+                makeServerMessage("message-3", 3),
+                makeServerMessage("message-4", 4),
+              ],
+              nextCursor: "cursor-older",
+              hasMore: true,
+            }
+      );
+    const { result } = await renderHook(
+      () => ({
+        messages: useMessagesQuery("conversation-1", "member-1", "WORK"),
+        older: useOlderMessages("conversation-1", "member-1", "WORK"),
+      }),
+      { wrapper: createWrapper() }
+    );
+    await waitFor(() =>
+      expect(result.current.older.hasOlderMessages).toBe(true)
+    );
+
+    await act(async () => {
+      await result.current.older.loadOlderMessages();
+    });
+
+    expect(getMessages).toHaveBeenLastCalledWith(
+      "conversation-1",
+      { limit: 50, before: "cursor-older" },
+      expect.anything()
+    );
+    expect(result.current.messages.data?.map((message) => message.id)).toEqual([
+      "message-1",
+      "message-2",
+      "message-3",
+      "message-4",
+    ]);
+    expect(result.current.older.hasOlderMessages).toBe(false);
+
+    await act(async () => {
+      await result.current.messages.refetch();
+    });
+    expect(result.current.messages.data).toHaveLength(4);
+    expect(result.current.older.hasOlderMessages).toBe(false);
   });
 
   it("sends connected text over WebSocket and replaces its optimistic message", async () => {

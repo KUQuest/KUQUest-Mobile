@@ -1,3 +1,4 @@
+import { useCallback } from "react";
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 
 import {
@@ -45,7 +46,39 @@ export const chatKeys = {
     viewerId: string,
     mode: ChatConversationMode = ConversationMode.WORK
   ) => [...chatKeys.all, "messages", mode, conversationId, viewerId] as const,
+  messageHistory: (
+    conversationId: string,
+    viewerId: string,
+    mode: ChatConversationMode
+  ) =>
+    [
+      ...chatKeys.all,
+      "message-history",
+      mode,
+      conversationId,
+      viewerId,
+    ] as const,
 };
+
+const MESSAGE_PAGE_SIZE = 50;
+
+/** Cursor for the next older Message page; `null` once history is exhausted. */
+interface MessageHistory {
+  before: string | null;
+}
+
+function fetchMessagePage(
+  conversationId: string,
+  mode: ChatConversationMode,
+  params: { limit: number; before?: string },
+  signal?: AbortSignal
+) {
+  return mode === ConversationMode.CANDIDATE_INQUIRY
+    ? liveQuestService.getCandidateInquiryMessages(conversationId, params, {
+        signal,
+      })
+    : chatApi.getMessages(conversationId, params, { signal });
+}
 
 function candidateInquiryToConversation(
   inquiry: ServerCandidateInquiry,
@@ -222,24 +255,84 @@ export function useMessagesQuery(
     enabled: Boolean(conversationId && viewerId) && enabled,
     queryKey,
     queryFn: async ({ signal }) => {
-      const page =
-        mode === "CANDIDATE_INQUIRY"
-          ? await liveQuestService.getCandidateInquiryMessages(
-              conversationId,
-              { limit: 50 },
-              { signal }
-            )
-          : await chatApi.getMessages(
-              conversationId,
-              { limit: 50 },
-              { signal }
-            );
+      const page = await fetchMessagePage(
+        conversationId,
+        mode,
+        { limit: MESSAGE_PAGE_SIZE },
+        signal
+      );
+      const current =
+        queryClient.getQueryData<DisplayChatMessage[]>(queryKey) ?? [];
+      const historyKey = chatKeys.messageHistory(
+        conversationId,
+        viewerId,
+        mode
+      );
+      // Older pages already merged keep their own cursor; only a fresh cache
+      // starts history from the newest page.
+      if (
+        current.length === 0 ||
+        !queryClient.getQueryData<MessageHistory>(historyKey)
+      ) {
+        queryClient.setQueryData<MessageHistory>(historyKey, {
+          before: page.hasMore ? page.nextCursor : null,
+        });
+      }
       return mergeDisplayMessages(
-        queryClient.getQueryData<DisplayChatMessage[]>(queryKey) ?? [],
+        current,
         page.items.map((message) => toDisplayMessage(message, viewerId))
       );
     },
   });
+}
+
+/** Loads the Message page before the oldest loaded one into the Message cache. */
+export function useOlderMessages(
+  conversationId: string,
+  viewerId: string,
+  mode: ChatConversationMode
+) {
+  const queryClient = useQueryClient();
+  const historyKey = chatKeys.messageHistory(conversationId, viewerId, mode);
+  const historyQuery = useQuery<MessageHistory>({
+    enabled: false,
+    queryKey: historyKey,
+    queryFn: () => ({ before: null }),
+    staleTime: Infinity,
+  });
+  const before = historyQuery.data?.before ?? null;
+  const olderMutation = useMutation({
+    mutationFn: (cursor: string) =>
+      fetchMessagePage(conversationId, mode, {
+        limit: MESSAGE_PAGE_SIZE,
+        before: cursor,
+      }),
+    onSuccess: (page) => {
+      queryClient.setQueryData<DisplayChatMessage[]>(
+        chatKeys.messages(conversationId, viewerId, mode),
+        (current) =>
+          mergeDisplayMessages(
+            current ?? [],
+            page.items.map((message) => toDisplayMessage(message, viewerId))
+          )
+      );
+      queryClient.setQueryData<MessageHistory>(historyKey, {
+        before: page.hasMore ? page.nextCursor : null,
+      });
+    },
+  });
+  const isLoadingOlderMessages = olderMutation.isPending;
+  const { mutateAsync } = olderMutation;
+  const loadOlderMessages = useCallback(async () => {
+    if (!before || isLoadingOlderMessages) return;
+    await mutateAsync(before);
+  }, [before, isLoadingOlderMessages, mutateAsync]);
+
+  return {
+    hasOlderMessages: before !== null,
+    isLoadingOlderMessages,
+    loadOlderMessages,
+  };
 }
 
 export function useWorkConversationQuery(

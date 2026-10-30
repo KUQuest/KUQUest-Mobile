@@ -579,14 +579,11 @@ export class LiveQuestService {
         [] as QuestV2ProofSubmission[]
       ),
       optionalResource(
-        async () => {
-          const page = await chatApi.listConversations({ limit: 20 }, options);
-          return (
-            page.items.find(
-              (conversation) => conversation.quest.id === questId
-            ) ?? null
-          );
-        },
+        () =>
+          chatApi.findConversation(
+            (conversation) => conversation.quest.id === questId,
+            options
+          ),
         null as ServerChatConversation | null
       ),
       editRequestId
