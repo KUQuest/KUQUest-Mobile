@@ -131,20 +131,23 @@ export interface WalletMessages {
   transferPreviewEarningsRemaining: string;
   payoutAction: string;
   requestPayoutTitle: string;
-  requestPayoutDesc: string;
-  payoutAvailableEarnings: string;
+  payoutAvailable: (amount: string) => string;
+  payoutMax: string;
+  payoutMaxLabel: string;
+  payoutReview: string;
+  payoutDone: string;
+  payoutDoneNote: string;
+  destinationFormTitle: string;
   payoutAmountLabel: string;
   payoutAmountInvalid: string;
   payoutNoEarnings: string;
   payoutInsufficientEarnings: string;
   payoutDestinationLabel: string;
-  payoutManageDestination: string;
   payoutDestinationLoading: string;
   payoutDestinationLoadError: string;
   payoutNoDestinationTitle: string;
   payoutNoDestinationDesc: string;
   payoutAddDestination: string;
-  payoutGetQuote: string;
   payoutQuoting: string;
   payoutQuoteError: string;
   payoutQuoteTitle: string;
@@ -161,10 +164,7 @@ export interface WalletMessages {
   payoutSubmitting: string;
   payoutSubmitError: string;
   payoutSuccessTitle: string;
-  payoutSuccessDesc: (receipt: string) => string;
   destinationTitle: string;
-  destinationDesc: string;
-  destinationActiveTitle: string;
   destinationBankLabel: string;
   destinationHolderLabel: string;
   destinationAccountLabel: string;
@@ -363,46 +363,44 @@ export const walletMessages: Record<SupportedLocale, WalletMessages> = {
     transferPreviewEarningsRemaining: "Remaining earnings:",
     payoutAction: "Payout",
     requestPayoutTitle: "Request a Payout",
-    requestPayoutDesc:
-      "Send Earnings to your verified Thai bank account. An Admin reviews every Payout before it is sent.",
-    payoutAvailableEarnings: "Available Earnings",
+    payoutAvailable: (amount: string) => `Available ${amount}`,
+    payoutMax: "Max",
+    payoutMaxLabel: "Use all available Earnings",
+    payoutReview: "Review payout",
+    payoutDone: "Done",
+    payoutDoneNote:
+      "An Admin reviews this Payout before it is sent. Track it in your History.",
+    destinationFormTitle: "Add bank account",
     payoutAmountLabel: "Amount to receive (฿)",
     payoutAmountInvalid: "Enter an amount greater than ฿0.00",
     payoutNoEarnings: "No Earnings available for a Payout",
     payoutInsufficientEarnings: "Amount is more than your Earnings",
     payoutDestinationLabel: "Pay out to",
-    payoutManageDestination: "Manage",
     payoutDestinationLoading: "Loading payout account",
     payoutDestinationLoadError: "Could not load your payout account.",
     payoutNoDestinationTitle: "Add a payout account first",
     payoutNoDestinationDesc:
       "You need a Thai bank account on file before you can request a Payout.",
-    payoutAddDestination: "Add payout account",
-    payoutGetQuote: "Review fees",
+    payoutAddDestination: "Add bank account",
     payoutQuoting: "Getting quote...",
     payoutQuoteError: "Could not get a Payout quote. Please try again.",
     payoutQuoteTitle: "Payout summary",
     payoutQuoteReceipt: "You receive",
     payoutQuoteFee: "Maximum fee",
     payoutQuoteTax: "Maximum tax",
-    payoutQuoteDebit: "Taken from Earnings (maximum)",
+    payoutQuoteDebit: "Deducted from Earnings (maximum)",
     payoutQuoteExpires: (time: string) => `Quote valid until ${time}`,
     payoutQuoteNote:
       "The amount is held as a Payout Reserve until an Admin decides. The final fee and tax are confirmed when the Payout settles.",
     payoutQuoteExpired: "This quote has expired. Review the fees again.",
     payoutQuoteInsufficient:
       "Your Earnings no longer cover this Payout. Lower the amount.",
-    payoutEditAmount: "Change amount",
+    payoutEditAmount: "Edit amount",
     payoutConfirm: "Confirm Payout",
     payoutSubmitting: "Submitting...",
     payoutSubmitError: "Could not submit your Payout. Please try again.",
     payoutSuccessTitle: "Payout requested",
-    payoutSuccessDesc: (receipt: string) =>
-      `Your Payout of ${receipt} is waiting for Admin approval.`,
     destinationTitle: "Payout account",
-    destinationDesc:
-      "The active Thai bank account that receives your Payouts. Account numbers stay masked.",
-    destinationActiveTitle: "Active account",
     destinationBankLabel: "Bank",
     destinationHolderLabel: "Account holder",
     destinationAccountLabel: "Account number",
@@ -410,7 +408,7 @@ export const walletMessages: Record<SupportedLocale, WalletMessages> = {
     destinationEmptyDesc: "Add a Thai bank account to receive Payouts.",
     destinationLoadError: "Could not load your payout account.",
     destinationAdd: "Add account",
-    destinationReplace: "Replace account",
+    destinationReplace: "Replace bank account",
     destinationGivenNameLabel: "Given name",
     destinationSurnameLabel: "Surname",
     destinationHolderNameLabel: "Account holder name",
@@ -619,21 +617,24 @@ export const walletMessages: Record<SupportedLocale, WalletMessages> = {
     transferPreviewEarningsRemaining: "รายได้สะสมคงเหลือ:",
     payoutAction: "ถอนเงิน",
     requestPayoutTitle: "ขอถอนเงิน",
-    requestPayoutDesc:
-      "ถอนรายได้สะสมเข้าบัญชีธนาคารไทยของคุณ ผู้ดูแลระบบจะตรวจสอบทุกรายการก่อนโอน",
-    payoutAvailableEarnings: "รายได้สะสมที่ใช้ได้",
+    payoutAvailable: (amount: string) => `ใช้ได้ ${amount}`,
+    payoutMax: "ทั้งหมด",
+    payoutMaxLabel: "ใช้รายได้สะสมทั้งหมด",
+    payoutReview: "ตรวจสอบการถอนเงิน",
+    payoutDone: "เสร็จสิ้น",
+    payoutDoneNote:
+      "ผู้ดูแลระบบจะตรวจสอบก่อนโอน ติดตามสถานะได้ที่ประวัติรายการ",
+    destinationFormTitle: "เพิ่มบัญชีธนาคาร",
     payoutAmountLabel: "จำนวนเงินที่ต้องการรับ (฿)",
     payoutAmountInvalid: "ระบุจำนวนเงินมากกว่า ฿0.00",
     payoutNoEarnings: "ไม่มีรายได้สะสมสำหรับการถอนเงิน",
     payoutInsufficientEarnings: "จำนวนเงินเกินรายได้สะสมของคุณ",
     payoutDestinationLabel: "โอนเข้าบัญชี",
-    payoutManageDestination: "จัดการ",
     payoutDestinationLoading: "กำลังโหลดบัญชีรับเงิน",
     payoutDestinationLoadError: "ไม่สามารถโหลดบัญชีรับเงินได้",
     payoutNoDestinationTitle: "เพิ่มบัญชีรับเงินก่อน",
     payoutNoDestinationDesc: "ต้องมีบัญชีธนาคารไทยในระบบก่อนจึงจะขอถอนเงินได้",
-    payoutAddDestination: "เพิ่มบัญชีรับเงิน",
-    payoutGetQuote: "ตรวจสอบค่าธรรมเนียม",
+    payoutAddDestination: "เพิ่มบัญชีธนาคาร",
     payoutQuoting: "กำลังคำนวณ...",
     payoutQuoteError: "ไม่สามารถคำนวณการถอนเงินได้ โปรดลองอีกครั้ง",
     payoutQuoteTitle: "สรุปการถอนเงิน",
@@ -652,11 +653,7 @@ export const walletMessages: Record<SupportedLocale, WalletMessages> = {
     payoutSubmitting: "กำลังส่งคำขอ...",
     payoutSubmitError: "ไม่สามารถส่งคำขอถอนเงินได้ โปรดลองอีกครั้ง",
     payoutSuccessTitle: "ส่งคำขอถอนเงินแล้ว",
-    payoutSuccessDesc: (receipt: string) =>
-      `คำขอถอนเงิน ${receipt} กำลังรอผู้ดูแลระบบอนุมัติ`,
     destinationTitle: "บัญชีรับเงิน",
-    destinationDesc: "บัญชีธนาคารไทยที่ใช้รับเงินถอน เลขบัญชีจะแสดงแบบปกปิด",
-    destinationActiveTitle: "บัญชีที่ใช้งานอยู่",
     destinationBankLabel: "ธนาคาร",
     destinationHolderLabel: "ชื่อบัญชี",
     destinationAccountLabel: "เลขบัญชี",
@@ -664,7 +661,7 @@ export const walletMessages: Record<SupportedLocale, WalletMessages> = {
     destinationEmptyDesc: "เพิ่มบัญชีธนาคารไทยเพื่อรับเงินถอน",
     destinationLoadError: "ไม่สามารถโหลดบัญชีรับเงินได้",
     destinationAdd: "เพิ่มบัญชี",
-    destinationReplace: "เปลี่ยนบัญชี",
+    destinationReplace: "เปลี่ยนบัญชีธนาคาร",
     destinationGivenNameLabel: "ชื่อ",
     destinationSurnameLabel: "นามสกุล",
     destinationHolderNameLabel: "ชื่อบัญชี",

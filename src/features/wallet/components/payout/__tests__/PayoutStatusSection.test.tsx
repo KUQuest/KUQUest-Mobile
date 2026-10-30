@@ -1,9 +1,10 @@
 import React from "react";
 import { fireEvent, waitFor } from "@testing-library/react-native";
 import { renderWithQueryClient } from "@/testing/queryTestUtils";
-import { walletApi } from "@/api/WalletApi";
+import { payoutStatusSchema, walletApi } from "@/api/WalletApi";
 import { walletMessages } from "@/locales/walletMessages";
 import { PayoutStatusSection } from "../PayoutStatusSection";
+import { PAYOUT_STATUS_TONE, getPayoutTone } from "../payoutStatusTone";
 
 jest.mock("@/features/preferences/localeStore", () => ({
   useLocale: () => ({ locale: "th" }),
@@ -124,5 +125,50 @@ describe("PayoutStatusSection", () => {
     await waitFor(() =>
       expect(view.getByTestId("payout-status-section")).toBeTruthy()
     );
+  });
+
+  it("maps every Payout status to a tone and reads unknown statuses as in progress", () => {
+    for (const status of payoutStatusSchema.options) {
+      expect(PAYOUT_STATUS_TONE[status]).toBeDefined();
+      expect(m.payoutStatusLabels[status]).toBeTruthy();
+    }
+    expect(PAYOUT_STATUS_TONE.SUCCEEDED).toBe("success");
+    expect(
+      (["FAILED", "REJECTED", "CANCELLED"] as const).map(
+        (status) => PAYOUT_STATUS_TONE[status]
+      )
+    ).toEqual(["danger", "danger", "danger"]);
+    expect(getPayoutTone("SOMETHING_NEW")).toBe("warning");
+  });
+
+  it("lists status history entries in the order the API returns them", async () => {
+    (walletApi.getPayout as jest.Mock).mockResolvedValue(pendingPayout);
+    (walletApi.listPayoutStatusHistory as jest.Mock).mockResolvedValue([
+      {
+        id: "h-new",
+        fromStatus: "PENDING_ADMIN_APPROVAL",
+        toStatus: "SUCCEEDED",
+        reason: null,
+        occurredAt: "2026-05-02T04:00:00Z",
+      },
+      {
+        id: "h-old",
+        fromStatus: null,
+        toStatus: "PENDING_ADMIN_APPROVAL",
+        reason: null,
+        occurredAt: "2026-05-01T03:00:00Z",
+      },
+    ]);
+    const view = await renderWithQueryClient(
+      <PayoutStatusSection messages={m} payoutId="payout-1" />
+    );
+
+    await waitFor(() =>
+      expect(view.getByTestId("payout-history-h-old")).toBeTruthy()
+    );
+    const ids = view
+      .getAllByTestId(/^payout-history-h-/)
+      .map((node) => node.props.testID);
+    expect(ids).toEqual(["payout-history-h-new", "payout-history-h-old"]);
   });
 });

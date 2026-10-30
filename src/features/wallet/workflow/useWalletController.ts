@@ -51,9 +51,7 @@ export function useWalletController() {
   const error = loadError ? getLocalizedErrorMessage(loadError, locale) : null;
   const [filter, setFilter] = useState<HirerHistoryFilterOption>("all");
   const [transferModalOpen, setTransferModalOpen] = useState(false);
-  const [payoutModalOpen, setPayoutModalOpen] = useState(false);
-  const [payoutDestinationModalOpen, setPayoutDestinationModalOpen] =
-    useState(false);
+  const [payoutOpen, setPayoutOpen] = useState(false);
   const [selectedTransaction, setSelectedTransaction] =
     useState<ClassifiedHirerTransaction | null>(null);
   const refetchWallet = walletQuery.refetch;
@@ -66,16 +64,8 @@ export function useWalletController() {
     () => setTransferModalOpen(false),
     []
   );
-  const handleOpenPayout = useCallback(() => setPayoutModalOpen(true), []);
-  const handleClosePayout = useCallback(() => setPayoutModalOpen(false), []);
-  const handleOpenPayoutDestination = useCallback(
-    () => setPayoutDestinationModalOpen(true),
-    []
-  );
-  const handleClosePayoutDestination = useCallback(
-    () => setPayoutDestinationModalOpen(false),
-    []
-  );
+  const handleOpenPayout = useCallback(() => setPayoutOpen(true), []);
+  const handleClosePayout = useCallback(() => setPayoutOpen(false), []);
   const handleSelectTransaction = useCallback(
     (transaction: ClassifiedHirerTransaction) =>
       setSelectedTransaction(transaction),
@@ -143,10 +133,7 @@ export function useWalletController() {
       transferModalOpen,
       onOpenPayout: handleOpenPayout,
       onClosePayout: handleClosePayout,
-      payoutModalOpen,
-      onOpenPayoutDestination: handleOpenPayoutDestination,
-      onClosePayoutDestination: handleClosePayoutDestination,
-      payoutDestinationModalOpen,
+      payoutOpen,
       selectedTransaction,
       onSelectTransaction: handleSelectTransaction,
       onCloseTransaction: handleCloseTransaction,

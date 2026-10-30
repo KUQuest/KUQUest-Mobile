@@ -1,22 +1,43 @@
-import React, { useCallback, useState } from "react";
-import { RefreshControl, type ListRenderItemInfo } from "react-native";
+import React, { useCallback, useMemo, useState } from "react";
+import {
+  RefreshControl,
+  SectionList,
+  type SectionListRenderItemInfo,
+} from "react-native";
 import { useRouter } from "expo-router";
 import { useSafeAreaInsets } from "react-native-safe-area-context";
-import { Bell, ChevronLeft, ShieldAlert } from "lucide-react-native";
+import {
+  Bell,
+  CheckCheck,
+  ChevronLeft,
+  ChevronRight,
+} from "lucide-react-native";
 
 import type { MemberNotification } from "@/api/NotificationApi";
 import { Chip } from "@/components/ui/Chip";
 import { ScreenLayout } from "@/components/layout/ScreenLayout";
 import { StateView } from "@/components/ui/StateView";
-import { formatTimestampDateTime } from "@/domain/datetime";
+import {
+  formatTimeInBangkok,
+  formatTimestampDateTime,
+} from "@/domain/datetime";
 import { useLocale } from "@/features/preferences/localeStore";
 import { useAppTheme } from "@/features/workspace/AppThemeProvider";
 import { memberNotificationMessages } from "@/locales/memberNotificationMessages";
 import { spacing } from "@/theme/spacing";
-import { ActivityIndicator, FlatList, Pressable, Text, View } from "@/tw";
+import { ActivityIndicator, Pressable, Text, View } from "@/tw";
 import { cn } from "@/tw/cn";
 import { goBackOrReplace } from "@/utils/navigation";
+import {
+  groupNotificationsByDay,
+  type NotificationDaySection,
+} from "./groupNotificationsByDay";
 import { memberNotificationCopy } from "./memberNotificationCopy";
+import {
+  notificationOpensProfile,
+  notificationPresentation,
+  notificationToneStyle,
+} from "./notificationPresentation";
 import {
   useMarkNotificationsReadMutation,
   useNotificationsQuery,
@@ -28,21 +49,35 @@ const styles = {
   backButton: "h-[48px] w-[48px] items-center justify-center",
   headerTitle:
     "ml-ku-xs flex-1 font-ku-bold text-ku-title-small text-ku-text-strong",
-  markAll: "min-h-[48px] justify-center px-ku-sm",
+  markAll: "min-h-[48px] justify-center",
+  markAllPill:
+    "flex-row items-center gap-ku-xs rounded-ku-pill bg-ku-primary-subtle px-ku-md py-ku-sm",
   markAllText: "font-ku-semibold text-ku-meta text-ku-primary",
-  filters: "flex-row gap-ku-sm px-ku-20 pb-ku-12",
-  row: "flex-row gap-ku-12 rounded-[16px] border border-ku-border-subtle bg-ku-card p-ku-md active:bg-ku-surface-muted",
-  rowUnread: "border-ku-border-accent bg-ku-surface-accent",
-  rowIcon:
-    "h-[40px] w-[40px] items-center justify-center rounded-[12px] bg-ku-surface-danger",
-  rowIconGeneric: "bg-ku-surface-muted",
+  filters: "flex-row gap-ku-sm px-ku-20 pb-ku-sm",
+  sectionHeader: "bg-ku-background px-ku-20 pb-ku-xs pt-ku-md",
+  sectionTitle: "font-ku-semibold text-ku-label text-ku-text-secondary",
+  row: "min-h-[64px] flex-row items-center gap-ku-12 bg-ku-surface px-ku-20 py-ku-12 active:bg-ku-surface-muted",
+  rowUnread: "bg-ku-primary-subtle",
+  rowIcon: "h-[44px] w-[44px] items-center justify-center rounded-ku-control",
   rowContent: "min-w-0 flex-1 gap-ku-2",
   rowTitleLine: "flex-row items-center gap-ku-xs",
-  rowTitle: "flex-1 font-ku-semibold text-ku-control text-ku-text-strong",
+  rowTitle: "flex-1 font-ku-regular text-ku-control text-ku-text-secondary",
+  rowTitleUnread: "font-ku-semibold text-ku-text-strong",
   unreadDot: "h-[8px] w-[8px] rounded-ku-pill bg-ku-primary",
   rowBody: "font-ku-regular text-ku-body-small text-ku-text-secondary",
   rowTime: "mt-ku-2 font-ku-regular text-ku-meta text-ku-text-muted",
+  separator: "ml-[76px] h-px bg-ku-divider",
+  loading: "flex-1 items-center justify-center gap-ku-sm",
+  loadingText: "font-ku-regular text-ku-body-small text-ku-text-secondary",
+  empty: "items-center px-ku-lg pt-ku-xl",
+  emptyIcon:
+    "mb-ku-md h-[64px] w-[64px] items-center justify-center rounded-ku-pill bg-ku-primary-subtle",
+  emptyTitle:
+    "text-center font-ku-semibold text-ku-emphasis-large text-ku-text-strong",
+  emptyDescription:
+    "mt-ku-xs text-center font-ku-regular text-ku-body-small text-ku-text-secondary",
   footer: "min-h-[48px] items-center justify-center py-ku-md",
+  footerText: "font-ku-semibold text-ku-meta text-ku-primary",
 } as const;
 
 function NotificationRow({
@@ -57,29 +92,35 @@ function NotificationRow({
   const messages = memberNotificationMessages[locale];
   const copy = memberNotificationCopy(item, locale);
   const unread = item.readAt === null;
-  const time = formatTimestampDateTime(item.createdAt, locale);
-  const Icon = copy.known ? ShieldAlert : Bell;
+  const opensProfile = notificationOpensProfile(item);
+  const { icon: Icon, tone } = notificationPresentation(item);
+  const toneStyle = notificationToneStyle[tone];
+  const time = formatTimeInBangkok(item.createdAt);
+  const hint = [
+    unread ? messages.unread : null,
+    opensProfile ? messages.opensProfile : null,
+  ]
+    .filter(Boolean)
+    .join(". ");
   return (
     <Pressable
-      accessibilityHint={unread ? messages.unread : undefined}
-      accessibilityLabel={`${copy.title}. ${copy.body}. ${time}`}
+      accessibilityHint={hint || undefined}
+      accessibilityLabel={`${copy.title}. ${copy.body}. ${formatTimestampDateTime(item.createdAt, locale)}`}
       accessibilityRole="button"
       className={cn(styles.row, unread && styles.rowUnread)}
       onPress={() => onPress(item)}
       testID={`notification-row-${item.id}`}
     >
-      <View
-        className={cn(styles.rowIcon, !copy.known && styles.rowIconGeneric)}
-      >
-        <Icon
-          color={copy.known ? colors.dangerDark : colors.textMuted}
-          size={20}
-          strokeWidth={2}
-        />
+      <View className={cn(styles.rowIcon, toneStyle.tile)}>
+        <Icon color={colors[toneStyle.iconColor]} size={22} strokeWidth={2} />
       </View>
       <View className={styles.rowContent}>
         <View className={styles.rowTitleLine}>
-          <Text className={styles.rowTitle}>{copy.title}</Text>
+          <Text
+            className={cn(styles.rowTitle, unread && styles.rowTitleUnread)}
+          >
+            {copy.title}
+          </Text>
           {unread ? (
             <View
               className={styles.unreadDot}
@@ -90,7 +131,45 @@ function NotificationRow({
         <Text className={styles.rowBody}>{copy.body}</Text>
         <Text className={styles.rowTime}>{time}</Text>
       </View>
+      {opensProfile ? (
+        <ChevronRight
+          color={colors.textMuted}
+          size={20}
+          strokeWidth={2}
+          testID={`notification-chevron-${item.id}`}
+        />
+      ) : null}
     </Pressable>
+  );
+}
+
+function RowSeparator() {
+  return <View className={styles.separator} />;
+}
+
+function InboxEmpty({ unreadOnly }: { unreadOnly: boolean }) {
+  const { locale } = useLocale();
+  const { colors } = useAppTheme();
+  const messages = memberNotificationMessages[locale];
+  const Icon = unreadOnly ? CheckCheck : Bell;
+  return (
+    <View
+      accessibilityLiveRegion="polite"
+      className={styles.empty}
+      testID="notifications-empty"
+    >
+      <View className={styles.emptyIcon}>
+        <Icon color={colors.primary} size={28} strokeWidth={1.8} />
+      </View>
+      <Text className={styles.emptyTitle}>
+        {unreadOnly ? messages.emptyUnread : messages.empty}
+      </Text>
+      <Text className={styles.emptyDescription}>
+        {unreadOnly
+          ? messages.emptyUnreadDescription
+          : messages.emptyDescription}
+      </Text>
+    </View>
   );
 }
 
@@ -103,7 +182,15 @@ export function NotificationInboxScreen() {
   const [unreadOnly, setUnreadOnly] = useState(false);
   const query = useNotificationsQuery(unreadOnly);
   const markRead = useMarkNotificationsReadMutation();
-  const items = query.data?.pages.flatMap((page) => page.items) ?? [];
+  const pages = query.data?.pages;
+  const items = useMemo(
+    () => pages?.flatMap((page) => page.items) ?? [],
+    [pages]
+  );
+  const sections = useMemo(
+    () => groupNotificationsByDay(items, new Date(), locale),
+    [items, locale]
+  );
   // The badge count covers pages not loaded yet.
   const unreadCount = useUnreadNotificationCountQuery().data ?? 0;
   const hasUnread =
@@ -112,7 +199,7 @@ export function NotificationInboxScreen() {
   const openRow = useCallback(
     (item: MemberNotification) => {
       if (item.readAt === null) markRead.mutate({ ids: [item.id] });
-      if (item.type === "CONDUCT_REPORT_UPHELD" || item.result) {
+      if (notificationOpensProfile(item)) {
         router.push("/(tabs)/profile");
       }
     },
@@ -120,17 +207,36 @@ export function NotificationInboxScreen() {
   );
 
   const renderItem = useCallback(
-    ({ item }: ListRenderItemInfo<MemberNotification>) => (
-      <NotificationRow item={item} onPress={openRow} />
-    ),
+    ({
+      item,
+    }: SectionListRenderItemInfo<
+      MemberNotification,
+      NotificationDaySection
+    >) => <NotificationRow item={item} onPress={openRow} />,
     [openRow]
+  );
+
+  const renderSectionHeader = useCallback(
+    ({ section }: { section: NotificationDaySection }) => (
+      <View className={styles.sectionHeader}>
+        <Text accessibilityRole="header" className={styles.sectionTitle}>
+          {section.title}
+        </Text>
+      </View>
+    ),
+    []
   );
 
   let body: React.ReactNode;
   if (query.isPending) {
     body = (
-      <View className={styles.footer} accessibilityLabel={messages.loading}>
+      <View
+        accessibilityLabel={messages.loading}
+        accessibilityLiveRegion="polite"
+        className={styles.loading}
+      >
         <ActivityIndicator color={colors.primary} />
+        <Text className={styles.loadingText}>{messages.loading}</Text>
       </View>
     );
   } else if (query.isError && items.length === 0) {
@@ -145,21 +251,13 @@ export function NotificationInboxScreen() {
     );
   } else {
     body = (
-      <FlatList
-        className="flex-1"
+      <SectionList<MemberNotification, NotificationDaySection>
         contentContainerStyle={{
-          gap: spacing.px12,
-          paddingHorizontal: spacing.px20,
           paddingBottom: insets.bottom + spacing.lg,
         }}
-        data={items}
+        ItemSeparatorComponent={RowSeparator}
         keyExtractor={(item) => item.id}
-        ListEmptyComponent={
-          <StateView
-            variant="empty"
-            title={unreadOnly ? messages.emptyUnread : messages.empty}
-          />
-        }
+        ListEmptyComponent={<InboxEmpty unreadOnly={unreadOnly} />}
         ListFooterComponent={
           query.hasNextPage ? (
             <Pressable
@@ -172,7 +270,7 @@ export function NotificationInboxScreen() {
               {query.isFetchingNextPage ? (
                 <ActivityIndicator color={colors.primary} />
               ) : (
-                <Text className={styles.markAllText}>{messages.loadMore}</Text>
+                <Text className={styles.footerText}>{messages.loadMore}</Text>
               )}
             </Pressable>
           ) : null
@@ -191,6 +289,10 @@ export function NotificationInboxScreen() {
           />
         }
         renderItem={renderItem}
+        renderSectionHeader={renderSectionHeader}
+        sections={sections}
+        stickySectionHeadersEnabled={false}
+        style={{ flex: 1 }}
         testID="notifications-list"
       />
     );
@@ -223,11 +325,14 @@ export function NotificationInboxScreen() {
             onPress={() => markRead.mutate({ all: true })}
             testID="notifications-mark-all-read"
           >
-            <Text className={styles.markAllText}>
-              {markRead.isPending
-                ? messages.markingAllRead
-                : messages.markAllRead}
-            </Text>
+            <View className={styles.markAllPill}>
+              <CheckCheck color={colors.primary} size={16} strokeWidth={2.2} />
+              <Text className={styles.markAllText}>
+                {markRead.isPending
+                  ? messages.markingAllRead
+                  : messages.markAllRead}
+              </Text>
+            </View>
           </Pressable>
         ) : null}
       </View>
@@ -240,7 +345,7 @@ export function NotificationInboxScreen() {
           testID="notifications-filter-all"
         />
         <Chip
-          label={messages.unreadOnly}
+          label={messages.unreadOnly(unreadCount)}
           tone="tab"
           selected={unreadOnly}
           onPress={() => setUnreadOnly(true)}

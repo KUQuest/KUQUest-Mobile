@@ -376,8 +376,9 @@ describe("WalletScreen", () => {
       view.getByTestId("payout-request-add-destination-btn")
     );
 
-    expect(view.getByTestId("payout-destination-modal")).toBeTruthy();
-    expect(view.queryByTestId("payout-request-modal")).toBeNull();
+    expect(view.getByTestId("payout-request-modal")).toBeTruthy();
+    expect(view.getByTestId("payout-destination-save-btn")).toBeTruthy();
+    expect(view.queryByTestId("payout-amount-input")).toBeNull();
   });
 
   it("shows Payout status and history when a Payout row is opened", async () => {

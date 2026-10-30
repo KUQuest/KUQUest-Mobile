@@ -22,8 +22,7 @@ import { HirerTransactionItem } from "./HirerTransactionItem";
 import { HirerWalletHeader } from "./HirerWalletHeader";
 import { TransactionDetailModal } from "./TransactionDetailModal";
 import { TransferEarningsModal } from "./TransferEarningsModal";
-import { PayoutDestinationModal } from "./payout/PayoutDestinationModal";
-import { RequestPayoutModal } from "./payout/RequestPayoutModal";
+import { PayoutSheet } from "./payout/PayoutSheet";
 import type { ClassifiedHirerTransaction } from "../walletModule";
 
 const MemoizedHirerTransactionItem = React.memo(HirerTransactionItem);
@@ -50,10 +49,7 @@ interface WalletScreenContentProps {
     transferModalOpen: boolean;
     onOpenPayout: () => void;
     onClosePayout: () => void;
-    payoutModalOpen: boolean;
-    onOpenPayoutDestination: () => void;
-    onClosePayoutDestination: () => void;
-    payoutDestinationModalOpen: boolean;
+    payoutOpen: boolean;
     selectedTransaction: ClassifiedHirerTransaction | null;
     onSelectTransaction: (transaction: ClassifiedHirerTransaction) => void;
     onCloseTransaction: () => void;
@@ -78,10 +74,7 @@ export function WalletScreenContent({
     transferModalOpen,
     onOpenPayout,
     onClosePayout,
-    payoutModalOpen,
-    onOpenPayoutDestination,
-    onClosePayoutDestination,
-    payoutDestinationModalOpen,
+    payoutOpen,
     selectedTransaction,
     onSelectTransaction,
     onCloseTransaction,
@@ -208,18 +201,12 @@ export function WalletScreenContent({
         onSuccess={onRefresh}
         visible={transferModalOpen}
       />
-      <RequestPayoutModal
+      <PayoutSheet
         balances={balances}
         messages={m}
         onClose={onClosePayout}
-        onManageDestination={onOpenPayoutDestination}
         onSuccess={onRefresh}
-        visible={payoutModalOpen && !payoutDestinationModalOpen}
-      />
-      <PayoutDestinationModal
-        messages={m}
-        onClose={onClosePayoutDestination}
-        visible={payoutDestinationModalOpen}
+        visible={payoutOpen}
       />
     </ScreenLayout>
   );
