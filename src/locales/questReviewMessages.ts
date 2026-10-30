@@ -25,6 +25,12 @@ export interface QuestReviewMessages {
   invalidComment: string;
   unavailableTitle: string;
   unavailableDescription: string;
+  reviewedBadge: string;
+  savedNext: (name: string) => string;
+  discardTitle: string;
+  discardDescription: string;
+  keepEditing: string;
+  discard: string;
 }
 
 export const questReviewMessages: Record<SupportedLocale, QuestReviewMessages> =
@@ -56,6 +62,12 @@ export const questReviewMessages: Record<SupportedLocale, QuestReviewMessages> =
       unavailableTitle: "Review unavailable",
       unavailableDescription:
         "Reviews can only be submitted after a Quest reaches a terminal state.",
+      reviewedBadge: "Reviewed",
+      savedNext: (name) => `Review saved for ${name}. Next Worker selected.`,
+      discardTitle: "Discard this review?",
+      discardDescription: "Your rating and comment will not be saved.",
+      keepEditing: "Keep editing",
+      discard: "Discard",
     },
     th: {
       close: "ปิด",
@@ -83,5 +95,12 @@ export const questReviewMessages: Record<SupportedLocale, QuestReviewMessages> =
       unavailableTitle: "ไม่สามารถรีวิวได้",
       unavailableDescription:
         "สามารถรีวิวได้หลังจากเควสต์เข้าสู่สถานะสิ้นสุดเท่านั้น",
+      reviewedBadge: "รีวิวแล้ว",
+      savedNext: (name) =>
+        `บันทึกรีวิวของ ${name} แล้ว เลือกผู้ทำงานคนถัดไปให้แล้ว`,
+      discardTitle: "ทิ้งรีวิวนี้หรือไม่",
+      discardDescription: "คะแนนและความคิดเห็นของคุณจะไม่ถูกบันทึก",
+      keepEditing: "แก้ไขต่อ",
+      discard: "ทิ้ง",
     },
   };
