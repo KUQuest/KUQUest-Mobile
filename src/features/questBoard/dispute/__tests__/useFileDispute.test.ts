@@ -135,6 +135,38 @@ describe("useFileDispute", () => {
     ).toBeNull();
     await fireEvent.press(dialog.getByRole("button", { name: "OK" }));
   });
+  it("keeps the form and its input open when filing fails, closing only on success", async () => {
+    const dialog = await renderDisputeAction();
+    await fireEvent.press(dialog.getByRole("button", { name: "File dispute" }));
+    await fireEvent.press(dialog.getByRole("radio", { name: "Other" }));
+    await fireEvent.changeText(
+      dialog.getByLabelText("Dispute details"),
+      "Details"
+    );
+    await fireEvent.press(
+      dialog.getByRole("button", { name: messages.confirm })
+    );
+    expect(dialog.getByText(messages.confirmTitle)).toBeTruthy();
+
+    await act(async () => {
+      const callbacks = mockMutate.mock.calls[0][1];
+      callbacks.onError(new Error("Network request failed"));
+      callbacks.onSettled();
+    });
+    await fireEvent.press(dialog.getByRole("button", { name: "OK" }));
+    expect(dialog.getByLabelText("Dispute details").props.value).toBe(
+      "Details"
+    );
+
+    await fireEvent.press(
+      dialog.getByRole("button", { name: messages.confirm })
+    );
+    await act(async () => {
+      mockMutate.mock.calls[1][1].onSuccess({ displayId: "DC-000124" });
+    });
+    expect(dialog.queryByText(messages.confirmTitle)).toBeNull();
+  });
+
   it("submits only once when confirmation fires twice while pending", async () => {
     const dialog = await renderDisputeAction();
     await fireEvent.press(dialog.getByRole("button", { name: "File dispute" }));
