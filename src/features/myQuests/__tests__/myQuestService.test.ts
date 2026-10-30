@@ -1,5 +1,9 @@
-import { listMyHirerProofReviewableQuestIds } from "../myQuestService";
+import {
+  listMyHirerCompletionReviewableQuestIds,
+  listMyHirerProofReviewableQuestIds,
+} from "../myQuestService";
 const mockListProofSubmissions = jest.fn();
+const mockListCompletionConfirmations = jest.fn();
 
 jest.mock("@/api/QuestApi", () => {
   const actual = jest.requireActual("@/api/QuestApi");
@@ -9,8 +13,30 @@ jest.mock("@/api/QuestApi", () => {
       ...actual.questApi,
       listProofSubmissions: (...args: unknown[]) =>
         mockListProofSubmissions(...args),
+      listCompletionConfirmations: (...args: unknown[]) =>
+        mockListCompletionConfirmations(...args),
     },
   };
+});
+
+describe("listMyHirerCompletionReviewableQuestIds", () => {
+  beforeEach(() => {
+    jest.clearAllMocks();
+  });
+
+  it("returns only proof-free Quests with pending completion confirmations", async () => {
+    mockListCompletionConfirmations.mockImplementation(
+      async (questId: string) =>
+        questId === "pending"
+          ? [{ reviewStatus: "COMPLETION_CONFIRMATION_PENDING" }]
+          : [{ reviewStatus: "COMPLETION_CONFIRMATION_APPROVED" }]
+    );
+
+    await expect(
+      listMyHirerCompletionReviewableQuestIds(["pending", "approved"])
+    ).resolves.toEqual(["pending"]);
+    expect(mockListCompletionConfirmations).toHaveBeenCalledTimes(2);
+  });
 });
 
 describe("listMyHirerProofReviewableQuestIds", () => {

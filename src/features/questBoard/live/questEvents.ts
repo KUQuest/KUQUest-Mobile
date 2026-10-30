@@ -61,6 +61,20 @@ const hirerQuestSubscribedEventSchema = z
   })
   .strict();
 
+const workerAssignmentsSubscribedEventSchema = z
+  .object({
+    type: z.literal("SUBSCRIBED"),
+    version: z.literal(1),
+  })
+  .strict();
+
+const workerAssignmentsInvalidatedEventSchema = z
+  .object({
+    type: z.literal("WORKER_ASSIGNMENTS_INVALIDATED"),
+    version: z.literal(1),
+  })
+  .strict();
+
 const hirerQuestUpdatedEventSchema = z
   .object({
     type: z.literal("HIRER_QUEST_UPDATED"),
@@ -218,4 +232,19 @@ export function subscribeToHirerQuestEvents(
       socket?.close();
     }
   };
+}
+
+export function subscribeToWorkerAssignmentEvents(
+  onInvalidated: () => void,
+  onSubscribed?: () => void
+): () => void {
+  return subscribeToEventStream(
+    "/api/v2/me/worker-assignments/events",
+    workerAssignmentsSubscribedEventSchema,
+    () => true,
+    workerAssignmentsInvalidatedEventSchema,
+    () => true,
+    onInvalidated,
+    onSubscribed
+  );
 }

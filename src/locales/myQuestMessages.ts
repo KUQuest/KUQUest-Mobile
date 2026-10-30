@@ -17,6 +17,7 @@ export interface MyQuestMessages {
   edit: string;
   review: string;
   proofReview: string;
+  completionReview: string;
   detail: string;
   manage: string;
   fileDispute: string;
@@ -78,6 +79,7 @@ export const myQuestMessages: Record<SupportedLocale, MyQuestMessages> = {
     edit: "แก้ไข",
     review: "เขียนรีวิว",
     proofReview: "ตรวจสอบหลักฐาน",
+    completionReview: "ตรวจสอบการเสร็จงาน",
     detail: "ดูรายละเอียด",
     manage: "จัดการเควสต์",
     fileDispute: "ยื่นข้อพิพาท",
@@ -138,6 +140,7 @@ export const myQuestMessages: Record<SupportedLocale, MyQuestMessages> = {
     edit: "Edit",
     review: "Write review",
     proofReview: "Review proof",
+    completionReview: "Review completion",
     detail: "View details",
     manage: "Manage",
     fileDispute: "File dispute",

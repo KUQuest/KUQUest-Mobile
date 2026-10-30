@@ -793,9 +793,44 @@ export const questV2ProofReviewSchema = z.object({
   questStatus: questV2StateSchema,
 });
 export type QuestV2ProofReview = z.infer<typeof questV2ProofReviewSchema>;
+export const questV2CompletionConfirmationStatusSchema = z.enum([
+  "COMPLETION_CONFIRMATION_PENDING",
+  "COMPLETION_CONFIRMATION_APPROVED",
+  "COMPLETION_CONFIRMATION_NOT_APPROVED",
+  "COMPLETION_CONFIRMATION_CANCELLED",
+]);
+export const questV2CompletionConfirmationSchema = z.object({
+  id: questV2IdSchema,
+  questId: questV2IdSchema,
+  workerId: questV2IdSchema.nullable(),
+  teamId: questV2IdSchema.nullable(),
+  confirmedByUserId: questV2IdSchema,
+  confirmedAt: z.string(),
+  reviewStatus: questV2CompletionConfirmationStatusSchema,
+  reviewDeadlineAt: z.string().nullable(),
+  reviewReason: z.string().nullable(),
+  reviewedAt: z.string().nullable(),
+  reviewedBy: z.enum(["HIRER", "AUTO_APPROVE"]).nullable(),
+});
+export type QuestV2CompletionConfirmation = z.infer<
+  typeof questV2CompletionConfirmationSchema
+>;
+export const questV2CompletionConfirmationListDataSchema = z.object({
+  items: z.array(questV2CompletionConfirmationSchema),
+});
+export const questV2CompletionConfirmationReviewSchema = z.object({
+  confirmation: questV2CompletionConfirmationSchema,
+  questStatus: questV2StateSchema,
+});
+export type QuestV2CompletionConfirmationReview = z.infer<
+  typeof questV2CompletionConfirmationReviewSchema
+>;
 export const questV2CompletionSchema = z.object({
+  id: questV2IdSchema,
   confirmed: z.literal(true),
   confirmedAt: z.string(),
+  reviewDeadlineAt: z.string(),
+  reviewStatus: z.literal("COMPLETION_CONFIRMATION_PENDING"),
   questStatus: questV2StateSchema,
 });
 export type QuestV2Completion = z.infer<typeof questV2CompletionSchema>;
@@ -1037,6 +1072,44 @@ export const questV2ProofReviewPayloadSchema = z
       });
     }
   });
+export const questV2CompletionConfirmationReviewPayloadSchema = z
+  .object({
+    decision: z.enum([
+      "COMPLETION_CONFIRMATION_APPROVED",
+      "COMPLETION_CONFIRMATION_NOT_APPROVED",
+    ]),
+    reason: z
+      .string()
+      .max(1000, "Reason must be at most 1000 characters")
+      .refine((value) => value.trim().length > 0, "Expected a non-blank reason")
+      .optional(),
+  })
+  .strict()
+  .superRefine((value, context) => {
+    if (
+      value.decision === "COMPLETION_CONFIRMATION_NOT_APPROVED" &&
+      value.reason === undefined
+    ) {
+      context.addIssue({
+        code: z.ZodIssueCode.custom,
+        path: ["reason"],
+        message: "Reason is required when completion is not approved",
+      });
+    }
+    if (
+      value.decision === "COMPLETION_CONFIRMATION_APPROVED" &&
+      value.reason !== undefined
+    ) {
+      context.addIssue({
+        code: z.ZodIssueCode.custom,
+        path: ["reason"],
+        message: "Reason is not allowed when completion is approved",
+      });
+    }
+  });
+export type QuestV2CompletionConfirmationReviewPayload = z.infer<
+  typeof questV2CompletionConfirmationReviewPayloadSchema
+>;
 export const questV2ReviewCreatePayloadSchema = z
   .object({
     revieweeId: questV2IdSchema.optional(),

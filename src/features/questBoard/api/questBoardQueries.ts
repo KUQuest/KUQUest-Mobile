@@ -17,6 +17,7 @@ import {
 import { disputeApi, type DisputeInput } from "@/api/DisputeApi";
 import type {
   QuestV2CreateEditRequestPayload,
+  QuestV2CompletionConfirmationReviewPayload,
   QuestV2ProofReviewPayload,
   QuestV2ReviewPayload,
 } from "@/api/QuestApi";
@@ -980,6 +981,48 @@ export function useReviewProofMutation() {
         "hirer"
       );
       await invalidateWalletQueries(queryClient);
+    },
+  });
+}
+
+export function useReviewCompletionConfirmationMutation() {
+  const queryClient = useQueryClient();
+  return useMutation({
+    mutationFn: ({
+      questId,
+      completionConfirmationId,
+      payload,
+      idempotencyKey,
+    }: {
+      questId: string;
+      completionConfirmationId: string;
+      payload: QuestV2CompletionConfirmationReviewPayload;
+      viewerId?: string;
+      idempotencyKey?: string;
+    }) =>
+      questApi.reviewCompletionConfirmation(
+        questId,
+        completionConfirmationId,
+        payload,
+        idempotencyKey
+      ),
+    onSuccess: async (_, variables) => {
+      await Promise.all([
+        invalidateQuestReads(
+          queryClient,
+          variables.questId,
+          variables.viewerId,
+          "hirer"
+        ),
+        variables.viewerId
+          ? invalidateWorkerQuestReads(
+              queryClient,
+              variables.questId,
+              variables.viewerId
+            )
+          : Promise.resolve(),
+        invalidateWalletQueries(queryClient),
+      ]);
     },
   });
 }

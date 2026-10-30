@@ -10,6 +10,9 @@ import {
   questV2BoardPageSchema,
   questV2CanonicalQuestSchema,
   questV2CompletionSchema,
+  questV2CompletionConfirmationListDataSchema,
+  questV2CompletionConfirmationReviewPayloadSchema,
+  questV2CompletionConfirmationReviewSchema,
   questV2StartWorkSchema,
   questV2CreatePayloadSchema,
   questV2DetailSchema,
@@ -61,6 +64,8 @@ import {
   type QuestV2BoardCard,
   type QuestV2CanonicalQuest,
   type QuestV2Completion,
+  type QuestV2CompletionConfirmation,
+  type QuestV2CompletionConfirmationReview,
   type QuestV2Detail,
   type QuestV2EditRequest,
   type QuestV2Image,
@@ -165,6 +170,13 @@ export interface QuestV2ProofRetryPayload {
 
 export interface QuestV2ProofReviewPayload {
   decision: z.infer<typeof questV2ProofReviewPayloadSchema>["decision"];
+  reason?: string;
+}
+
+export interface QuestV2CompletionConfirmationReviewPayload {
+  decision: z.infer<
+    typeof questV2CompletionConfirmationReviewPayloadSchema
+  >["decision"];
   reason?: string;
 }
 
@@ -490,6 +502,34 @@ export class QuestApi {
       `/api/v2/quests/${questId}/completion-confirmation`,
       questV2CompletionSchema,
       { json: {}, idempotencyKey }
+    );
+  }
+
+  async listCompletionConfirmations(
+    questId: string,
+    options?: RequestOptions
+  ): Promise<QuestV2CompletionConfirmation[]> {
+    const data = await this.client.get(
+      `/api/v2/quests/${questId}/completion-confirmations`,
+      questV2CompletionConfirmationListDataSchema,
+      options
+    );
+    return data.items;
+  }
+
+  async reviewCompletionConfirmation(
+    questId: string,
+    completionConfirmationId: string,
+    payload: QuestV2CompletionConfirmationReviewPayload,
+    idempotencyKey = createQuestIdempotencyKey()
+  ): Promise<QuestV2CompletionConfirmationReview> {
+    const validatedPayload =
+      questV2CompletionConfirmationReviewPayloadSchema.parse(payload);
+    return this.client.send(
+      "POST",
+      `/api/v2/quests/${questId}/completion-confirmations/${completionConfirmationId}/review`,
+      questV2CompletionConfirmationReviewSchema,
+      { json: validatedPayload, idempotencyKey }
     );
   }
 
