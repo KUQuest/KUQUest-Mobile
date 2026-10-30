@@ -863,15 +863,24 @@ describe("group Quest sheets", () => {
         respondedAt: null,
       },
     };
+    const queryClient = queryClientWithRatings(["worker-1"]);
+    queryClient.setQueryData(profileKeys.public("worker-1"), {
+      firstName: "Test",
+      lastName: "Worker",
+      reputation: { rating: { average: 4.7 } },
+    });
     const view = await renderWithAppTheme(
-      <PartialGroupStartConsentContent
-        canConsent
-        locale="th"
-        onWorkerConsent={onWorkerConsent}
-        underfilled={underfilled}
-        viewerId="worker-1"
-      />
+      <QueryClientProvider client={queryClient}>
+        <PartialGroupStartConsentContent
+          canConsent
+          locale="th"
+          onWorkerConsent={onWorkerConsent}
+          underfilled={underfilled}
+          viewerId="worker-1"
+        />
+      </QueryClientProvider>
     );
+    expect(view.getByText("Test Worker")).toBeTruthy();
     expect(view.queryByText("2026-10-01T23:25:00.000+07:00")).toBeNull();
     expect(view.getByText("1 ต.ค. 2026 23:25")).toBeTruthy();
 
@@ -883,23 +892,26 @@ describe("group Quest sheets", () => {
     );
 
     await view.rerender(
-      <PartialGroupStartConsentContent
-        canConsent
-        locale="th"
-        onWorkerConsent={onWorkerConsent}
-        underfilled={{
-          ...underfilled,
-          ownResponse: {
-            decision: "ACCEPT",
-            questReward: 100,
-            respondedAt: "2026-08-12T09:01:00.000Z",
-          },
-        }}
-        viewerId="worker-1"
-      />
+      <QueryClientProvider client={queryClient}>
+        <PartialGroupStartConsentContent
+          canConsent
+          locale="th"
+          onWorkerConsent={onWorkerConsent}
+          underfilled={{
+            ...underfilled,
+            ownResponse: {
+              decision: "ACCEPT",
+              questReward: 100,
+              respondedAt: "2026-08-12T09:01:00.000Z",
+            },
+          }}
+          viewerId="worker-1"
+        />
+      </QueryClientProvider>
     );
     expect(view.queryByTestId("partial-group-start-approve")).toBeNull();
-    expect(view.getAllByText("ตอบรับแล้ว")).toHaveLength(2);
+    expect(view.getByTestId("partial-group-start-votes")).toBeTruthy();
+    expect(view.getByText(/คุณตอบรับแล้ว/)).toBeTruthy();
     jest.useRealTimers();
   });
 
