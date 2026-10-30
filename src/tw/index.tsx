@@ -5,6 +5,7 @@ import {
   FlatList as RNFlatList,
   type FlatListProps,
   KeyboardAvoidingView as RNKeyboardAvoidingView,
+  type LayoutChangeEvent,
   Pressable as RNPressable,
   ScrollView as RNScrollView,
   StyleSheet,
@@ -99,14 +100,45 @@ export const ActivityIndicator = (
 };
 ActivityIndicator.displayName = "CSS(ActivityIndicator)";
 
-export const KeyboardAvoidingView = (
-  props: React.ComponentProps<typeof RNKeyboardAvoidingView> & {
-    className?: string;
-  }
-) => {
-  return useCssElementCompat(RNKeyboardAvoidingView, props, {
-    className: "style",
-  });
+/** `viewRef` is public on the class but missing from React Native's types. */
+type KeyboardAvoiderInstance = RNKeyboardAvoidingView & {
+  viewRef: React.RefObject<{
+    measureInWindow: (callback: (x: number, y: number) => void) => void;
+  } | null>;
+};
+
+/**
+ * React Native lifts `padding` by `frame.y + frame.height - keyboardY`, where
+ * `frame.y` is relative to the parent. A view below a header would lift too
+ * little by the header's height, so unless the caller sets
+ * `keyboardVerticalOffset`, use the view's distance from the window top.
+ */
+export const KeyboardAvoidingView = ({
+  keyboardVerticalOffset,
+  onLayout,
+  ...props
+}: React.ComponentProps<typeof RNKeyboardAvoidingView> & {
+  className?: string;
+}) => {
+  const avoiderRef = React.useRef<KeyboardAvoiderInstance>(null);
+  const [measuredOffset, setMeasuredOffset] = React.useState(0);
+  return useCssElementCompat(
+    RNKeyboardAvoidingView,
+    {
+      ...props,
+      ref: avoiderRef,
+      keyboardVerticalOffset: keyboardVerticalOffset ?? measuredOffset,
+      onLayout: (event: LayoutChangeEvent) => {
+        onLayout?.(event);
+        if (keyboardVerticalOffset === undefined) {
+          avoiderRef.current?.viewRef.current?.measureInWindow((_x, y) =>
+            setMeasuredOffset(y)
+          );
+        }
+      },
+    },
+    { className: "style" }
+  );
 };
 KeyboardAvoidingView.displayName = "CSS(KeyboardAvoidingView)";
 

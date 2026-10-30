@@ -11,6 +11,14 @@ Mistakes agents made in this repo and the rules they produced, so the same failu
 
 ## Entries
 
+### 2026-10-30 — `KeyboardAvoidingView` with `height` or no behavior leaves Android inputs under the keyboard
+
+**What happened**: On a real Android device the proof review reject-reason field, its label, and both buttons were hidden behind the keyboard; the Work Hub proof form had the same risk.
+
+**Root cause**: Under edge-to-edge the window does not resize for the keyboard, and `KeyboardAvoidingView` with `behavior="height"` or `undefined` did not lift the sheet or shrink its scroll area. The safe-area bottom edge was also counted twice (`ScreenLayout` edge plus `insets.bottom` in content padding).
+
+**Rule**: Import `KeyboardAvoidingView` from `@/tw`, not `react-native`; it uses `behavior="padding"` with a measured `keyboardVerticalOffset`, because React Native computes the lift from the view's parent-relative `frame.y` and under-lifts by the height of any header above it (the Create Quest action bar stayed under the keyboard). Give each safe-area edge one owner. Verify a keyboard-facing change on a development build with the keyboard open: jest cannot show overlap. A throwaway `src/app/zz-*.tsx` mock route opened with `adb shell am start -d kuquestmobile-staging:///zz-...` reaches a screen without staging data; delete it afterward.
+
 ### 2026-10-29 — Isolated agent worktrees can start from an older commit than HEAD
 
 **What happened**: Three worktree agents refactored code from commit `88aac67` while the branch was at `2184916`; one copied a function that predated the #292 fix and would have reverted it.
