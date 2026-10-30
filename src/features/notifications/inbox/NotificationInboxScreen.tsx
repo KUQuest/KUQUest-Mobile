@@ -13,7 +13,11 @@ import {
   ChevronRight,
 } from "lucide-react-native";
 
-import type { MemberNotification } from "@/api/NotificationApi";
+import {
+  memberNotificationCategorySchema,
+  type MemberNotification,
+  type MemberNotificationCategory,
+} from "@/api/NotificationApi";
 import { Chip } from "@/components/ui/Chip";
 import { ScreenLayout } from "@/components/layout/ScreenLayout";
 import { StateView } from "@/components/ui/StateView";
@@ -22,10 +26,11 @@ import {
   formatTimestampDateTime,
 } from "@/domain/datetime";
 import { useLocale } from "@/features/preferences/localeStore";
+import { DisputeRespondSheet } from "@/features/questBoard/dispute/DisputeRespondSheet";
 import { useAppTheme } from "@/features/workspace/AppThemeProvider";
 import { memberNotificationMessages } from "@/locales/memberNotificationMessages";
 import { spacing } from "@/theme/spacing";
-import { ActivityIndicator, Pressable, Text, View } from "@/tw";
+import { ActivityIndicator, Pressable, ScrollView, Text, View } from "@/tw";
 import { cn } from "@/tw/cn";
 import { goBackOrReplace } from "@/utils/navigation";
 import {
@@ -35,14 +40,18 @@ import {
 import { memberNotificationCopy } from "./memberNotificationCopy";
 import {
   notificationOpensProfile,
+  notificationOpensRespondForm,
+  notificationQuestRoute,
   notificationPresentation,
   notificationToneStyle,
 } from "./notificationPresentation";
 import {
   useMarkNotificationsReadMutation,
   useNotificationsQuery,
-  useUnreadNotificationCountQuery,
+  useUnreadNotificationSummaryQuery,
 } from "./notificationQueries";
+
+const CATEGORIES = memberNotificationCategorySchema.options;
 
 const styles = {
   header: "h-[56px] flex-row items-center px-ku-12",
@@ -53,7 +62,9 @@ const styles = {
   markAllPill:
     "flex-row items-center gap-ku-xs rounded-ku-pill bg-ku-primary-subtle px-ku-md py-ku-sm",
   markAllText: "font-ku-semibold text-ku-meta text-ku-primary",
-  filters: "flex-row gap-ku-sm px-ku-20 pb-ku-sm",
+  filters: "flex-row items-center gap-ku-sm px-ku-20 pb-ku-sm",
+  filterChip: "min-h-[48px] px-ku-md",
+  filterDivider: "h-[24px] w-px bg-ku-divider",
   sectionHeader: "bg-ku-background px-ku-20 pb-ku-xs pt-ku-md",
   sectionTitle: "font-ku-semibold text-ku-label text-ku-text-secondary",
   row: "min-h-[64px] flex-row items-center gap-ku-12 bg-ku-surface px-ku-20 py-ku-12 active:bg-ku-surface-muted",
@@ -93,12 +104,16 @@ function NotificationRow({
   const copy = memberNotificationCopy(item, locale);
   const unread = item.readAt === null;
   const opensProfile = notificationOpensProfile(item);
+  const opensRespondForm = notificationOpensRespondForm(item);
+  const opensQuest = notificationQuestRoute(item) !== null;
   const { icon: Icon, tone } = notificationPresentation(item);
   const toneStyle = notificationToneStyle[tone];
   const time = formatTimeInBangkok(item.createdAt);
   const hint = [
     unread ? messages.unread : null,
     opensProfile ? messages.opensProfile : null,
+    opensRespondForm ? messages.opensRespondForm : null,
+    opensQuest ? messages.opensQuest : null,
   ]
     .filter(Boolean)
     .join(". ");
@@ -131,7 +146,7 @@ function NotificationRow({
         <Text className={styles.rowBody}>{copy.body}</Text>
         <Text className={styles.rowTime}>{time}</Text>
       </View>
-      {opensProfile ? (
+      {opensProfile || opensRespondForm || opensQuest ? (
         <ChevronRight
           color={colors.textMuted}
           size={20}
@@ -180,7 +195,11 @@ export function NotificationInboxScreen() {
   const { locale } = useLocale();
   const messages = memberNotificationMessages[locale];
   const [unreadOnly, setUnreadOnly] = useState(false);
-  const query = useNotificationsQuery(unreadOnly);
+  const [category, setCategory] = useState<MemberNotificationCategory | null>(
+    null
+  );
+  const [respondingTo, setRespondingTo] = useState<string | null>(null);
+  const query = useNotificationsQuery(unreadOnly, category);
   const markRead = useMarkNotificationsReadMutation();
   const pages = query.data?.pages;
   const items = useMemo(
@@ -192,15 +211,24 @@ export function NotificationInboxScreen() {
     [items, locale]
   );
   // The badge count covers pages not loaded yet.
-  const unreadCount = useUnreadNotificationCountQuery().data ?? 0;
+  const unreadSummary = useUnreadNotificationSummaryQuery().data;
+  const unreadCount = unreadSummary?.count ?? 0;
+  const scopeUnreadCount = category
+    ? (unreadSummary?.byCategory[category] ?? 0)
+    : unreadCount;
   const hasUnread =
-    unreadCount > 0 || items.some((item) => item.readAt === null);
+    scopeUnreadCount > 0 || items.some((item) => item.readAt === null);
 
   const openRow = useCallback(
     (item: MemberNotification) => {
       if (item.readAt === null) markRead.mutate({ ids: [item.id] });
       if (notificationOpensProfile(item)) {
         router.push("/(tabs)/profile");
+      } else if (notificationOpensRespondForm(item) && item.disputeCaseId) {
+        setRespondingTo(item.disputeCaseId);
+      } else {
+        const route = notificationQuestRoute(item);
+        if (route) router.push(route);
       }
     },
     [markRead, router]
@@ -322,7 +350,11 @@ export function NotificationInboxScreen() {
             accessibilityState={{ disabled: markRead.isPending }}
             className={styles.markAll}
             disabled={markRead.isPending}
-            onPress={() => markRead.mutate({ all: true })}
+            onPress={() =>
+              markRead.mutate(
+                category ? { all: true, category } : { all: true }
+              )
+            }
             testID="notifications-mark-all-read"
           >
             <View className={styles.markAllPill}>
@@ -336,23 +368,56 @@ export function NotificationInboxScreen() {
           </Pressable>
         ) : null}
       </View>
-      <View className={styles.filters} accessibilityRole="tablist">
+      <ScrollView
+        accessibilityLabel={messages.filterByCategory}
+        className="grow-0"
+        contentContainerClassName={styles.filters}
+        horizontal
+        showsHorizontalScrollIndicator={false}
+      >
         <Chip
-          label={messages.all}
-          tone="tab"
-          selected={!unreadOnly}
-          onPress={() => setUnreadOnly(false)}
-          testID="notifications-filter-all"
-        />
-        <Chip
+          className={styles.filterChip}
           label={messages.unreadOnly(unreadCount)}
           tone="tab"
           selected={unreadOnly}
-          onPress={() => setUnreadOnly(true)}
+          onPress={() => setUnreadOnly((value) => !value)}
           testID="notifications-filter-unread"
         />
-      </View>
+        <View className={styles.filterDivider} />
+        <Chip
+          className={styles.filterChip}
+          label={messages.all}
+          tone="tab"
+          selected={category === null}
+          onPress={() => setCategory(null)}
+          testID="notifications-filter-all"
+        />
+        {CATEGORIES.map((value) => {
+          const count = unreadSummary?.byCategory[value] ?? 0;
+          const label = messages.categories[value];
+          return (
+            <Chip
+              accessibilityLabel={
+                count > 0 ? `${label}, ${messages.unreadCount(count)}` : label
+              }
+              className={styles.filterChip}
+              key={value}
+              label={count > 0 ? `${label} · ${count}` : label}
+              tone="tab"
+              selected={category === value}
+              onPress={() => setCategory(value)}
+              testID={`notifications-filter-${value.toLowerCase()}`}
+            />
+          );
+        })}
+      </ScrollView>
       {body}
+      {respondingTo ? (
+        <DisputeRespondSheet
+          disputeCaseId={respondingTo}
+          onClose={() => setRespondingTo(null)}
+        />
+      ) : null}
     </ScreenLayout>
   );
 }
