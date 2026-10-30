@@ -320,6 +320,30 @@ describe("notification transitions", () => {
     ).toBe(false);
   });
 
+  it("tells an Incomplete Worker on a completed Quest, but not a paid one", () => {
+    const base = makeWorkerAssignment(
+      "UNDERFILLED_COMPLETED",
+      "QUEST_COMPLETED"
+    );
+    expect(
+      detectWorkerQuestTransitions(new Map([["quest-1", null]]), [
+        { ...base, state: "ASSIGNMENT_INCOMPLETE" as const },
+      ])
+    ).toEqual([
+      {
+        questId: "quest-1",
+        kind: "INCOMPLETE",
+        cancellationReason: null,
+        href: "/quest/[id]/work",
+      },
+    ]);
+    expect(
+      detectWorkerQuestTransitions(new Map([["quest-1", null]]), [
+        { ...base, state: "ASSIGNMENT_COMPLETED" as const },
+      ])
+    ).toEqual([]);
+  });
+
   it("also tells a Worker the Server left ASSIGNMENT_ACTIVE on the failed Quest", () => {
     const stillActive = makeWorkerAssignment(
       "UNDERFILLED_COMPLETED",

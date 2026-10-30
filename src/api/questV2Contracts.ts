@@ -361,6 +361,15 @@ export type QuestV2UnderfilledCancellationReason = z.infer<
 export const QuestV2CancellationReason =
   questV2UnderfilledCancellationReasonSchema.enum;
 
+/** `failureReason` of a `QUEST_FAILED` push. */
+export const questV2PushFailureReasonSchema = z.enum([
+  "PROOF_NOT_APPROVED",
+  "DUE_AT_MISSED",
+]);
+export type QuestV2PushFailureReason = z.infer<
+  typeof questV2PushFailureReasonSchema
+>;
+
 /** `type` of an Android FCM data-only message sent by the underfilled lifecycle. */
 export const questV2PushTypeSchema = z.enum([
   "UNDERFILLED_DECISION_PENDING",
@@ -368,6 +377,9 @@ export const questV2PushTypeSchema = z.enum([
   "UNDERFILLED_COMPLETED",
   "UNDERFILLED_CANCELLED",
   "QUEST_ASSIGNED",
+  "PROOF_NOT_APPROVED",
+  "QUEST_COMPLETED_DISPUTE_WINDOW_OPEN",
+  "QUEST_FAILED",
 ]);
 export type QuestV2PushType = z.infer<typeof questV2PushTypeSchema>;
 export const QuestV2PushTypeValue = questV2PushTypeSchema.enum;

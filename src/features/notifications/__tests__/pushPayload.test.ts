@@ -52,6 +52,53 @@ describe("push payload", () => {
     }
   });
 
+  it("accepts the per-Worker review pushes and words each failure reason", () => {
+    const assignmentId = "6a1d7f58-3f7e-4f63-9d0b-0a4c3c1f7a22";
+    const notApproved = {
+      type: "PROOF_NOT_APPROVED",
+      questId,
+      transitionId: "t-4",
+      assignmentId,
+    };
+    expect(parsePushPayload(notApproved)).toEqual(notApproved);
+    expect(
+      parsePushPayload({
+        type: "QUEST_COMPLETED_DISPUTE_WINDOW_OPEN",
+        questId,
+        transitionId: "t-5",
+        assignmentId,
+      })
+    ).not.toBeNull();
+    expect(
+      parsePushPayload({
+        type: "QUEST_FAILED",
+        questId,
+        transitionId: "t-6",
+        failureReason: "NOPE",
+      })
+    ).toBeNull();
+    expect(routeForPush({ type: "PROOF_NOT_APPROVED", questId })).toEqual({
+      pathname: "/quest/[id]",
+      params: { id: questId },
+    });
+    const bodies = (["PROOF_NOT_APPROVED", "DUE_AT_MISSED"] as const).map(
+      (failureReason) =>
+        localizedPushCopy(
+          { type: "QUEST_FAILED", questId, transitionId: "t-6", failureReason },
+          "en",
+          now
+        )?.body
+    );
+    expect(new Set(bodies).size).toBe(2);
+    expect(
+      localizedPushCopy(
+        { type: "QUEST_FAILED", questId, transitionId: "t-7" },
+        "th",
+        now
+      )?.body
+    ).toBeTruthy();
+  });
+
   it("drops timed notices that are expired or lack a server expiry", () => {
     const base = {
       type: "UNDERFILLED_CONSENT_PENDING" as const,

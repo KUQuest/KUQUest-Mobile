@@ -54,8 +54,9 @@ export function closeAllServerSockets(): void {
 }
 
 const MAX_RECONNECT_DELAY_MS = 15_000;
-// Client message (1008), session expiry (4401), denied Origin or access (4403).
-const TERMINAL_CLOSE_CODES = [1008, 4401, 4403];
+// Quest access ended (1000, e.g. an Incomplete Worker's 7-day hold ended),
+// client message (1008), session expiry (4401), denied Origin or access (4403).
+const TERMINAL_CLOSE_CODES = [1000, 1008, 4401, 4403];
 // React Native otherwise sends the API host as Origin, which Quest event
 // endpoints reject with 4403. The server allows the app scheme (app.json).
 const APP_ORIGIN = "kuquestmobile://";

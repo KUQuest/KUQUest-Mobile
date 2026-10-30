@@ -18,6 +18,7 @@ export const notificationMessages: Record<
     underfilledDecisionPending: () => string;
     questFullOrAssigned: () => string;
     questFailed: () => string;
+    questCompletedNotApproved: () => string;
     underfilledCancelled: (
       reason: QuestV2UnderfilledCancellationReason | null
     ) => string;
@@ -41,6 +42,8 @@ export const notificationMessages: Record<
     questFullOrAssigned: () => "A quest you joined is now assigned.",
     questFailed: () =>
       "A quest you joined failed. You have 1 day to file a Dispute Case.",
+    questCompletedNotApproved: () =>
+      "Your Proof was not approved, so this Quest paid you nothing. You can file a Dispute Case for a limited time.",
     underfilledCancelled: (reason) =>
       reason === "HIRER_CANCELLED"
         ? "The Hirer cancelled a quest you joined."
@@ -85,6 +88,8 @@ export const notificationMessages: Record<
     questFullOrAssigned: () => "เควสต์ที่คุณเข้าร่วมได้รับมอบหมายแล้ว",
     questFailed: () =>
       "เควสต์ที่คุณเข้าร่วมล้มเหลว คุณยื่นคำร้องข้อพิพาทได้ภายใน 1 วัน",
+    questCompletedNotApproved: () =>
+      "หลักฐานของคุณไม่ได้รับการอนุมัติ เควสต์นี้จึงไม่มีการจ่ายเงินให้คุณ คุณยื่นคำร้องข้อพิพาทได้ภายในเวลาที่กำหนด",
     underfilledCancelled: (reason) =>
       reason === "HIRER_CANCELLED"
         ? "ผู้ว่าจ้างยกเลิกเควสต์ที่คุณเข้าร่วม"

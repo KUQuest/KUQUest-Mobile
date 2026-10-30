@@ -329,11 +329,16 @@ export default function HirerQuestManageScreen({
     snapshot.capabilities.canDecideUnderfilled;
   const serverDispute = "dispute" in quest ? quest.dispute : undefined;
   const showDispute =
-    snapshot.state === QuestStatus.QUEST_FAILED &&
-    (serverDispute
-      ? serverDispute.canFile
-      : snapshot.actor === QuestActor.HIRER ||
-        (snapshot.actor === QuestActor.WORKER && snapshot.assignment !== null));
+    (snapshot.state === QuestStatus.QUEST_FAILED &&
+      (serverDispute
+        ? serverDispute.canFile
+        : snapshot.actor === QuestActor.HIRER ||
+          (snapshot.actor === QuestActor.WORKER &&
+            snapshot.assignment !== null))) ||
+    // A completed GROUP + FCFS Quest may hold Incomplete Workers; only the
+    // Server's `dispute.canFile` says whether this viewer can still file.
+    (snapshot.state === QuestStatus.QUEST_COMPLETED &&
+      serverDispute?.canFile === true);
   const nextStep = showUnderfilled
     ? "underfilled"
     : showProofReview && snapshot.nextAction === QuestNextAction.REVIEW_PROOF
@@ -501,7 +506,8 @@ export default function HirerQuestManageScreen({
           </View>
         ) : null}
 
-        {snapshot.state === QuestStatus.QUEST_FAILED ? (
+        {snapshot.state === QuestStatus.QUEST_FAILED ||
+        snapshot.state === QuestStatus.QUEST_COMPLETED ? (
           <FailedQuestNotice quest={quest} />
         ) : null}
         <FiledConductReports

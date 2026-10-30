@@ -36,7 +36,8 @@ export type WorkerQuestNoticeKind =
   | "DECISION_PENDING"
   | "FULL_OR_ASSIGNED"
   | "CANCELLED"
-  | "FAILED";
+  | "FAILED"
+  | "INCOMPLETE";
 
 export interface WorkerQuestNoticeTransition {
   questId: string;
@@ -62,6 +63,14 @@ export function getWorkerAssignmentNoticeKind(
       assignment.state === QuestAssignmentStatus.ASSIGNMENT_ACTIVE)
   ) {
     return "FAILED";
+  }
+  // GROUP + FCFS: the Quest ended QUEST_COMPLETED but the Hirer did not approve
+  // this Worker's Proof, so this Assignment earned nothing.
+  if (
+    assignment.questState === QuestStatus.QUEST_COMPLETED &&
+    assignment.state === QuestAssignmentStatus.ASSIGNMENT_INCOMPLETE
+  ) {
+    return "INCOMPLETE";
   }
   if (assignment.state !== QuestAssignmentStatus.ASSIGNMENT_ACTIVE) return null;
   if (
@@ -96,6 +105,7 @@ const WORKER_NOTICE_HREF: Record<
   FULL_OR_ASSIGNED: "/quest/[id]",
   CANCELLED: "/quest/[id]",
   FAILED: "/quest/[id]/work",
+  INCOMPLETE: "/quest/[id]/work",
 };
 
 export function detectWorkerQuestTransitions(
