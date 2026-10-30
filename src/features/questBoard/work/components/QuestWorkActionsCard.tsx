@@ -290,8 +290,9 @@ export default function QuestWorkActionsCard({
         </View>
       </View>
 
-      {snapshot.editRequest?.status ===
-      QuestEditRequestStatus.EDIT_REQUEST_PENDING ? (
+      {snapshot.state === QuestStatus.QUEST_ASSIGNED &&
+      snapshot.editRequest?.status ===
+        QuestEditRequestStatus.EDIT_REQUEST_PENDING ? (
         <View className={styles.warningCard}>
           <View className={styles.calloutRow}>
             <FileEdit color={palette.warningDark} size={20} />

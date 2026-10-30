@@ -20,6 +20,50 @@ import {
   QuestUnderfilledState,
 } from "../../domain/types";
 import styles from "../../styles/questDetailStyles";
+import { TeamAssembleRosterRow } from "../../teamAssemble/components/TeamAssembleRosterRow";
+
+export function QuestDetailTeamRoster({
+  snapshot,
+  groupMessages,
+}: {
+  snapshot: LiveQuestSnapshot;
+  groupMessages: GroupQuestMessages;
+}) {
+  const team = snapshot.team;
+  if (
+    !team ||
+    isHirerActor(snapshot.actor) ||
+    snapshot.participation !== QuestParticipation.GROUP ||
+    snapshot.mode !== QuestMode.CANDIDATE
+  )
+    return null;
+
+  return (
+    <View className={styles.section} testID="quest-detail-team-roster">
+      <Text accessibilityRole="header" className={styles.sectionTitle}>
+        {groupMessages.roster}
+      </Text>
+      <View className={cn(styles.infoCard, "py-ku-md")}>
+        <View className="gap-ku-sm">
+          {team.members.map((member) => (
+            <TeamAssembleRosterRow
+              key={member.memberId}
+              member={{
+                workerId: member.memberId,
+                displayName: member.member?.displayName ?? member.memberId,
+              }}
+              role={
+                member.memberId === team.leaderId
+                  ? groupMessages.leader
+                  : groupMessages.member
+              }
+            />
+          ))}
+        </View>
+      </View>
+    </View>
+  );
+}
 
 export function LiveEntrySurface({
   snapshot,
@@ -62,8 +106,8 @@ export function LiveEntrySurface({
     (!hideTeamEntry &&
       isGroupCandidate &&
       !isHirer &&
-      (snapshot.team !== null ||
-        snapshot.capabilities.canCreateTeam ||
+      !snapshot.team &&
+      (snapshot.capabilities.canCreateTeam ||
         snapshot.capabilities.canJoinTeam ||
         snapshot.capabilities.canUpdateTeam ||
         snapshot.capabilities.canSubmitTeam ||

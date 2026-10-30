@@ -427,9 +427,6 @@ export function buildQuestDetailSheetsProps(
             onAcceptProposal: surface.liveAction
               ? undefined
               : context.selectCandidate,
-            onRejectProposal: surface.liveAction
-              ? undefined
-              : context.rejectCandidate,
             onClose: transitions.closeCandidateReview,
             onSelectProposal: transitions.selectProposal,
             rewardSatangPerWorker: getQuestRewardSatang(facts.quest),
