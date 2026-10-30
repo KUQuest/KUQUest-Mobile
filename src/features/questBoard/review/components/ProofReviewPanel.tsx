@@ -1,5 +1,6 @@
 import { useMemo, useRef, useState } from "react";
 import type { ComponentRef } from "react";
+import { Modal } from "react-native";
 import { FileText, ImageIcon } from "lucide-react-native";
 
 import { Button } from "@/components/ui/Button";
@@ -10,7 +11,14 @@ import { questBoardMessages } from "@/locales/questBoardMessages";
 import { useAppTheme } from "@/features/workspace/AppThemeProvider";
 import { QuestProofFileStatus } from "@/features/questBoard/domain/types";
 import { showErrorAlert } from "@/components/ui/SweetAlert";
-import { Image, Pressable, ScrollView, Text, View } from "@/tw";
+import {
+  Image,
+  KeyboardAvoidingView,
+  Pressable,
+  ScrollView,
+  Text,
+  View,
+} from "@/tw";
 
 import type { QuestV2ProofReviewPayload } from "@/api/QuestApi";
 import type { QuestV2ProofSubmission } from "@/api/questV2Contracts";
@@ -46,8 +54,8 @@ function fileKind(contentType: string | null): "image" | "video" | "file" {
 }
 
 /**
- * Proof evidence plus the approve / do-not-approve decision form. Mount it
- * with `key={proof.id}` so a different Proof starts with a fresh form.
+ * Proof evidence and decision actions. The non-approval reason is collected
+ * in a separate dialog. Mount it with `key={proof.id}` to reset between proofs.
  */
 export function ProofReviewPanel({
   proof,
@@ -59,6 +67,7 @@ export function ProofReviewPanel({
   const { locale } = useLocale();
   const messages = questBoardMessages[locale];
   const [reason, setReason] = useState("");
+  const [reasonDialogVisible, setReasonDialogVisible] = useState(false);
   const [busy, setBusy] = useState(false);
   const [error, setError] = useState<string>();
   const [viewingImage, setViewingImage] = useState<{
@@ -74,7 +83,7 @@ export function ProofReviewPanel({
   const [resolvingFileIds, setResolvingFileIds] = useState<Set<string>>(
     () => new Set()
   );
-  const scrollViewRef = useRef<ComponentRef<typeof ScrollView>>(null);
+  const reasonDialogScrollRef = useRef<ComponentRef<typeof ScrollView>>(null);
   const submittedAt = useMemo(
     () => formatTimestamp(proof.submittedAt, locale, "—"),
     [locale, proof.submittedAt]
@@ -90,8 +99,10 @@ export function ProofReviewPanel({
     setError(undefined);
     try {
       const result = await onReview(payload);
-      if (result !== false) onDone();
-      else setError(messages.manageSnapshotError);
+      if (result !== false) {
+        setReasonDialogVisible(false);
+        onDone();
+      } else setError(messages.manageSnapshotError);
     } catch (caught) {
       setError(
         getLocalizedErrorMessage(caught, locale, {
@@ -101,6 +112,17 @@ export function ProofReviewPanel({
     } finally {
       setBusy(false);
     }
+  };
+
+  const openReasonDialog = () => {
+    setError(undefined);
+    setReasonDialogVisible(true);
+  };
+
+  const closeReasonDialog = () => {
+    if (busy) return;
+    setError(undefined);
+    setReasonDialogVisible(false);
   };
 
   const confirmNotApproved = () => {
@@ -223,7 +245,6 @@ export function ProofReviewPanel({
   return (
     <>
       <ScrollView
-        ref={scrollViewRef}
         className="shrink"
         contentContainerClassName={styles.proofSheetContent}
         keyboardShouldPersistTaps="handled"
@@ -395,22 +416,7 @@ export function ProofReviewPanel({
           )}
         </View>
 
-        <View className="mt-ku-20">
-          <TextArea
-            accessibilityLabel={messages.proofReviewReasonLabel}
-            label={messages.proofReviewReasonLabel}
-            maxLength={MAX_REVIEW_REASON_LENGTH}
-            onChangeText={setReason}
-            placeholder={messages.proofReviewReasonPlaceholder}
-            onFocus={() =>
-              scrollViewRef.current?.scrollToEnd({ animated: true })
-            }
-            testID="proof-review-reason-input"
-            value={reason}
-          />
-        </View>
-
-        {error ? (
+        {error && !reasonDialogVisible ? (
           <Text
             accessibilityRole="alert"
             className={styles.proofValidation}
@@ -425,7 +431,7 @@ export function ProofReviewPanel({
         <Button
           className="w-auto flex-1"
           disabled={busy}
-          onPress={confirmNotApproved}
+          onPress={openReasonDialog}
           testID="proof-review-not-approve"
           variant="secondary"
         >
@@ -450,6 +456,92 @@ export function ProofReviewPanel({
         onClose={() => setViewingImage(null)}
         visible={viewingImage !== null}
       />
+      <Modal
+        animationType="fade"
+        onRequestClose={closeReasonDialog}
+        transparent
+        visible={reasonDialogVisible}
+      >
+        <Pressable
+          accessible={false}
+          className={styles.proofReviewReasonBackdrop}
+          onPress={closeReasonDialog}
+        >
+          <KeyboardAvoidingView
+            behavior="padding"
+            className="flex-1 justify-center"
+          >
+            <Pressable
+              accessibilityRole="none"
+              accessible={false}
+              accessibilityViewIsModal
+              className={styles.proofReviewReasonDialog}
+              onPress={() => undefined}
+              testID="proof-review-reason-dialog"
+            >
+              <ScrollView
+                ref={reasonDialogScrollRef}
+                className="shrink"
+                contentContainerClassName={styles.proofReviewReasonContent}
+                keyboardShouldPersistTaps="handled"
+                showsVerticalScrollIndicator={false}
+                testID="proof-review-reason-scroll"
+              >
+                <Text
+                  accessibilityRole="header"
+                  className={styles.proofReviewReasonTitle}
+                >
+                  {messages.proofReviewDoNotApprove}
+                </Text>
+                <TextArea
+                  accessibilityLabel={messages.proofReviewReasonLabel}
+                  editable={!busy}
+                  label={messages.proofReviewReasonLabel}
+                  maxLength={MAX_REVIEW_REASON_LENGTH}
+                  onChangeText={(value) => {
+                    setReason(value);
+                    if (error) setError(undefined);
+                  }}
+                  onFocus={() =>
+                    reasonDialogScrollRef.current?.scrollToEnd({
+                      animated: true,
+                    })
+                  }
+                  placeholder={messages.proofReviewReasonPlaceholder}
+                  testID="proof-review-reason-input"
+                  value={reason}
+                />
+                {error ? (
+                  <Text
+                    accessibilityRole="alert"
+                    className={styles.proofValidation}
+                    testID="proof-review-error"
+                  >
+                    {error}
+                  </Text>
+                ) : null}
+              </ScrollView>
+              <View className={styles.proofReviewReasonActions}>
+                <Button
+                  disabled={busy}
+                  onPress={confirmNotApproved}
+                  testID="proof-review-confirm-not-approved"
+                >
+                  {messages.proofReviewConfirmNotApproved}
+                </Button>
+                <Button
+                  disabled={busy}
+                  onPress={closeReasonDialog}
+                  testID="proof-review-cancel-not-approved"
+                  variant="secondary"
+                >
+                  {messages.cancel}
+                </Button>
+              </View>
+            </Pressable>
+          </KeyboardAvoidingView>
+        </Pressable>
+      </Modal>
     </>
   );
 }
