@@ -1,6 +1,7 @@
 import React from "react";
 import { fireEvent, screen, waitFor } from "@testing-library/react-native";
 
+import { disputeApi } from "@/api/DisputeApi";
 import { notificationApi } from "@/api/NotificationApi";
 import { renderWithQueryClient } from "@/testing/queryTestUtils";
 import { NotificationInboxScreen } from "../inbox/NotificationInboxScreen";
@@ -21,12 +22,43 @@ jest.mock("@/api/NotificationApi", () => ({
   ...jest.requireActual("@/api/NotificationApi"),
   notificationApi: {
     listNotifications: jest.fn(),
-    countUnread: jest.fn(),
+    unreadSummary: jest.fn(),
     markRead: jest.fn(),
   },
 }));
 
+jest.mock("@/api/DisputeApi", () => ({
+  ...jest.requireActual("@/api/DisputeApi"),
+  disputeApi: { respondToDispute: jest.fn() },
+}));
+
 const api = jest.mocked(notificationApi);
+const summary = (count: number, byCategory = {}) => ({
+  count,
+  byCategory: { PENALTY: 0, QUEST: 0, DISPUTE: 0, ...byCategory },
+});
+const disputes = jest.mocked(disputeApi);
+
+const filedAgainstYou = {
+  id: "d-1",
+  type: "DISPUTE_CASE_FILED_AGAINST_YOU",
+  createdAt: "2026-10-30T10:00:00Z",
+  readAt: null,
+  questId: "11111111-1111-4111-8111-111111111111",
+  questTitle: "Wash my car",
+  result: null,
+  expiresAt: null,
+  disputeCaseId: "22222222-2222-4222-8222-222222222222",
+  disputeStatus: null,
+  viewerWon: null,
+};
+const decided = {
+  ...filedAgainstYou,
+  id: "d-2",
+  type: "DISPUTE_CASE_DECIDED",
+  disputeStatus: "DISPUTE_CASE_RESOLVED" as const,
+  viewerWon: false,
+};
 
 const redFlag = {
   id: "n-1",
@@ -62,7 +94,7 @@ describe("NotificationInboxScreen", () => {
   beforeEach(() => {
     jest.clearAllMocks();
     api.markRead.mockResolvedValue(undefined);
-    api.countUnread.mockResolvedValue(0);
+    api.unreadSummary.mockResolvedValue(summary(0));
   });
 
   it("shows app-written copy, a generic row for an unknown type, and marks a row read on tap", async () => {
@@ -127,7 +159,7 @@ describe("NotificationInboxScreen", () => {
   });
 
   it("offers Mark all read when unread rows sit on pages not loaded yet", async () => {
-    api.countUnread.mockResolvedValue(3);
+    api.unreadSummary.mockResolvedValue(summary(3));
     api.listNotifications.mockResolvedValue({
       items: [unknownType],
       nextCursor: "c-2",
@@ -171,7 +203,7 @@ describe("NotificationInboxScreen", () => {
   });
 
   it("shows the unread count on the Unread chip", async () => {
-    api.countUnread.mockResolvedValue(3);
+    api.unreadSummary.mockResolvedValue(summary(3));
     api.listNotifications.mockResolvedValue({
       items: [redFlag],
       nextCursor: null,
@@ -224,5 +256,177 @@ describe("NotificationInboxScreen", () => {
 
     await fireEvent.press(screen.getByTestId("notifications-filter-unread"));
     expect(await screen.findByText("You're all caught up")).toBeTruthy();
+  });
+
+  it("lets a Member answer a Dispute Case filed against them with one statement", async () => {
+    api.listNotifications.mockResolvedValue({
+      items: [filedAgainstYou],
+      nextCursor: null,
+    });
+    disputes.respondToDispute.mockResolvedValue({} as never);
+
+    await renderWithQueryClient(<NotificationInboxScreen />);
+    expect(
+      await screen.findByText("A Dispute Case was filed against you")
+    ).toBeTruthy();
+
+    await fireEvent.press(screen.getByTestId("notification-row-d-1"));
+    expect(mockPush).not.toHaveBeenCalled();
+    const send = screen.getByRole("button", { name: "Send statement" });
+    expect(send.props.accessibilityState.disabled).toBe(true);
+
+    await fireEvent.changeText(
+      screen.getByLabelText("Your statement"),
+      "  The proof did not match the Quest.  "
+    );
+    await fireEvent.press(
+      screen.getByRole("button", { name: "Send statement" })
+    );
+
+    await waitFor(() =>
+      expect(disputes.respondToDispute).toHaveBeenCalledWith(
+        "22222222-2222-4222-8222-222222222222",
+        "The proof did not match the Quest."
+      )
+    );
+    await waitFor(() =>
+      expect(screen.queryByLabelText("Your statement")).toBeNull()
+    );
+  });
+
+  it("opens the Quest from a decided Dispute Case with the server's verdict", async () => {
+    api.listNotifications.mockResolvedValue({
+      items: [decided],
+      nextCursor: null,
+    });
+
+    await renderWithQueryClient(<NotificationInboxScreen />);
+    expect(
+      await screen.findByText("You did not win the Dispute Case")
+    ).toBeTruthy();
+
+    await fireEvent.press(screen.getByTestId("notification-row-d-2"));
+    expect(mockPush).toHaveBeenCalledWith({
+      pathname: "/quest/[id]",
+      params: { id: decided.questId },
+    });
+    expect(screen.queryByLabelText("Your statement")).toBeNull();
+  });
+
+  it("filters by category with per-category unread counts and reads only that category", async () => {
+    api.unreadSummary.mockResolvedValue(summary(4, { QUEST: 3, DISPUTE: 1 }));
+    api.listNotifications.mockResolvedValue({
+      items: [filedAgainstYou],
+      nextCursor: null,
+    });
+
+    await renderWithQueryClient(<NotificationInboxScreen />);
+
+    expect(await screen.findByText("Disputes · 1")).toBeTruthy();
+    expect(screen.getByText("Quests · 3")).toBeTruthy();
+    expect(screen.getByText("Penalties")).toBeTruthy();
+
+    await fireEvent.press(screen.getByTestId("notifications-filter-dispute"));
+    await waitFor(() =>
+      expect(api.listNotifications).toHaveBeenLastCalledWith(
+        expect.objectContaining({ category: "DISPUTE" }),
+        expect.anything()
+      )
+    );
+
+    await fireEvent.press(screen.getByTestId("notifications-mark-all-read"));
+    await waitFor(() =>
+      expect(api.markRead).toHaveBeenCalledWith({
+        all: true,
+        category: "DISPUTE",
+      })
+    );
+
+    await fireEvent.press(screen.getByTestId("notifications-filter-all"));
+    await waitFor(() =>
+      expect(api.listNotifications).toHaveBeenLastCalledWith(
+        expect.not.objectContaining({ category: "DISPUTE" }),
+        expect.anything()
+      )
+    );
+  });
+
+  it("combines the Unread toggle with a category and turns it off on a second press", async () => {
+    api.listNotifications.mockResolvedValue({ items: [], nextCursor: null });
+
+    await renderWithQueryClient(<NotificationInboxScreen />);
+    await fireEvent.press(
+      await screen.findByTestId("notifications-filter-quest")
+    );
+    await fireEvent.press(screen.getByTestId("notifications-filter-unread"));
+    await waitFor(() =>
+      expect(api.listNotifications).toHaveBeenLastCalledWith(
+        expect.objectContaining({ unreadOnly: true, category: "QUEST" }),
+        expect.anything()
+      )
+    );
+
+    await fireEvent.press(screen.getByTestId("notifications-filter-unread"));
+    await waitFor(() =>
+      expect(api.listNotifications).toHaveBeenLastCalledWith(
+        expect.objectContaining({ unreadOnly: false, category: "QUEST" }),
+        expect.anything()
+      )
+    );
+  });
+
+  it("writes Quest rows in app copy and opens the Quest, or the consent screen", async () => {
+    const quest = {
+      ...unknownType,
+      readAt: null,
+      questId: "33333333-3333-4333-8333-333333333333",
+      questTitle: "Wash my car",
+    };
+    api.listNotifications.mockResolvedValue({
+      items: [
+        {
+          ...quest,
+          id: "q-1",
+          type: "QUEST_FAILED",
+          failureReason: "DUE_AT_MISSED",
+        },
+        {
+          ...quest,
+          id: "q-2",
+          type: "QUEST_FAILED",
+          failureReason: "COMPLETION_NOT_APPROVED",
+        },
+        {
+          ...quest,
+          id: "q-3",
+          type: "UNDERFILLED_CONSENT_PENDING",
+          expiresAt: "2026-10-31T10:00:00Z",
+        },
+        { ...quest, id: "q-4", type: "QUEST_ASSIGNED" },
+      ],
+      nextCursor: null,
+    });
+
+    await renderWithQueryClient(<NotificationInboxScreen />);
+
+    expect(
+      await screen.findByText("The due time passed before all Proof was sent.")
+    ).toBeTruthy();
+    expect(
+      screen.getByText("The Hirer did not approve the completion.")
+    ).toBeTruthy();
+    expect(screen.getByText("Quest roster filled")).toBeTruthy();
+    expect(screen.queryByText("Account update")).toBeNull();
+
+    await fireEvent.press(screen.getByTestId("notification-row-q-4"));
+    expect(mockPush).toHaveBeenLastCalledWith({
+      pathname: "/quest/[id]",
+      params: { id: quest.questId },
+    });
+    await fireEvent.press(screen.getByTestId("notification-row-q-3"));
+    expect(mockPush).toHaveBeenLastCalledWith({
+      pathname: "/quest/[id]/partial-start",
+      params: { id: quest.questId },
+    });
   });
 });

@@ -938,6 +938,18 @@ export function useFileDisputeMutation() {
   });
 }
 
+export function useRespondToDisputeMutation() {
+  return useMutation({
+    mutationFn: ({
+      disputeCaseId,
+      respondentStatement,
+    }: {
+      disputeCaseId: string;
+      respondentStatement: string;
+    }) => disputeApi.respondToDispute(disputeCaseId, respondentStatement),
+  });
+}
+
 export function useConductReportsQuery(
   questId: string | null,
   viewerId: string | null,
