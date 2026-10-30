@@ -1,5 +1,5 @@
 import { useCallback, useEffect } from "react";
-import { Modal, Platform } from "react-native";
+import { Modal } from "react-native";
 import { StatusBar } from "expo-status-bar";
 import { useSafeAreaInsets } from "react-native-safe-area-context";
 import { KeyboardAvoidingView, ScrollView, View } from "@/tw";
@@ -68,7 +68,7 @@ export function QuestTopUpModal({
           testID="quest-funding-top-up-flow"
         >
           <KeyboardAvoidingView
-            behavior={Platform.OS === "ios" ? "padding" : undefined}
+            behavior="padding"
             className="w-full max-w-[640px] flex-1 self-center"
           >
             <TopUpHeader

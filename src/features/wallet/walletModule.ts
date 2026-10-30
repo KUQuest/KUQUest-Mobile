@@ -298,6 +298,8 @@ export function classifyHirerTransaction(
   let subtitle: string | undefined;
   if (tx.destinationInfo) {
     subtitle = tx.destinationInfo;
+  } else if (tx.quest?.title) {
+    subtitle = tx.quest.title;
   } else if (tx.reference && !tx.reference.match(/^[0-9a-f-]{36}$/i)) {
     subtitle = tx.reference;
   }
