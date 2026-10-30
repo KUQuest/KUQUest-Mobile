@@ -17,7 +17,6 @@ export interface ProfileEditMessages {
   leave: string;
   stay: string;
   basics: string;
-  basicsSummary: string;
   academicRegistration: string;
   academicRegistrationSummary: string;
   experience: string;
@@ -106,7 +105,6 @@ export const profileEditMessages: Record<SupportedLocale, ProfileEditMessages> =
       leave: "Discard",
       stay: "Keep editing",
       basics: "Profile basics",
-      basicsSummary: "Name, avatar, and bio",
       academicRegistration: "Academic Registration",
       academicRegistrationSummary: "Occupation and Student ID",
       experience: "Experience",
@@ -199,7 +197,6 @@ export const profileEditMessages: Record<SupportedLocale, ProfileEditMessages> =
       leave: "ละทิ้ง",
       stay: "แก้ไขต่อ",
       basics: "ข้อมูลโปรไฟล์",
-      basicsSummary: "ชื่อ รูปโปรไฟล์ และคำแนะนำตัว",
       academicRegistration: "ข้อมูลการลงทะเบียนการศึกษา",
       academicRegistrationSummary: "อาชีพและรหัสนิสิต",
       experience: "ประสบการณ์",

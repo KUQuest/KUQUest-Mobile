@@ -46,6 +46,9 @@ describe("ChatConversationScreen", () => {
       refreshing: false,
       refresh: jest.fn(),
       retryLoad: jest.fn(),
+      hasOlderMessages: false,
+      isLoadingOlderMessages: false,
+      loadOlderMessages: jest.fn(),
       role: "member",
       conversationKind: "work",
       canWrite: false,
@@ -369,6 +372,55 @@ describe("ChatConversationScreen", () => {
       { width: 320, height: 480 }
     );
     expect(scrollToEnd).toHaveBeenCalledTimes(2);
+  });
+
+  it("loads older history when scrolled to the top after showing the newest Message", async () => {
+    jest
+      .spyOn(NativeFlatList.prototype, "scrollToEnd")
+      .mockImplementation(() => undefined);
+    const getController =
+      mockedUseChatConversationController.getMockImplementation();
+    if (!getController) {
+      throw new Error("Chat conversation controller mock is not configured");
+    }
+    const loadOlderMessages = jest.fn();
+    mockedUseChatConversationController.mockReturnValue({
+      ...getController("WORK"),
+      conversationPending: false,
+      conversation: {
+        id: "conversation-1",
+        questId: "quest-1",
+        questTitle: { en: "Campus cleanup", th: "ทำความสะอาดวิทยาเขต" },
+        participantName: "Sora Student",
+        participantRole: "owner",
+        initials: "SS",
+        avatarColor: "#208AEF",
+        latestMessage: { en: "Hello", th: "สวัสดี" },
+        latestAt: "2026-09-24T03:30:00Z",
+        unreadCount: 0,
+        messages: [],
+      },
+      searchedMessages: [
+        {
+          id: "message-1",
+          sender: "other",
+          text: { en: "First", th: "แรก" },
+          createdAt: "2026-09-24T03:30:00Z",
+          attachments: [],
+        },
+      ],
+      hasOlderMessages: true,
+      loadOlderMessages,
+    });
+    const view = await renderWithAppTheme(<ChatConversationScreen />);
+    const list = view.getByTestId("chat-message-list");
+
+    await fireEvent(list, "startReached", { distanceFromStart: 0 });
+    expect(loadOlderMessages).not.toHaveBeenCalled();
+
+    await fireEvent(list, "contentSizeChange", { width: 320, height: 240 });
+    await fireEvent(list, "startReached", { distanceFromStart: 0 });
+    expect(loadOlderMessages).toHaveBeenCalledTimes(1);
   });
 
   it("navigates to report on long-press of another participant's message, but not own message", async () => {

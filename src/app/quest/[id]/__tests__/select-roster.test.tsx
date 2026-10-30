@@ -209,7 +209,7 @@ describe("SelectRosterRoute", () => {
     expect(mockBack).not.toHaveBeenCalled();
   });
 
-  it("rejects a pending team proposal after confirmation and refreshes the list", async () => {
+  it("shows only the select action for a pending team proposal", async () => {
     const base = createSnapshot();
     const snapshot = createSnapshot({
       participation: "GROUP",
@@ -228,105 +228,17 @@ describe("SelectRosterRoute", () => {
           createdAt: "2026-09-01T00:00:00Z",
         },
       ],
-      capabilities: { ...base.capabilities, canRejectTeam: true },
+      capabilities: {
+        ...base.capabilities,
+        canRejectTeam: true,
+        canSelectTeam: true,
+      },
     });
     (liveQuestService.getLiveSnapshot as jest.Mock).mockResolvedValue(snapshot);
-    (questApi.rejectCandidateTeam as jest.Mock).mockResolvedValue({});
-    const { getByTestId, getByText, getByRole } = await renderWithQueryClient(
-      <>
-        <SelectRosterRoute />
-        <SweetAlertHost />
-      </>
-    );
-
-    await waitFor(() => {
-      expect(getByText("Nina Candidate")).toBeTruthy();
-    });
-
-    await fireEvent.press(getByTestId("select-roster-team-team-1-reject"));
-    expect(
-      getByText(questBoardMessages.th.confirmRejectTeamTitle)
-    ).toBeTruthy();
-    expect(questApi.rejectCandidateTeam).not.toHaveBeenCalled();
-    await fireEvent.press(
-      getByRole("button", { name: groupQuestMessages.th.cancel })
-    );
-    expect(questApi.rejectCandidateTeam).not.toHaveBeenCalled();
-    await fireEvent.press(getByTestId("select-roster-team-team-1-reject"));
-    await fireEvent.press(
-      getByRole("button", { name: groupQuestMessages.th.reject })
-    );
-
-    await waitFor(() => {
-      expect(questApi.rejectCandidateTeam).toHaveBeenCalledWith(
-        "quest-1",
-        "team-1",
-        expect.any(String)
-      );
-    });
-    await waitFor(() => {
-      expect(liveQuestService.getLiveSnapshot).toHaveBeenCalledTimes(2);
-    });
-    expect(mockBack).not.toHaveBeenCalled();
-  });
-
-  it("shows a localized rejection error and refetches when team rejection fails", async () => {
-    const base = createSnapshot();
-    const snapshot = createSnapshot({
-      participation: "GROUP",
-      teams: [
-        {
-          id: "team-1",
-          questId: "quest-1",
-          leaderId: "leader-1",
-          name: "Muralists",
-          headcount: 3,
-          state: "TEAM_SUBMITTED",
-          joinCode: null,
-          joinCodeExpiresAt: null,
-          members: [{ memberId: "leader-1", joinedAt: "2026-09-01T00:00:00Z" }],
-          submission: null,
-          createdAt: "2026-09-01T00:00:00Z",
-        },
-      ],
-      capabilities: { ...base.capabilities, canRejectTeam: true },
-    });
-    (liveQuestService.getLiveSnapshot as jest.Mock).mockResolvedValue(snapshot);
-    const failureMessage = "The team could not be rejected";
-    (questApi.rejectCandidateTeam as jest.Mock).mockRejectedValue(
-      new Error(failureMessage)
-    );
-    const { getByTestId, getByText, getByRole, queryByText } =
-      await renderWithQueryClient(
-        <>
-          <SelectRosterRoute />
-          <SweetAlertHost />
-        </>
-      );
-
-    await waitFor(() => {
-      expect(getByText("Nina Candidate")).toBeTruthy();
-    });
-
-    await fireEvent.press(getByTestId("select-roster-team-team-1-reject"));
-    expect(
-      getByText(questBoardMessages.th.confirmRejectTeamTitle)
-    ).toBeTruthy();
-    await fireEvent.press(
-      getByRole("button", { name: groupQuestMessages.th.reject })
-    );
-
-    await waitFor(() => {
-      expect(questApi.rejectCandidateTeam).toHaveBeenCalledWith(
-        "quest-1",
-        "team-1",
-        expect.any(String)
-      );
-      expect(liveQuestService.getLiveSnapshot).toHaveBeenCalledTimes(2);
-      expect(getByText(alertMessages.th.errorFallback)).toBeTruthy();
-    });
-    expect(queryByText(failureMessage)).toBeNull();
-    expect(mockBack).not.toHaveBeenCalled();
+    const view = await renderWithQueryClient(<SelectRosterRoute />);
+    await waitFor(() => expect(view.getByText("Nina Candidate")).toBeTruthy());
+    expect(view.queryByTestId("select-roster-team-team-1-reject")).toBeNull();
+    expect(view.getByTestId("select-roster-team-team-1-select")).toBeTruthy();
   });
 
   it("shows a no-selection-needed state for a First-Come-First-Served quest", async () => {

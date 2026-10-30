@@ -1,6 +1,7 @@
 import { useCallback, useEffect, useRef, useState } from "react";
 import { z } from "zod";
 
+import { ApiError } from "@/api/ApiClient";
 import { openServerSocket, type ServerSocket } from "@/api/ServerSocket";
 import {
   chatApi,
@@ -89,6 +90,30 @@ export interface UseChatSocketResult {
 }
 
 const MESSAGE_ACK_TIMEOUT_MS = 15_000;
+
+// MESSAGE_REJECTED carries only a code, so mirror the REST status the Work
+// Chat and Candidate Inquiry controllers send for the same code; any other
+// code is a 409 business-rule conflict there too.
+const REJECTION_STATUS_BY_CODE: Partial<Record<string, number>> = {
+  CONVERSATION_NOT_FOUND: 404,
+  INQUIRY_NOT_AVAILABLE: 404,
+  ATTACHMENT_NOT_FOUND: 404,
+  MESSAGE_CONTENT_REQUIRED: 400,
+  MESSAGE_TOO_LONG: 400,
+  ATTACHMENT_IDS_DUPLICATE: 400,
+  RATE_LIMITED: 429,
+};
+
+function messageRejectionError(error: {
+  code: string;
+  message: string;
+}): ApiError {
+  return new ApiError(
+    REJECTION_STATUS_BY_CODE[error.code] ?? 409,
+    error.code,
+    error.message
+  );
+}
 const sendMessageCommandSchema = z
   .object({
     type: z.literal(ChatSocketEventType.SEND_MESSAGE),
@@ -211,7 +236,9 @@ export function useChatSocket({
               if (event.type === ChatSocketEventType.MESSAGE_ACCEPTED) {
                 pending.resolve(event.message);
               } else {
-                pending.reject(new Error(event.error.message));
+                // The send's own error handling reports this rejection.
+                pending.reject(messageRejectionError(event.error));
+                return;
               }
             }
           }

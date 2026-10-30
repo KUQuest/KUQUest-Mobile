@@ -34,6 +34,10 @@ export interface QuestWorkMessages {
   actionUnavailable: string;
   proofCta: string;
   confirmationCta: string;
+  completionPending: string;
+  completionPendingDescription: string;
+  completionNotApproved: string;
+  completionNotApprovedDescription: string;
   confirmationPlaceholder: string;
   archiveDescription: string;
   fileDispute: string;
@@ -53,6 +57,8 @@ export interface QuestWorkMessages {
   settlementAmount: string;
   settlementPaid: string;
   settlementPending: string;
+  settlementLeaderSplitPending: (deadline: string) => string;
+  settlementMemberSplitPending: (deadline: string) => string;
   settlementNone: string;
   settlementUnavailable: string;
   settlementTeamShare: string;
@@ -139,6 +145,12 @@ export const questWorkMessages: Record<SupportedLocale, QuestWorkMessages> = {
     actionUnavailable: "This action is not available for your Assignment.",
     proofCta: "Proof submission",
     confirmationCta: "Confirm completion",
+    completionPending: "Awaiting Hirer approval",
+    completionPendingDescription:
+      "You sent a completion confirmation. The Quest stays in progress until the Hirer approves it, or the Server auto-approves it after 24 hours.",
+    completionNotApproved: "Completion not approved",
+    completionNotApprovedDescription:
+      "The Hirer did not approve this completion confirmation.",
     confirmationPlaceholder:
       "Completion confirmation will open when this action is enabled.",
     archiveDescription:
@@ -160,6 +172,10 @@ export const questWorkMessages: Record<SupportedLocale, QuestWorkMessages> = {
     settlementAmount: "Amount credited to Earnings",
     settlementPaid: "Paid to your Earnings Balance",
     settlementPending: "Payment pending. Refresh to check the transfer.",
+    settlementLeaderSplitPending: (deadline) =>
+      `Split the team reward by ${deadline}. If you do not, the Server splits it equally.`,
+    settlementMemberSplitPending: (deadline) =>
+      `Waiting for the Team Leader to split the reward by ${deadline}. If they do not, the Server splits it equally.`,
     settlementNone: "No payment for this Assignment.",
     settlementUnavailable: "Settlement details are not available yet.",
     settlementTeamShare: "Your team reward share",
@@ -252,6 +268,12 @@ export const questWorkMessages: Record<SupportedLocale, QuestWorkMessages> = {
     actionUnavailable: "การดำเนินการนี้ไม่พร้อมใช้งานสำหรับการมอบหมายของคุณ",
     proofCta: "ส่งหลักฐาน",
     confirmationCta: "ยืนยันการเสร็จสิ้น",
+    completionPending: "รอผู้ว่าจ้างอนุมัติการเสร็จงาน",
+    completionPendingDescription:
+      "ส่งยืนยันงานเสร็จแล้ว รอผู้ว่าจ้างอนุมัติก่อนที่เควสต์จะเสร็จ ระบบจะอนุมัติให้อัตโนมัติหลัง 24 ชั่วโมง",
+    completionNotApproved: "ไม่อนุมัติการยืนยันงานเสร็จ",
+    completionNotApprovedDescription:
+      "ผู้ว่าจ้างยังไม่อนุมัติการยืนยันงานเสร็จ",
     confirmationPlaceholder:
       "หน้ายืนยันการเสร็จสิ้นจะแสดงเมื่อเปิดใช้การดำเนินการนี้",
     archiveDescription:
@@ -270,10 +292,14 @@ export const questWorkMessages: Record<SupportedLocale, QuestWorkMessages> = {
     conditionCount: (count) => `${count} ข้อ`,
     workChatHint: "สื่อสารและประสานงานเควสต์นี้กับผู้ว่าจ้าง",
     givenPrice: "ราคาที่ผู้ว่าจ้างเสนอต่อผู้ปฏิบัติงาน",
-    settlementTitle: "การชำระเงินของคุณ",
+    settlementTitle: "การได้รับเงินของคุณ",
     settlementAmount: "จำนวนเงินที่เข้ายอดรายได้",
     settlementPaid: "โอนเข้ายอดรายได้แล้ว",
     settlementPending: "รอการโอนเงิน รีเฟรชเพื่อตรวจสอบสถานะ",
+    settlementLeaderSplitPending: (deadline) =>
+      `แบ่งค่าตอบแทนทีมภายใน ${deadline} ถ้าไม่แบ่ง ระบบจะหารเท่ากัน`,
+    settlementMemberSplitPending: (deadline) =>
+      `รอหัวหน้าทีมแบ่งค่าตอบแทนภายใน ${deadline} ถ้าไม่แบ่ง ระบบจะหารเท่ากัน`,
     settlementNone: "ไม่มีการชำระเงินสำหรับงานนี้",
     settlementUnavailable: "ยังไม่มีข้อมูลการชำระเงิน",
     settlementTeamShare: "ส่วนแบ่งค่าตอบแทนของคุณ",

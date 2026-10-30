@@ -14,7 +14,26 @@ jest.mock("expo-router", () => ({
 }));
 
 jest.mock("../../auth/AuthService", () => ({
-  authService: { signOut: jest.fn() },
+  authService: {
+    signOut: jest.fn(),
+    getStudentApi: () =>
+      Promise.resolve({
+        getPenaltyStatus: () =>
+          Promise.resolve({
+            misconduct: {
+              strikeCount: 0,
+              ladderLength: 3,
+              nextResult: "PENALTY_RED_FLAG",
+            },
+            review: {
+              strikeCount: 0,
+              ladderLength: 3,
+              nextResult: "PENALTY_TEMPORARY_BAN_7_DAYS",
+            },
+            redFlagExpiresAt: null,
+          }),
+      }),
+  },
 }));
 
 jest.mock("../../../features/preferences/localeStore", () => ({

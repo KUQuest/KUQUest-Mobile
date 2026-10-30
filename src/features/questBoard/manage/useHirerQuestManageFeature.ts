@@ -36,6 +36,7 @@ import { getLocalizedErrorMessage } from "@/utils/error";
 import { useCandidateSelection } from "@/features/questBoard/useCandidateSelection";
 import {
   isHirerActor,
+  QuestCompletionConfirmationStatus,
   QuestEditRequestStatus,
   QuestMode,
   QuestParticipation,
@@ -183,17 +184,31 @@ export function useHirerQuestManageFeature(questId?: string) {
   const pendingProof = snapshot?.proofs.find(
     (proof) => proof.status === QuestProofStatus.PROOF_PENDING
   );
+  const pendingCompletionConfirmation = isHirerActor(snapshot?.actor)
+    ? snapshot?.completionConfirmations?.find(
+        (confirmation) =>
+          confirmation.reviewStatus ===
+          QuestCompletionConfirmationStatus.COMPLETION_CONFIRMATION_PENDING
+      )
+    : undefined;
   const terminal = snapshot ? isTerminalStatus(snapshot.state) : false;
   // Settlement per the cancellation matrix in quest-lifecycle-contract.md.
+  const candidateTeamQuest =
+    snapshot?.mode === QuestMode.CANDIDATE &&
+    snapshot.participation === QuestParticipation.GROUP;
   const cancelDescription =
     snapshot?.state === QuestStatus.QUEST_DRAFT
       ? cancelMessages.cancelDraftDescription
       : snapshot?.state === QuestStatus.QUEST_OPEN
         ? cancelMessages.cancelOpenDescription
         : snapshot?.state === QuestStatus.QUEST_ASSIGNED
-          ? cancelMessages.cancelAssignedDescription
+          ? candidateTeamQuest
+            ? cancelMessages.cancelAssignedTeamDescription
+            : cancelMessages.cancelAssignedDescription
           : snapshot?.state === QuestStatus.QUEST_IN_PROGRESS
-            ? cancelMessages.cancelInProgressDescription
+            ? candidateTeamQuest
+              ? cancelMessages.cancelInProgressTeamDescription
+              : cancelMessages.cancelInProgressDescription
             : undefined;
   const canReviewCandidateProposals =
     isHirerActor(snapshot?.actor) &&
@@ -246,13 +261,19 @@ export function useHirerQuestManageFeature(questId?: string) {
           throw caught;
         });
       if (!outcome) return;
+      // A paid Candidate Team cancellation settles after the Team Leader splits it.
+      const teamSplitPending = candidateTeamQuest && outcome.paidSatang > 0;
       const settlement = [
         outcome.paidSatang > 0 &&
-          cancelMessages.cancelPaidWorkers(
+          (teamSplitPending
+            ? cancelMessages.cancelTeamSplitPending
+            : cancelMessages.cancelPaidWorkers)(
             formatSatang(outcome.paidSatang, locale)
           ),
         outcome.refundedSatang > 0 &&
-          cancelMessages.cancelRefunded(
+          (teamSplitPending
+            ? cancelMessages.cancelTeamRefundPending
+            : cancelMessages.cancelRefunded)(
             formatSatang(outcome.refundedSatang, locale)
           ),
       ].filter(Boolean);
@@ -304,6 +325,13 @@ export function useHirerQuestManageFeature(questId?: string) {
       return;
     router.push({
       pathname: "/quest/[id]/proof-review",
+      params: { id: snapshot.quest.id },
+    });
+  };
+  const reviewCompletion = () => {
+    if (!snapshot || !pendingCompletionConfirmation) return;
+    router.push({
+      pathname: "/quest/[id]/completion-review",
       params: { id: snapshot.quest.id },
     });
   };
@@ -363,6 +391,7 @@ export function useHirerQuestManageFeature(questId?: string) {
     error,
     originalConditionItems,
     pendingProof,
+    pendingCompletionConfirmation,
     terminal,
     cancelDescription,
     cancelPreviewText,
@@ -386,6 +415,7 @@ export function useHirerQuestManageFeature(questId?: string) {
     selectTeam,
     cancel,
     reviewProof,
+    reviewCompletion,
     submitConditionEdit,
   };
 }

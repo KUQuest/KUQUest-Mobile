@@ -21,6 +21,7 @@ export interface ProjectMyQuestWorkspaceInput {
   hirerQuests: QuestV2CanonicalQuest[] | null;
   tagCatalog?: readonly TagItem[];
   proofReviewableQuestIds?: ReadonlySet<string>;
+  completionReviewableQuestIds?: ReadonlySet<string>;
 }
 
 const hirerTabs: HirerTab[] = ["active", "draft", "completed"];
@@ -38,6 +39,7 @@ export function projectMyQuestWorkspace({
   hirerQuests,
   tagCatalog = [],
   proofReviewableQuestIds,
+  completionReviewableQuestIds,
 }: ProjectMyQuestWorkspaceInput): MyQuestWorkspaceProjection {
   const selectedTab = normalizeTab(requestedTab);
   const messages = myQuestMessages[locale];
@@ -52,7 +54,8 @@ export function projectMyQuestWorkspace({
           selectedTab,
           locale,
           tagCatalog,
-          proofReviewableQuestIds
+          proofReviewableQuestIds,
+          completionReviewableQuestIds
         )
       : [],
     selectedTabLabel: messages.tabs[selectedTab],

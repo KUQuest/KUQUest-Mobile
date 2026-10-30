@@ -427,9 +427,6 @@ export function buildQuestDetailSheetsProps(
             onAcceptProposal: surface.liveAction
               ? undefined
               : context.selectCandidate,
-            onRejectProposal: surface.liveAction
-              ? undefined
-              : context.rejectCandidate,
             onClose: transitions.closeCandidateReview,
             onSelectProposal: transitions.selectProposal,
             rewardSatangPerWorker: getQuestRewardSatang(facts.quest),
@@ -567,7 +564,13 @@ export function buildQuestDetailActionBar(
           facts.liveSnapshot.teams.length === 0)),
     canReview:
       facts.isPostView &&
-      (facts.isHirerView || facts.liveSnapshot?.actor === QuestActor.WORKER) &&
+      // A Hirer needs at least one Worker to review (e.g. not a Quest cancelled while Open).
+      ((facts.isHirerView &&
+        (facts.liveSnapshot?.assignments ?? []).some(
+          (assignment) =>
+            assignment.state !== QuestAssignmentStatus.ASSIGNMENT_CANCELLED
+        )) ||
+        facts.liveSnapshot?.actor === QuestActor.WORKER) &&
       isTerminalStatus(facts.quest.status) &&
       facts.liveSnapshot?.capabilities.canCreateReview === true,
     canReviewProof:

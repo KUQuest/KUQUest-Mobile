@@ -114,6 +114,7 @@ jest.mock("@/tw", () => {
 });
 
 jest.mock("lucide-react-native", () => ({
+  Check: () => null,
   Star: () => null,
   X: () => null,
 }));
@@ -319,6 +320,114 @@ describe("QuestReviewModal", () => {
       ["worker-1", "review-key-1"],
       ["worker-2", "review-key-2"],
     ]);
+  });
+
+  it("locks to the given Worker without a picker when opened for one Worker", async () => {
+    mockAssignments = {
+      data: [
+        {
+          workerId: "worker-1",
+          state: QuestAssignmentStatus.ASSIGNMENT_COMPLETED,
+        },
+        {
+          workerId: "worker-2",
+          state: QuestAssignmentStatus.ASSIGNMENT_COMPLETED,
+        },
+      ],
+      error: null,
+    };
+    const screen = await render(
+      <QuestReviewModal
+        onClose={mockClose}
+        questId="quest-1"
+        revieweeId="worker-2"
+      />
+    );
+
+    expect(screen.getByText("Kai Worker")).toBeTruthy();
+    expect(screen.queryByTestId("quest-review-worker-worker-1")).toBeNull();
+    expect(screen.queryByTestId("quest-review-worker-worker-2")).toBeNull();
+    await fireEvent.press(screen.getByTestId("quest-review-rating-4"));
+    await fireEvent.press(screen.getByTestId("quest-review-submit"));
+
+    await waitFor(() => expect(mockMutateAsync).toHaveBeenCalledTimes(1));
+    expect(mockMutateAsync.mock.calls[0][0].input.revieweeId).toBe("worker-2");
+  });
+
+  it("marks reviewed Workers, starts on the next unreviewed one, and advances after submit", async () => {
+    mockSnapshot = {
+      ...completedSnapshot(),
+      participants: [
+        { id: "worker-1", displayName: "Jane Worker" },
+        { id: "worker-2", displayName: "Kai Worker" },
+        { id: "worker-3", displayName: "Lin Worker" },
+      ],
+    };
+    mockAssignments = {
+      data: ["worker-1", "worker-2", "worker-3"].map((workerId) => ({
+        workerId,
+        state: QuestAssignmentStatus.ASSIGNMENT_COMPLETED,
+      })),
+      error: null,
+    };
+    mockReviews = {
+      data: [
+        {
+          id: "review-1",
+          reviewerId: "hirer-1",
+          revieweeId: "worker-1",
+          rating: 4,
+          comment: null,
+        },
+      ],
+      error: null,
+    };
+    const screen = await render(
+      <QuestReviewModal onClose={mockClose} questId="quest-1" />
+    );
+
+    expect(screen.getByText("Reviewed")).toBeTruthy();
+    expect(
+      screen.getByTestId("quest-review-worker-worker-2").props
+        .accessibilityState
+    ).toEqual({ selected: true });
+
+    await fireEvent.press(screen.getByTestId("quest-review-rating-5"));
+    await fireEvent.press(screen.getByTestId("quest-review-submit"));
+
+    await waitFor(() =>
+      expect(screen.getByTestId("quest-review-saved")).toBeTruthy()
+    );
+    expect(mockMutateAsync.mock.calls[0][0].input.revieweeId).toBe("worker-2");
+    expect(
+      screen.getByTestId("quest-review-worker-worker-3").props
+        .accessibilityState
+    ).toEqual({ selected: true });
+    expect(mockClose).not.toHaveBeenCalled();
+  });
+
+  it("asks before discarding an unsaved rating and closes only on Discard", async () => {
+    const screen = await render(
+      <QuestReviewModal onClose={mockClose} questId="quest-1" />
+    );
+
+    await fireEvent.press(screen.getByTestId("quest-review-done"));
+    expect(mockClose).toHaveBeenCalledTimes(1);
+    mockClose.mockClear();
+
+    await fireEvent.press(screen.getByTestId("quest-review-rating-3"));
+    await fireEvent.press(screen.getByTestId("quest-review-close"));
+    expect(mockClose).not.toHaveBeenCalled();
+    expect(screen.getByText("Discard this review?")).toBeTruthy();
+
+    await fireEvent.press(screen.getByTestId("quest-review-keep-editing"));
+    expect(
+      screen.getByTestId("quest-review-rating-3").props.accessibilityState
+    ).toEqual({ selected: true });
+
+    await fireEvent.press(screen.getByTestId("quest-review-done"));
+    await fireEvent.press(screen.getByTestId("quest-review-discard-confirm"));
+    expect(mockClose).toHaveBeenCalledTimes(1);
   });
 
   it("shows a retryable review-list error and never creates a review", async () => {

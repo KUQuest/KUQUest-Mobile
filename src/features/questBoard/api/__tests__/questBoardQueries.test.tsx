@@ -36,6 +36,7 @@ import {
   useProofFileLinksQuery,
   useQuestBoardQuery,
   useQuestReviewsQuery,
+  useReviewCompletionConfirmationMutation,
   useReviewProofMutation,
   useSelectApplicationMutation,
   useUpdateReviewMutation,
@@ -62,6 +63,7 @@ jest.mock("@/api/QuestApi", () => ({
     createReview: jest.fn(),
     updateReview: jest.fn(),
     reviewProof: jest.fn(),
+    reviewCompletionConfirmation: jest.fn(),
     selectApplication: jest.fn(),
     joinCandidateTeam: jest.fn(),
     joinCandidateTeamByCode: jest.fn(),
@@ -915,6 +917,52 @@ describe("quest board query ownership", () => {
       });
     });
     expect(invalidated()).toBe(false);
+    queryClient.clear();
+  });
+
+  it("invalidates Hirer, Worker, and Wallet reads after completion review", async () => {
+    const queryClient = new QueryClient();
+    const walletKey = walletKeys.detail();
+    const hirerSnapshotKey = questBoardKeys.liveSnapshotScope(
+      "quest-1",
+      "hirer-1"
+    );
+    const workerParticipationKey =
+      workerHomeKeys.participationDetail("quest-1");
+    queryClient.setQueryData(walletKey, { cached: true });
+    queryClient.setQueryData(hirerSnapshotKey, { cached: true });
+    queryClient.setQueryData(workerParticipationKey, { cached: true });
+    jest
+      .mocked(questApi.reviewCompletionConfirmation)
+      .mockResolvedValue({} as never);
+    const review = await renderHook(
+      () => useReviewCompletionConfirmationMutation(),
+      { wrapper: wrapper(queryClient) }
+    );
+
+    await act(async () => {
+      await review.result.current.mutateAsync({
+        questId: "quest-1",
+        completionConfirmationId: "completion-confirmation-1",
+        payload: { decision: "COMPLETION_CONFIRMATION_APPROVED" },
+        viewerId: "hirer-1",
+        idempotencyKey: "completion-review-1",
+      });
+    });
+
+    expect(questApi.reviewCompletionConfirmation).toHaveBeenCalledWith(
+      "quest-1",
+      "completion-confirmation-1",
+      { decision: "COMPLETION_CONFIRMATION_APPROVED" },
+      "completion-review-1"
+    );
+    expect(queryClient.getQueryState(walletKey)?.isInvalidated).toBe(true);
+    expect(queryClient.getQueryState(hirerSnapshotKey)?.isInvalidated).toBe(
+      true
+    );
+    expect(
+      queryClient.getQueryState(workerParticipationKey)?.isInvalidated
+    ).toBe(true);
     queryClient.clear();
   });
 

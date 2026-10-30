@@ -62,6 +62,9 @@ async function invalidateQuestReads(queryClient: QueryClient, questId: string) {
     queryClient.invalidateQueries({
       queryKey: createQuestKeys.editSource(questId),
     }),
+    queryClient.invalidateQueries({
+      queryKey: createQuestKeys.publishCheck(questId),
+    }),
     queryClient.invalidateQueries({ queryKey: workerHomeKeys.all }),
   ]);
 }

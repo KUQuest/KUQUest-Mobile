@@ -993,7 +993,7 @@ export function CandidateReviewSheet({
           testID="candidate-review-summary"
         >
           <View className={styles.proposalSummaryHeader}>
-            <View className={styles.reviewHeader}>
+            <View className={`${styles.reviewHeader} min-w-0 flex-1`}>
               <View className={styles.reviewIcon}>
                 {isTeamMode ? (
                   <UsersRound
@@ -1022,7 +1022,9 @@ export function CandidateReviewSheet({
                 ) : null}
               </View>
             </View>
-            <Text className={styles.proposalSummaryCount}>
+            <Text
+              className={`${styles.proposalSummaryCount} ml-ku-sm shrink-0`}
+            >
               {messages.proposalCount(normalizedProposals.length)}
             </Text>
           </View>

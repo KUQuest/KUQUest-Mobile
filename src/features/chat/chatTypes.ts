@@ -53,8 +53,6 @@ export interface ChatConversation {
   participantId?: string;
   participantName: string;
   participantRole: "owner" | "member";
-  participantAvatarUrl?: string;
-  participantAvatarFileId?: string;
   initials: string;
   avatarColor: string;
   latestMessage: LocalizedText;

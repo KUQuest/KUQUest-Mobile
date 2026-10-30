@@ -24,6 +24,7 @@ import {
 } from "../presentation/questLabels";
 import {
   isWorkerActor,
+  QuestCompletionConfirmationStatus,
   QuestTeamRole,
   type QuestStatus,
 } from "../domain/types";
@@ -33,11 +34,13 @@ import QuestWorkStatusCard from "./components/QuestWorkStatusCard";
 import { QuestWorkFrame } from "./QuestWorkFrame";
 import TeamLeaderWorkScreen from "./TeamLeaderWorkScreen";
 import TeamMemberWorkScreen from "./TeamMemberWorkScreen";
+import TeamRewardAllocationCard from "./components/TeamRewardAllocationCard";
 import {
   useQuestWorkFeature,
   type QuestWorkFeatureProps,
 } from "./useQuestWorkFeature";
 import { useQuestTagsQuery } from "../api/questTagsQueries";
+import { ownCompletionConfirmation } from "../domain/completionConfirmationOwnership";
 
 export type QuestWorkScreenProps = QuestWorkFeatureProps;
 export default function QuestWorkScreen(props: QuestWorkScreenProps) {
@@ -110,8 +113,21 @@ export default function QuestWorkScreen(props: QuestWorkScreenProps) {
     [locale, navigation]
   );
 
+  const completionConfirmation = snapshot
+    ? ownCompletionConfirmation(snapshot, resolvedViewerId ?? snapshot.viewerId)
+    : null;
+  const completionPending =
+    completionConfirmation?.reviewStatus ===
+    QuestCompletionConfirmationStatus.COMPLETION_CONFIRMATION_PENDING;
+  const completionNotApproved =
+    completionConfirmation?.reviewStatus ===
+    QuestCompletionConfirmationStatus.COMPLETION_CONFIRMATION_NOT_APPROVED;
   const status = snapshot
-    ? workStatusLabel(snapshot.state as QuestStatus, messages, locale)
+    ? completionPending
+      ? messages.completionPending
+      : completionNotApproved
+        ? messages.completionNotApproved
+        : workStatusLabel(snapshot.state as QuestStatus, messages, locale)
     : "";
   const isTerminal = Boolean(
     snapshot && isTerminalStatus(snapshot.state as QuestStatus)
@@ -210,7 +226,11 @@ export default function QuestWorkScreen(props: QuestWorkScreenProps) {
       snapshot={snapshot}
       status={status}
       assignment={assignmentLabel(snapshot.assignment, locale)}
-      nextAction={nextActionLabel(snapshot.nextAction, messages, locale)}
+      nextAction={
+        completionPending
+          ? messages.completionPending
+          : nextActionLabel(snapshot.nextAction, messages, locale)
+      }
       countdown={countdown}
       dueAtDetail={
         snapshot.dueAt ? formatTimestamp(snapshot.dueAt, locale, "") : undefined
@@ -295,8 +315,23 @@ export default function QuestWorkScreen(props: QuestWorkScreenProps) {
       />
     );
   }
+  // The Team roster can be unreadable, but the Server still names the Leader
+  // who owes a pending split.
+  const pendingLeaderSplit =
+    snapshot.teamRewardAllocation?.status === "PENDING" &&
+    snapshot.teamRewardAllocation.viewerIsLeader
+      ? snapshot.teamRewardAllocation
+      : null;
   return (
     <QuestWorkFrame {...frame}>
+      {pendingLeaderSplit ? (
+        <TeamRewardAllocationCard
+          allocation={pendingLeaderSplit}
+          messages={messages}
+          submitting={allocationSending}
+          onSubmit={submitTeamRewardAllocation}
+        />
+      ) : null}
       {statusCard}
       {settlementCard}
       {proofForm}

@@ -59,6 +59,7 @@ const ACTION_ICONS: Record<QuestCardAction, LucideIcon> = {
   manage: Settings2,
   review: Star,
   proofReview: ShieldCheck,
+  completionReview: ShieldCheck,
   dispute: TriangleAlert,
 };
 
@@ -67,6 +68,7 @@ const ACTION_MESSAGE_KEYS = {
   manage: "manage",
   review: "review",
   proofReview: "proofReview",
+  completionReview: "completionReview",
   dispute: "fileDispute",
 } as const satisfies Record<QuestCardAction, keyof MyQuestMessages>;
 
@@ -245,6 +247,24 @@ export function MyQuestSummaryCard({
             />
             <Text className="shrink font-ku-medium text-ku-body-small text-ku-text-strong">
               {messages.proofReview}
+            </Text>
+          </Pressable>
+        ) : null}
+        {quest.canReviewCompletion ? (
+          <Pressable
+            accessibilityLabel={`${messages.completionReview}: ${quest.title}`}
+            accessibilityRole="button"
+            className="min-h-[48px] flex-row items-center justify-center gap-ku-xs rounded-ku-pill border border-ku-border px-ku-12 active:bg-ku-surface-muted"
+            onPress={() => onAction("completionReview")}
+            testID={`my-quest-list-completion-review-${quest.id}`}
+          >
+            <ShieldCheck
+              color={palette.textStrong}
+              size={16}
+              strokeWidth={2.2}
+            />
+            <Text className="shrink font-ku-medium text-ku-body-small text-ku-text-strong">
+              {messages.completionReview}
             </Text>
           </Pressable>
         ) : null}

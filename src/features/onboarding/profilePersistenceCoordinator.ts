@@ -160,6 +160,18 @@ export class ProfilePersistenceCoordinator {
       api.updateProfile(profile, this.mutationOptions("profile", profile))
     );
 
+    if (!isEditMode) await this.saveProfileExtras(api, options);
+
+    return {
+      draft: cloneDraft(this.draft),
+      completedSteps: [...this.completedSteps],
+    };
+  }
+
+  private async saveProfileExtras(
+    api: StudentApi,
+    options?: { unavailableCollections?: UnavailableProfileCollections }
+  ): Promise<void> {
     const profileImage = this.draft.profileImage;
     if (
       isLocalAsset(profileImage) &&
@@ -179,11 +191,6 @@ export class ProfilePersistenceCoordinator {
     if (!options?.unavailableCollections?.experience)
       await this.saveExperiences(api);
     await this.deletePendingRecords(api, options?.unavailableCollections);
-
-    return {
-      draft: cloneDraft(this.draft),
-      completedSteps: [...this.completedSteps],
-    };
   }
 
   private get firstName(): string {

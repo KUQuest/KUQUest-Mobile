@@ -19,6 +19,7 @@ import { colors } from "@/theme/colors";
 import { formatSatang } from "@/domain/satang";
 import type { WalletMessages } from "@/locales/walletMessages";
 import type { ClassifiedHirerTransaction } from "../walletModule";
+import { PayoutStatusSection } from "./payout/PayoutStatusSection";
 
 interface TransactionDetailModalProps {
   transaction: ClassifiedHirerTransaction | null;
@@ -54,9 +55,10 @@ const styles = {
   detailLabel: "flex-1 font-ku-regular text-ku-meta text-ku-text-muted",
   detailValue:
     "flex-[1.5] text-right font-ku-medium text-ku-meta text-ku-text-strong",
-  monoText: "font-ku-regular text-[11px] text-ku-text-secondary",
+  monoText: "font-ku-regular text-ku-label text-ku-text-secondary",
   sourceTag: "self-end rounded-[6px] bg-ku-surface-success px-ku-sm py-ku-2",
-  sourceTagText: "font-ku-medium text-[11px] text-ku-primary-deep",
+  sourceTagText: "font-ku-medium text-ku-label text-ku-primary-deep",
+  payoutSection: "mb-ku-md",
   actionButton:
     "items-center justify-center rounded-[14px] bg-ku-primary px-ku-13 py-ku-13",
   actionButtonText: "font-ku-bold text-ku-control text-ku-on-primary",
@@ -279,6 +281,12 @@ export function TransactionDetailModal({
                 </Text>
               </View>
             </View>
+
+            {tx.payoutId ? (
+              <View className={styles.payoutSection}>
+                <PayoutStatusSection messages={m} payoutId={tx.payoutId} />
+              </View>
+            ) : null}
 
             <TouchableOpacity
               accessibilityLabel={m.closeButton}

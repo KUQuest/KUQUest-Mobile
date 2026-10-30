@@ -114,6 +114,7 @@ export interface GroupQuestMessages {
   decline: string;
   proceedConsequence: string;
   cancelConsequence: string;
+  decisionSummary: string;
   assignedOpenWorkHub: string;
   partialDetailsChanged: string;
   respondWithin: string;
@@ -121,6 +122,8 @@ export interface GroupQuestMessages {
   workerResponseRequired: string;
   acceptingWaitsForEveryone: string;
   decliningCancelsForEveryone: string;
+  responseSummary: string;
+  responseDetails: string;
   acceptedWaiting: (count: number) => string;
   declinedByYou: string;
   declinedByWorker: string;
@@ -163,6 +166,8 @@ export interface GroupQuestMessages {
   noConsent: string;
   newRewardPerWorker: string;
   dueDate: string;
+  previousValue: string;
+  newValue: string;
   notSet: string;
   proceed: string;
   proceedLabel: string;
@@ -207,6 +212,8 @@ export const groupQuestMessages: Record<SupportedLocale, GroupQuestMessages> = {
   en: {
     newRewardPerWorker: "New reward per Worker",
     dueDate: "Due date",
+    previousValue: "Previous",
+    newValue: "New",
     notSet: "Not set",
     proceed: "Proceed",
     proceedLabel: "Proceed with joined workers",
@@ -219,6 +226,9 @@ export const groupQuestMessages: Record<SupportedLocale, GroupQuestMessages> = {
       "Accepting does not start the quest by itself — everyone who joined must accept. If anyone declines or doesn't respond in time, the quest is cancelled. Workers owe nothing and are owed nothing; the hirer is refunded in full.",
     decliningCancelsForEveryone:
       "Declining cancels the quest for everyone. Workers owe nothing and are owed nothing; the hirer is refunded in full.",
+    responseSummary:
+      "Everyone must accept on time or the Quest is cancelled without Worker payment and the Hirer is refunded.",
+    responseDetails: "View details",
     acceptedWaiting: (count) =>
       `You accepted — waiting for ${count} ${count === 1 ? "other worker" : "other workers"}.`,
     declinedByYou: "You declined. The quest was cancelled for everyone.",
@@ -252,6 +262,8 @@ export const groupQuestMessages: Record<SupportedLocale, GroupQuestMessages> = {
     proceedConsequence:
       "Proceeding gives joined workers 10 minutes to accept the revised reward and due date. Everyone must accept or the quest is cancelled. Workers owe nothing and are owed nothing; the hirer is refunded in full.",
     cancelConsequence: "Cancelling ends the quest. You are refunded in full.",
+    decisionSummary:
+      "Workers have 10 minutes to accept. Otherwise, the quest is cancelled and refunded.",
     assignedOpenWorkHub: "Open Work Hub",
     close: "Close",
     cancel: "Cancel",
@@ -403,6 +415,8 @@ export const groupQuestMessages: Record<SupportedLocale, GroupQuestMessages> = {
   th: {
     newRewardPerWorker: "ค่าตอบแทนใหม่ต่อผู้ทำงาน",
     dueDate: "กำหนดส่งงาน",
+    previousValue: "เดิม",
+    newValue: "ใหม่",
     notSet: "ไม่มี",
     proceed: "ดำเนินการต่อ",
     proceedLabel: "ดำเนินการต่อกับผู้ทำงานที่เข้าร่วม",
@@ -553,6 +567,9 @@ export const groupQuestMessages: Record<SupportedLocale, GroupQuestMessages> = {
       "การตอบรับของคุณเพียงคนเดียวไม่ได้เริ่มเควสต์ ผู้ทำงานทุกคนที่เข้าร่วมต้องตอบรับ หากมีผู้ปฏิเสธหรือไม่ตอบภายในเวลา เควสต์จะถูกยกเลิก ผู้ทำงานไม่ต้องชำระเงินและไม่มีเงินที่ต้องได้รับ ผู้ว่าจ้างได้รับเงินคืนเต็มจำนวน",
     decliningCancelsForEveryone:
       "การปฏิเสธจะยกเลิกเควสต์สำหรับทุกคน ผู้ทำงานไม่ต้องชำระเงินและไม่มีเงินที่ต้องได้รับ ผู้ว่าจ้างได้รับเงินคืนเต็มจำนวน",
+    responseSummary:
+      "ทุกคนต้องตอบรับทันเวลา มิฉะนั้นเควสต์จะถูกยกเลิก ไม่มีค่าตอบแทน และคืนเงินผู้ว่าจ้างเต็มจำนวน",
+    responseDetails: "ดูรายละเอียด",
     acceptedWaiting: (count) =>
       `คุณตอบรับแล้ว — กำลังรอผู้ทำงานอีก ${count} คน`,
     declinedByYou: "คุณปฏิเสธแล้ว เควสต์ถูกยกเลิกสำหรับทุกคน",
@@ -583,6 +600,8 @@ export const groupQuestMessages: Record<SupportedLocale, GroupQuestMessages> = {
       "หากดำเนินการต่อ ผู้ทำงานที่เข้าร่วมจะมีเวลา 10 นาทีตอบรับค่าตอบแทนและกำหนดส่งใหม่ ทุกคนต้องตอบรับ มิฉะนั้นเควสต์จะถูกยกเลิก ผู้ทำงานไม่ต้องชำระเงินและไม่มีเงินที่ต้องได้รับ ผู้ว่าจ้างได้รับเงินคืนเต็มจำนวน",
     cancelConsequence:
       "การยกเลิกจะสิ้นสุดเควสต์ และคุณจะได้รับเงินคืนเต็มจำนวน",
+    decisionSummary:
+      "ผู้ทำงานทุกคนมีเวลา 10 นาทีตอบรับ มิฉะนั้นเควสต์จะถูกยกเลิกและคืนเงินเต็มจำนวน",
     assignedOpenWorkHub: "เปิดศูนย์งาน",
   },
 };

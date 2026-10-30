@@ -4,19 +4,17 @@
     "slug": "KUQUest-Mobile",
     "version": "1.0.1",
     "orientation": "portrait",
-    "icon": "./assets/images/icon.png",
+    "icon": "./assets/images/kq-app-icon.png",
     "scheme": "kuquestmobile",
     "userInterfaceStyle": "automatic",
     "ios": {
-      "icon": "./assets/expo.icon",
+      "icon": "./assets/images/kq-app-icon.png",
       "bundleIdentifier": "org.kubits.kuquest"
     },
     "android": {
       "adaptiveIcon": {
-        "backgroundColor": "#E6F4FE",
-        "foregroundImage": "./assets/images/android-icon-foreground.png",
-        "backgroundImage": "./assets/images/android-icon-background.png",
-        "monochromeImage": "./assets/images/android-icon-monochrome.png"
+        "backgroundColor": "#34462F",
+        "foregroundImage": "./assets/images/kq-app-icon.png"
       },
       "predictiveBackGestureEnabled": false,
       "package": "org.kubits.kuquest",
@@ -32,8 +30,12 @@
         "expo-splash-screen",
         {
           "backgroundColor": "#34462F",
-          "image": "./assets/images/kuquest-splash.png",
-          "imageWidth": 180
+          "image": "./assets/images/kq-start-logo.png",
+          "imageWidth": 180,
+          "dark": {
+            "backgroundColor": "#34462F",
+            "image": "./assets/images/kq-start-logo.png"
+          }
         }
       ],
       "expo-font",

@@ -419,7 +419,7 @@ describe("OnboardingScreen Academic Registration selections", () => {
     await fireEvent.press(screen.getAllByTestId("select-trigger")[1]);
     expect(screen.getByText("คณะวิศวกรรมศาสตร์")).toBeTruthy();
   });
-  test("opens searchable dropdowns for occupation, faculty, and department", async () => {
+  test("opens searchable sheets for occupation, faculty, and department", async () => {
     const api = createApi();
     prepareAuth(api);
     await renderWithQueryClient(<OnboardingScreen />);
@@ -433,9 +433,8 @@ describe("OnboardingScreen Academic Registration selections", () => {
     expect(screen.getByTestId("select-search-input").props.placeholder).toBe(
       "Search occupation"
     );
-    expect(screen.getByTestId("select-dropdown")).toBeTruthy();
-    expect(screen.queryByTestId("close-select-button")).toBeNull();
-    await fireEvent.press(screen.getByTestId("select-dropdown-dismiss"));
+    expect(screen.getByTestId("close-select-button")).toBeTruthy();
+    await fireEvent.press(screen.getByTestId("close-select-button"));
 
     await fireEvent.press(triggers()[1]);
     expect(screen.getByTestId("select-search-input").props.placeholder).toBe(
@@ -501,7 +500,7 @@ describe("OnboardingScreen Academic Registration selections", () => {
     });
   });
 
-  test("edits an existing Experience without repeating Academic Registration writes", async () => {
+  test("saves only Academic Registration in edit mode and leaves Experience to its own editor", async () => {
     mockRouteParams = { mode: "edit" };
     const api = createApi({
       getAcademicRegistrationStatus: jest.fn().mockResolvedValue({
@@ -549,33 +548,23 @@ describe("OnboardingScreen Academic Registration selections", () => {
     await waitFor(() =>
       expect(screen.getByText("Faculty of Engineering")).toBeTruthy()
     );
-    await fireEvent.press(screen.getByText("Next"));
-    await fireEvent.press(screen.getByText("Next"));
-    await fireEvent.changeText(
-      screen.getByLabelText("Job title"),
-      "Lead Tutor"
-    );
+    expect(screen.queryByLabelText("Job title")).toBeNull();
+    expect(screen.queryByText("Next")).toBeNull();
     await fireEvent.press(screen.getByText("Save Changes"));
 
     await waitFor(() =>
-      expect(api.updateExperience).toHaveBeenCalledWith(
-        "experience-id",
-        expect.objectContaining({ title: "Lead Tutor" }),
+      expect(api.updateAcademicRegistration).toHaveBeenCalledWith(
         expect.objectContaining({
-          idempotencyKey: expect.stringContaining("experience-0-update"),
+          occupationId: "occupation-student",
+          studentId: "6712345678",
+          departmentId: "department-software",
+        }),
+        expect.objectContaining({
+          idempotencyKey: expect.stringContaining("academic-registration"),
         })
       )
     );
-    expect(api.updateAcademicRegistration).toHaveBeenCalledWith(
-      expect.objectContaining({
-        occupationId: "occupation-student",
-        studentId: "6712345678",
-        departmentId: "department-software",
-      }),
-      expect.objectContaining({
-        idempotencyKey: expect.stringContaining("academic-registration"),
-      })
-    );
+    expect(api.updateExperience).not.toHaveBeenCalled();
   });
   test("clears field and dependent validation errors as values change", async () => {
     const api = createApi();

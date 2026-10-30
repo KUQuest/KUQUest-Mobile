@@ -1,9 +1,13 @@
 import React from "react";
-import { cn } from "@/tw/cn";
 import { Text, View } from "@/tw";
 import { defaultAccessibilityLabels, imageSource } from "./profileShared";
 import { useWindowDimensions } from "react-native";
-import { Building2, Code2, GraduationCap, Pencil } from "lucide-react-native";
+import {
+  BookOpen,
+  Building2,
+  GraduationCap,
+  Pencil,
+} from "lucide-react-native";
 import { Avatar } from "../../../components/ui/Avatar";
 import { Chip } from "../../../components/ui/Chip";
 import { Button } from "../../../components/ui/Button";
@@ -102,18 +106,13 @@ export function ProfileHeader({
       className={styles.heroCard}
       style={{ padding: metrics.cardPadding }}
     >
-      <View
-        className={cn(
-          styles.identityRow,
-          (width < 360 || fontScale >= 1.3) && "flex-col items-start"
-        )}
-      >
+      <View className={styles.identityRow}>
         <Avatar
           accessibilityLabel={labels.profileImageLabel(data.name)}
           cacheKey={profileImageCacheKey}
           className={styles.photoFrame}
           name={data.name}
-          size={presentation === "public" ? metrics.photoSize : 72}
+          size={presentation === "public" ? metrics.photoSize : 96}
           textClassName={styles.initials}
           uri={profileImageUri}
         />
@@ -140,7 +139,7 @@ export function ProfileHeader({
             <ProfileMeta icon={Building2}>{facultyName}</ProfileMeta>
           ) : null}
           {departmentName ? (
-            <ProfileMeta icon={Code2}>{departmentName}</ProfileMeta>
+            <ProfileMeta icon={BookOpen}>{departmentName}</ProfileMeta>
           ) : null}
         </View>
       ) : null}
@@ -168,13 +167,14 @@ export function ProfileHeader({
       ) : null}
       {editProfileLabel && onEditPress ? (
         <Button
+          className="w-auto self-center px-ku-lg"
           onPress={onEditPress}
-          variant="primary"
+          variant="secondary"
           accessibilityLabel={editProfileLabel}
         >
           <Pencil
             accessible={false}
-            color={colors.onPrimary}
+            color={colors.primary}
             size={16}
             strokeWidth={2}
           />

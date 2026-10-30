@@ -190,8 +190,7 @@ const styles = {
     "items-center border-ku-primary rounded-ku-pill border flex-1 flex-row gap-ku-xs min-h-[48px] justify-center px-ku-sm",
   proposalActionAccept: "bg-ku-primary",
   proposalActionReject: "border-ku-danger-dark",
-  proposalActionText:
-    "text-ku-primary font-ku-semibold text-ku-label text-center",
+  proposalActionText: "font-ku-semibold text-ku-label text-center",
   proposalActionTextAccept: "text-ku-on-primary",
   proposalActionTextReject: "text-ku-danger-dark",
   consentStatusCard:

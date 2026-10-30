@@ -116,16 +116,16 @@ export function MyQuestListContent({
               </Pressable>
             </View>
           ) : (
-            <>
+            <View className="items-center">
               <BriefcaseBusiness
                 color={palette.primary}
                 size={36}
                 strokeWidth={1.5}
               />
-              <Text className="mt-ku-lg font-ku-semibold text-ku-subtitle text-ku-text-strong">
+              <Text className="mt-ku-sm text-center font-ku-semibold text-ku-subtitle text-ku-text-strong">
                 {projection.emptyTitle}
               </Text>
-            </>
+            </View>
           )}
         </View>
       }

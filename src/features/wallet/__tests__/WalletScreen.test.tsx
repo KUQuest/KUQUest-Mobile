@@ -47,6 +47,9 @@ jest.mock("@/api/WalletApi", () => {
       getTopUpStatus: jest.fn(),
       simulateTopUp: jest.fn(),
       convertEarnings: jest.fn(),
+      getActivePayoutDestination: jest.fn(),
+      getPayout: jest.fn(),
+      listPayoutStatusHistory: jest.fn(),
     },
   };
 });
@@ -355,6 +358,81 @@ describe("WalletScreen", () => {
     });
   });
 
+  it("opens the Request Payout flow from the wallet balance actions", async () => {
+    (walletApi.getActivePayoutDestination as jest.Mock).mockResolvedValue(null);
+    const view = await renderWithQueryClient(<WalletScreen />);
+    await waitFor(() => {
+      expect(view.getByTestId("hirer-balance-payout-btn")).toBeTruthy();
+    });
+
+    await fireEvent.press(view.getByTestId("hirer-balance-payout-btn"));
+
+    expect(view.getByTestId("payout-request-modal")).toBeTruthy();
+    await waitFor(() => {
+      expect(view.getByTestId("payout-request-no-destination")).toBeTruthy();
+    });
+
+    await fireEvent.press(
+      view.getByTestId("payout-request-add-destination-btn")
+    );
+
+    expect(view.getByTestId("payout-destination-modal")).toBeTruthy();
+    expect(view.queryByTestId("payout-request-modal")).toBeNull();
+  });
+
+  it("shows Payout status and history when a Payout row is opened", async () => {
+    (walletApi.getTransactionHistory as jest.Mock).mockResolvedValue({
+      items: [
+        {
+          id: "payout-1",
+          type: "PAYOUT" as const,
+          titleKey: WalletTransactionTitleKey.BANK_PAYOUT,
+          amountSatang: 11_545,
+          direction: "OUTFLOW" as const,
+          status: "PENDING_ADMIN_APPROVAL",
+          createdAt: "2024-04-12T10:00:00Z",
+          sourceApi: "PAYOUTS" as const,
+          payoutId: "payout-1",
+        },
+      ],
+    });
+    (walletApi.getPayout as jest.Mock).mockResolvedValue({
+      id: "payout-1",
+      status: "PENDING_ADMIN_APPROVAL",
+      receiptSatang: 10_000,
+      maximumFeeSatang: 1_500,
+      maximumTaxSatang: 45,
+      maximumDebitSatang: 11_545,
+      actualDebitSatang: null,
+      createdAt: "2024-04-12T10:00:00Z",
+    });
+    (walletApi.listPayoutStatusHistory as jest.Mock).mockResolvedValue([
+      {
+        id: "h-1",
+        fromStatus: null,
+        toStatus: "PENDING_ADMIN_APPROVAL",
+        reason: null,
+        occurredAt: "2024-04-12T10:00:00Z",
+      },
+    ]);
+    const view = await renderWithQueryClient(<WalletScreen />);
+    await waitFor(() => {
+      expect(view.getByTestId("hirer-tx-payout-1")).toBeTruthy();
+    });
+
+    await fireEvent.press(view.getByTestId("hirer-tx-payout-1"));
+
+    await waitFor(() => {
+      expect(view.getByTestId("payout-status-label")).toBeTruthy();
+    });
+    expect(walletApi.getPayout).toHaveBeenCalledWith(
+      "payout-1",
+      expect.anything()
+    );
+    await waitFor(() => {
+      expect(view.getByTestId("payout-history-h-1")).toBeTruthy();
+    });
+  });
   it("displays empty state when there are no transactions", async () => {
     (walletApi.getTransactionHistory as jest.Mock).mockResolvedValue({
       items: [],
@@ -386,6 +464,24 @@ describe("WalletScreen", () => {
     await fireEvent.press(view.getByRole("button", { name: "ลองอีกครั้ง" }));
 
     await waitFor(() => expect(walletApi.getWallet).toHaveBeenCalledTimes(2));
+  });
+  it("shows the retry error card instead of an empty history when history fails", async () => {
+    (walletApi.getTransactionHistory as jest.Mock).mockRejectedValue(
+      new Error("Ledger unavailable")
+    );
+
+    const view = await renderWithQueryClient(<WalletScreen />);
+
+    await waitFor(() => {
+      expect(view.getByTestId("hirer-wallet-error")).toBeTruthy();
+    });
+    expect(view.queryByTestId("hirer-wallet-empty")).toBeNull();
+
+    await fireEvent.press(view.getByRole("button", { name: "ลองอีกครั้ง" }));
+
+    await waitFor(() =>
+      expect(walletApi.getTransactionHistory).toHaveBeenCalledTimes(2)
+    );
   });
   it("does not refetch on mount or within 30s, then refetches after 30s", async () => {
     const view = await renderWithQueryClient(<WalletScreen />);

@@ -34,6 +34,8 @@ export interface TeamAssembleSubmissionPanelProps {
   files: readonly ProposalFileItem[];
   text: string;
   submitting: boolean;
+  /** A proposal file is still uploading; submitting now would drop it. */
+  uploading?: boolean;
   messages: TeamAssembleSubmissionMessages;
   onSubmit: () => void;
   onReviewChange: (reviewing: boolean) => void;
@@ -49,12 +51,14 @@ export function TeamAssembleSubmissionPanel({
   files,
   text,
   submitting,
+  uploading = false,
   messages,
   onSubmit,
   onReviewChange,
 }: TeamAssembleSubmissionPanelProps) {
   const { colors } = useAppTheme();
-  const canSubmit = submissionReady && (!canonical || Boolean(text.trim()));
+  const canSubmit =
+    submissionReady && !uploading && (!canonical || Boolean(text.trim()));
   if (submissionBlocker && canonical && submissionReady) {
     return (
       <View
@@ -169,19 +173,19 @@ export function TeamAssembleSubmissionPanel({
     <Pressable
       accessibilityLabel={messages.reviewRoster}
       accessibilityRole="button"
-      accessibilityState={{ disabled: !submissionReady }}
-      className={`${styles.submitButton} ${!submissionReady ? styles.submitButtonDisabled : ""}`}
-      disabled={!submissionReady}
+      accessibilityState={{ disabled: !canSubmit }}
+      className={`${styles.submitButton} ${!canSubmit ? styles.submitButtonDisabled : ""}`}
+      disabled={!canSubmit}
       onPress={() => onReviewChange(true)}
       testID="team-assemble-review-roster"
     >
       <UsersRound
-        color={!submissionReady ? colors.textMuted : colors.onPrimary}
+        color={!canSubmit ? colors.textMuted : colors.onPrimary}
         size={18}
         strokeWidth={2.3}
       />
       <Text
-        className={`${styles.submitButtonText} ${!submissionReady ? styles.submitButtonTextDisabled : ""}`}
+        className={`${styles.submitButtonText} ${!canSubmit ? styles.submitButtonTextDisabled : ""}`}
       >
         {messages.reviewRoster}
       </Text>

@@ -3,6 +3,7 @@ import { cn } from "@/tw/cn";
 import { TextInput as RNTextInput, TextInputProps } from "react-native";
 import { Text, TextInput, View } from "@/tw";
 import { colors } from "@/theme/colors";
+import { fontFamily } from "@/theme/typography";
 import styles from "./textAreaStyles";
 
 export interface TextAreaProps extends TextInputProps {
@@ -47,7 +48,7 @@ export const TextArea = React.forwardRef<
           focused ? styles.inputFocused : null,
           !editable ? styles.inputDisabled : null
         )}
-        style={style}
+        style={[{ fontFamily: fontFamily.regular }, style]}
         placeholderTextColor={colors.textFaint}
         multiline
         textAlignVertical="top"

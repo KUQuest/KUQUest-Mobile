@@ -23,11 +23,6 @@ const styles = {
   clearButton: "items-center justify-center min-h-[48px] min-w-[48px]",
   searchContainer:
     "flex-row items-center mx-ku-20 my-ku-12 px-ku-sm border border-ku-border-muted rounded-[10px] bg-ku-surface-subtle min-h-[48px]",
-  dropdownOverlay: "flex-1",
-  dropdownDismissArea: "absolute top-0 right-0 bottom-0 left-0",
-  dropdownMenu:
-    "bg-ku-card rounded-[10px] border border-ku-border-muted overflow-hidden",
-  dropdownSearchContainer: "mx-ku-12 my-ku-10",
   searchInput:
     "flex-1 px-ku-sm py-ku-sm font-ku-regular text-ku-body-small text-ku-text-strong",
   optionItem:

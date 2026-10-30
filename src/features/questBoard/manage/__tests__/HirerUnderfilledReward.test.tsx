@@ -1,4 +1,5 @@
 import { render } from "@testing-library/react-native";
+import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
 
 import { AppThemeProvider } from "@/features/workspace/AppThemeProvider";
 import { PartialGroupStartConsentContent } from "@/features/questBoard/teamAssemble/components/PartialGroupStartConsentContent";
@@ -52,10 +53,9 @@ describe("hirer underfilled reward display", () => {
     const view = await renderUnderfilledContent(12000);
 
     expect(
-      view.getByText(
-        `${formatSatang(12000, "en")} → ${formatSatang(9000, "en")}`
-      )
+      view.getByText(`Previous: ${formatSatang(12000, "en")}`)
     ).toBeTruthy();
+    expect(view.getByText(`New: ${formatSatang(9000, "en")}`)).toBeTruthy();
   });
 
   it("shows revised reward only when published reward is null", async () => {
@@ -100,16 +100,21 @@ describe("hirer underfilled reward display", () => {
         },
       ],
     } as never;
+    const client = new QueryClient({
+      defaultOptions: { queries: { enabled: false } },
+    });
     const view = await render(
-      <AppThemeProvider>
-        <PartialGroupStartConsentContent
-          underfilled={consentPending}
-          hirerId="hirer-1"
-          viewerId="hirer-1"
-          canDecide={false}
-          locale="en"
-        />
-      </AppThemeProvider>
+      <QueryClientProvider client={client}>
+        <AppThemeProvider>
+          <PartialGroupStartConsentContent
+            underfilled={consentPending}
+            hirerId="hirer-1"
+            viewerId="hirer-1"
+            canDecide={false}
+            locale="en"
+          />
+        </AppThemeProvider>
+      </QueryClientProvider>
     );
 
     expect(view.getAllByText("Somchai Jaidee").length).toBeGreaterThan(0);

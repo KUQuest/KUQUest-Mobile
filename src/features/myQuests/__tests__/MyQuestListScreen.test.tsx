@@ -7,6 +7,7 @@ const mockPush = jest.fn();
 const mockBack = jest.fn();
 const mockHirerList = jest.fn();
 const mockHirerProofReviewableIds = jest.fn();
+const mockHirerCompletionReviewableIds = jest.fn();
 const mockCancelAsync = jest.fn();
 jest.mock("expo-router", () => ({
   useRouter: () => ({ back: mockBack, push: mockPush }),
@@ -31,6 +32,8 @@ jest.mock("../myQuestService", () => {
       listAllMyHirerQuests: (...args: unknown[]) => mockHirerList(...args),
       listMyHirerProofReviewableQuestIds: (...args: unknown[]) =>
         mockHirerProofReviewableIds(...args),
+      listMyHirerCompletionReviewableQuestIds: (...args: unknown[]) =>
+        mockHirerCompletionReviewableIds(...args),
     },
   };
 });
@@ -79,6 +82,7 @@ describe("MyQuestListScreen", () => {
     jest.clearAllMocks();
     mockHirerList.mockResolvedValue([]);
     mockHirerProofReviewableIds.mockResolvedValue([]);
+    mockHirerCompletionReviewableIds.mockResolvedValue([]);
     mockCancelAsync.mockResolvedValue({ refundedSatang: 0 });
   });
 
@@ -208,6 +212,33 @@ describe("MyQuestListScreen", () => {
     ).toBeNull();
   });
 
+  it("opens proof review directly from an active Quest with pending proof", async () => {
+    mockHirerList.mockResolvedValue([
+      {
+        ...draftQuest("active-reviewable-1", "Active Quest", "QUEST_OPEN"),
+        state: "QUEST_IN_PROGRESS",
+      },
+    ] as never);
+    mockHirerProofReviewableIds.mockResolvedValue(["active-reviewable-1"]);
+
+    const screen = await renderWithQueryClient(
+      <MyQuestListScreen initialTab="active" />
+    );
+
+    await waitFor(() =>
+      expect(
+        screen.getByTestId("my-quest-list-proof-review-active-reviewable-1")
+      ).toBeTruthy()
+    );
+    await fireEvent.press(
+      screen.getByTestId("my-quest-list-proof-review-active-reviewable-1")
+    );
+    expect(mockPush).toHaveBeenCalledWith({
+      pathname: "/quest/[id]/proof-review",
+      params: { id: "active-reviewable-1" },
+    });
+  });
+
   it("hides proof review when failed Quest proof list is not reviewable", async () => {
     mockHirerList.mockResolvedValue([
       {
@@ -234,6 +265,64 @@ describe("MyQuestListScreen", () => {
     expect(
       screen.queryByTestId("my-quest-list-secondary-failed-not-reviewable-1")
     ).toBeNull();
+  });
+
+  it("opens completion review for an active proof-free Quest with a pending confirmation", async () => {
+    mockHirerList.mockResolvedValue([
+      {
+        ...draftQuest("completion-review-1", "Proof-free Quest", "QUEST_OPEN"),
+        state: "QUEST_IN_PROGRESS",
+        proofRequired: false,
+      },
+    ] as never);
+    mockHirerCompletionReviewableIds.mockResolvedValue(["completion-review-1"]);
+
+    const screen = await renderWithQueryClient(
+      <MyQuestListScreen initialTab="active" />
+    );
+
+    const reviewButton = await screen.findByTestId(
+      "my-quest-list-completion-review-completion-review-1"
+    );
+    await fireEvent.press(reviewButton);
+
+    expect(mockPush).toHaveBeenCalledWith({
+      pathname: "/quest/[id]/completion-review",
+      params: { id: "completion-review-1" },
+    });
+  });
+
+  it("opens completion review for failed GROUP + FCFS proof-free Quests", async () => {
+    mockHirerList.mockResolvedValue([
+      {
+        ...draftQuest(
+          "failed-fcfs-completion-1",
+          "Partially failed Quest",
+          "QUEST_OPEN"
+        ),
+        state: "QUEST_FAILED",
+        mode: "FIRST_COME_FIRST_SERVED",
+        participation: "GROUP",
+        proofRequired: false,
+      },
+    ] as never);
+    mockHirerCompletionReviewableIds.mockResolvedValue([
+      "failed-fcfs-completion-1",
+    ]);
+
+    const screen = await renderWithQueryClient(
+      <MyQuestListScreen initialTab="completed" />
+    );
+
+    await fireEvent.press(
+      await screen.findByTestId(
+        "my-quest-list-completion-review-failed-fcfs-completion-1"
+      )
+    );
+    expect(mockPush).toHaveBeenCalledWith({
+      pathname: "/quest/[id]/completion-review",
+      params: { id: "failed-fcfs-completion-1" },
+    });
   });
 
   it("confirms cancellation and reports successful cancellation", async () => {

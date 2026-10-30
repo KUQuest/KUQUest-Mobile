@@ -438,6 +438,22 @@ describe("HirerQuestManageRoute condition edit", () => {
     await act(async () => undefined);
     expect(view.queryByTestId("hirer-manage-dispute")).toBeNull();
   });
+  it("tells the Hirer that the Team Leader splits a Candidate Team cancellation", async () => {
+    const base = createSnapshot();
+    (liveQuestService.getLiveSnapshot as jest.Mock).mockResolvedValue(
+      createSnapshot({
+        participation: "GROUP",
+        quest: { ...base.quest, participation: "GROUP" },
+      })
+    );
+    const screen = await render(<HirerQuestManageRoute />);
+    await fireEvent.press(await screen.findByTestId("hirer-manage-cancel"));
+    expect(
+      within(await screen.findByTestId("cancel-quest-guardrail")).getByText(
+        myQuestMessages.en.cancelAssignedTeamDescription
+      )
+    ).toBeTruthy();
+  });
   it("ASSIGNED cancel uses slide confirmation and IN_PROGRESS requires the keyword", async () => {
     (liveQuestService.getLiveSnapshot as jest.Mock).mockResolvedValue(
       createSnapshot()
@@ -900,12 +916,20 @@ describe("HirerQuestManageRoute condition edit", () => {
       </>
     );
     await fireEvent.press(await view.findByTestId("hirer-manage-cancel"));
-    await fireEvent.press(await view.findByTestId("cancel-guardrail-confirm"));
+    await fireEvent(
+      await view.findByTestId("cancel-guardrail-slide-thumb"),
+      "accessibilityAction",
+      { nativeEvent: { actionName: "increment" } }
+    );
     await fireEvent.press(
       await view.findByRole("button", { name: alertMessages.en.dismiss })
     );
     await fireEvent.press(await view.findByTestId("hirer-manage-cancel"));
-    await fireEvent.press(await view.findByTestId("cancel-guardrail-confirm"));
+    await fireEvent(
+      await view.findByTestId("cancel-guardrail-slide-thumb"),
+      "accessibilityAction",
+      { nativeEvent: { actionName: "increment" } }
+    );
     await waitFor(() => {
       expect(questApi.cancelQuest).toHaveBeenCalledTimes(2);
     });

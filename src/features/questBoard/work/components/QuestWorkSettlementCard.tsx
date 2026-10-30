@@ -1,4 +1,5 @@
 import { Text, View } from "@/tw";
+import { formatTimestamp } from "@/domain/datetime";
 import { formatSatang } from "@/domain/satang";
 import { isTerminalStatus } from "@/domain/questLifecycle";
 import { useLocale } from "@/features/preferences/localeStore";
@@ -22,11 +23,20 @@ export default function QuestWorkSettlementCard({
     "workerSettlement" in snapshot.quest
       ? snapshot.quest.workerSettlement
       : null;
+  const allocation = snapshot.teamRewardAllocation;
+  const splitDeadline =
+    allocation?.status === "PENDING"
+      ? formatTimestamp(allocation.deadlineAt, locale, "")
+      : null;
   const status =
     settlement?.status === "PAID"
       ? messages.settlementPaid
       : settlement?.status === "PENDING"
-        ? messages.settlementPending
+        ? allocation && splitDeadline
+          ? (allocation.viewerIsLeader
+              ? messages.settlementLeaderSplitPending
+              : messages.settlementMemberSplitPending)(splitDeadline)
+          : messages.settlementPending
         : settlement?.status === "NO_PAYMENT"
           ? messages.settlementNone
           : messages.settlementUnavailable;

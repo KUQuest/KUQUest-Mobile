@@ -280,6 +280,16 @@ export interface QuestBoardMessages {
   proofReviewTeamSubmittedBy: (leaderName: string) => string;
   proofReviewOpen: string;
   proofReviewOpenLabel: (submitterName: string) => string;
+  completionReviewTitle: string;
+  completionReviewDescription: string;
+  completionReviewQuestStatus: string;
+  completionReviewNothingPending: string;
+  completionReviewSentAt: string;
+  completionReviewDeadline: string;
+  completionReviewWorkerFallback: string;
+  completionReviewTeamFallback: string;
+  completionReviewPendingCount: (count: number) => string;
+  completionReviewStatus: (status: string) => string;
   disputeBannerTitle: string;
   disputeDescription: string;
   resolveDispute: string;
@@ -721,6 +731,29 @@ export const questBoardMessages: Record<SupportedLocale, QuestBoardMessages> = {
     proofReviewOpen: "Review",
     proofReviewOpenLabel: (submitterName) =>
       `Review submission from ${submitterName}`,
+    completionReviewTitle: "Review completion confirmations",
+    completionReviewDescription:
+      "Review each completion confirmation. The Quest stays in progress until approval. Pending confirmations are approved automatically after 24 hours.",
+    completionReviewQuestStatus: "Quest status",
+    completionReviewNothingPending:
+      "This Quest has no completion confirmations waiting for your review.",
+    completionReviewSentAt: "Confirmed",
+    completionReviewDeadline: "Auto-approval deadline",
+    completionReviewWorkerFallback: "Worker",
+    completionReviewTeamFallback: "Team",
+    completionReviewPendingCount: (count) =>
+      count === 0
+        ? "No completion confirmations waiting for review"
+        : count === 1
+          ? "1 completion confirmation waiting for review"
+          : `${count} completion confirmations waiting for review`,
+    completionReviewStatus: (status) =>
+      ({
+        COMPLETION_CONFIRMATION_PENDING: "Waiting for review",
+        COMPLETION_CONFIRMATION_APPROVED: "Approved",
+        COMPLETION_CONFIRMATION_NOT_APPROVED: "Not approved",
+        COMPLETION_CONFIRMATION_CANCELLED: "Cancelled",
+      })[status] ?? status,
     disputeBannerTitle: "Quest dispute",
     disputeDescription:
       "This Quest is waiting for an authorized dispute resolution.",
@@ -1150,6 +1183,26 @@ export const questBoardMessages: Record<SupportedLocale, QuestBoardMessages> = {
     proofReviewOpen: "ตรวจงาน",
     proofReviewOpenLabel: (submitterName) =>
       `ตรวจงานที่ส่งโดย ${submitterName}`,
+    completionReviewTitle: "ตรวจสอบการยืนยันงานเสร็จ",
+    completionReviewDescription:
+      "ตรวจสอบการยืนยันของผู้ทำงานแต่ละรายการ เควสต์จะยังดำเนินอยู่จนกว่าจะอนุมัติ ระบบจะอนุมัติอัตโนมัติหลังครบ 24 ชั่วโมง",
+    completionReviewQuestStatus: "สถานะเควสต์",
+    completionReviewNothingPending: "เควสต์นี้ไม่มีการยืนยันงานเสร็จที่รอตรวจ",
+    completionReviewSentAt: "ยืนยันเมื่อ",
+    completionReviewDeadline: "กำหนดอนุมัติอัตโนมัติ",
+    completionReviewWorkerFallback: "ผู้ทำงาน",
+    completionReviewTeamFallback: "ทีม",
+    completionReviewPendingCount: (count) =>
+      count === 0
+        ? "ไม่มีการยืนยันงานเสร็จที่รอตรวจ"
+        : `มีการยืนยันงานเสร็จ ${count} รายการรอตรวจ`,
+    completionReviewStatus: (status) =>
+      ({
+        COMPLETION_CONFIRMATION_PENDING: "รอตรวจ",
+        COMPLETION_CONFIRMATION_APPROVED: "อนุมัติแล้ว",
+        COMPLETION_CONFIRMATION_NOT_APPROVED: "ไม่อนุมัติ",
+        COMPLETION_CONFIRMATION_CANCELLED: "ยกเลิกแล้ว",
+      })[status] ?? status,
     disputeBannerTitle: "ข้อพิพาทเควสต์",
     disputeDescription: "เควสต์นี้รอการแก้ไขข้อพิพาทจากผู้มีอำนาจ",
     resolveDispute: "แก้ไขข้อพิพาท",

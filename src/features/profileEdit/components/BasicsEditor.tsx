@@ -106,40 +106,38 @@ export function BasicsEditor({
             backLabel={messages.back}
             onBack={onBack}
           />
-          <View className={styles.formGroup}>
-            <Text className={styles.formGroupTitle}>{messages.basics}</Text>
+          <View className={styles.basicsGroup}>
             <View className={styles.avatarPicker}>
-              {profileImageSource && !avatarImageFailed ? (
-                <Image
-                  source={profileImageSource}
-                  onError={onAvatarImageError}
-                  className={styles.avatar}
-                  contentFit="cover"
-                />
-              ) : (
-                <View className={styles.avatarFallback}>
-                  <Text className={styles.avatarInitials}>
-                    {profileName
-                      .trim()
-                      .split(/\s+/)
-                      .filter(Boolean)
-                      .slice(0, 2)
-                      .map((part) => part[0])
-                      .join("")
-                      .toUpperCase() || "?"}
-                  </Text>
-                </View>
-              )}
               <Pressable
                 accessibilityRole="button"
                 accessibilityLabel={messages.changeAvatar}
-                className={styles.avatarButton}
+                className={styles.avatarFrame}
                 onPress={() => void chooseAvatar()}
               >
-                <Pencil color={colors.primary} size={15} />
-                <Text className={styles.avatarButtonText}>
-                  {messages.changeAvatar}
-                </Text>
+                {profileImageSource && !avatarImageFailed ? (
+                  <Image
+                    source={profileImageSource}
+                    onError={onAvatarImageError}
+                    className={styles.avatar}
+                    contentFit="cover"
+                  />
+                ) : (
+                  <View className={styles.avatarFallback}>
+                    <Text className={styles.avatarInitials}>
+                      {profileName
+                        .trim()
+                        .split(/\s+/)
+                        .filter(Boolean)
+                        .slice(0, 2)
+                        .map((part) => part[0])
+                        .join("")
+                        .toUpperCase() || "?"}
+                    </Text>
+                  </View>
+                )}
+                <View className={styles.avatarEditBadge}>
+                  <Pencil color={colors.onPrimary} size={14} />
+                </View>
               </Pressable>
               <Text
                 accessibilityRole={avatarImageFailed ? "alert" : undefined}

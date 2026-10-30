@@ -88,14 +88,12 @@ function SelectionSection({
       ) : (
         selection.proposals.map((proposal) => (
           <ProposalCard
-            canReject={selection.canReject}
             canSelect={selection.canSelect}
             key={proposal.id}
             onOpenProfile={vm.onOpenProfile}
             openProfileLabel={vm.openProfileLabel}
             pendingAction={selection.pendingAction}
             proposal={proposal}
-            rejectLabel={selection.rejectLabel}
             selectLabel={selection.selectLabel}
           />
         ))
