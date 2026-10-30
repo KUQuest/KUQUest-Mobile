@@ -49,6 +49,7 @@ describe("buildQuestDetailActionBar", () => {
       actor?: QuestActor;
       canReviewProof?: boolean;
       canCreateReview?: boolean;
+      assignments?: { workerId: string; state: string }[];
     } = {}
   ): QuestDetailPresentationContext {
     const facts = {
@@ -67,7 +68,9 @@ describe("buildQuestDetailActionBar", () => {
           canDecideUnderfilled: false,
           canProposeConditionEdit: false,
         },
-        assignments: [],
+        assignments: liveOverrides.assignments ?? [
+          { workerId: "worker-1", state: "ASSIGNMENT_COMPLETED" },
+        ],
         applications: [],
         teams: [],
         proofs: [],
@@ -152,6 +155,28 @@ describe("buildQuestDetailActionBar", () => {
 
     expect(actionBar.canReview).toBe(true);
     expect(actionBar.canEditPost).toBe(false);
+  });
+
+  it("hides Hirer review when the Quest has no Worker to review", () => {
+    const noAssignments = buildQuestDetailActionBar(
+      makeContext(
+        { quest: makeQuest(QuestStatus.QUEST_CANCELLED) },
+        { assignments: [] }
+      )
+    );
+    const onlyCancelled = buildQuestDetailActionBar(
+      makeContext(
+        { quest: makeQuest(QuestStatus.QUEST_CANCELLED) },
+        {
+          assignments: [
+            { workerId: "worker-1", state: "ASSIGNMENT_CANCELLED" },
+          ],
+        }
+      )
+    );
+
+    expect(noAssignments.canReview).toBe(false);
+    expect(onlyCancelled.canReview).toBe(false);
   });
 
   it("lets a Worker on a failed Quest back into the Work Hub to file a dispute", () => {
