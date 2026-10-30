@@ -1,5 +1,9 @@
 import { z } from "zod";
 import { ApiClient, type RequestOptions } from "./ApiClient";
+import {
+  questV2PushTypeSchema,
+  questV2UnderfilledCancellationReasonSchema,
+} from "./questV2Contracts";
 
 /** Member Notification `type` values the app has copy for (ADR 0035). */
 export const memberNotificationTypeSchema = z.enum([
@@ -30,6 +34,26 @@ export const memberDisputeStatusSchema = z.enum([
   "DISPUTE_CASE_RESOLVED",
 ]);
 
+export const memberNotificationCategorySchema = z.enum([
+  "PENALTY",
+  "QUEST",
+  "DISPUTE",
+]);
+export type MemberNotificationCategory = z.infer<
+  typeof memberNotificationCategorySchema
+>;
+
+/** Quest lifecycle rows reuse the eight Quest push types. */
+export const memberQuestNotificationTypeSchema = questV2PushTypeSchema;
+
+/** `failureReason` of a `QUEST_FAILED` row; the push omits the middle value. */
+export const memberFailureReasonSchema = z.enum([
+  "PROOF_NOT_APPROVED",
+  "COMPLETION_NOT_APPROVED",
+  "DUE_AT_MISSED",
+]);
+export type MemberFailureReason = z.infer<typeof memberFailureReasonSchema>;
+
 export const memberPenaltyResultSchema = z.enum([
   "RED_FLAG",
   "TEMPORARY_BAN",
@@ -51,6 +75,12 @@ export const memberNotificationSchema = z.object({
   result: memberPenaltyResultSchema.nullable().catch(null),
   expiresAt: z.string().nullable(),
   questTitle: z.string().nullable().optional(),
+  /** Quest rows only. */
+  failureReason: memberFailureReasonSchema.nullable().catch(null).optional(),
+  cancellationReason: questV2UnderfilledCancellationReasonSchema
+    .nullable()
+    .catch(null)
+    .optional(),
   /** Dispute rows only. `viewerWon` is the server's answer for this Member. */
   disputeCaseId: z.string().nullable().optional(),
   disputeStatus: memberDisputeStatusSchema.nullable().catch(null).optional(),
@@ -64,15 +94,33 @@ const notificationPageSchema = z.object({
 });
 export type MemberNotificationPage = z.infer<typeof notificationPageSchema>;
 
-const unreadCountSchema = z.object({ count: z.coerce.number().int().min(0) });
+const unreadNumber = z.coerce.number().int().min(0);
+const unreadSummarySchema = z.object({
+  count: unreadNumber,
+  byCategory: z
+    .object({
+      PENALTY: unreadNumber,
+      QUEST: unreadNumber,
+      DISPUTE: unreadNumber,
+    })
+    .catch({ PENALTY: 0, QUEST: 0, DISPUTE: 0 }),
+});
+export type MemberUnreadSummary = z.infer<typeof unreadSummarySchema>;
 
-export type MarkNotificationsReadTarget = { ids: string[] } | { all: true };
+/** `category` narrows `all` to one category. */
+export type MarkNotificationsReadTarget =
+  { ids: string[] } | { all: true; category?: MemberNotificationCategory };
 
 export class NotificationApi {
   constructor(private readonly client: ApiClient = new ApiClient()) {}
 
   listNotifications(
-    params: { cursor?: string | null; limit?: number; unreadOnly?: boolean },
+    params: {
+      cursor?: string | null;
+      limit?: number;
+      unreadOnly?: boolean;
+      category?: MemberNotificationCategory;
+    },
     options: RequestOptions = {}
   ): Promise<MemberNotificationPage> {
     return this.client.get("/api/v1/notifications", notificationPageSchema, {
@@ -81,17 +129,21 @@ export class NotificationApi {
         limit: params.limit,
         cursor: params.cursor ?? undefined,
         unreadOnly: params.unreadOnly,
+        category: params.category,
       },
     });
   }
 
-  async countUnread(options: RequestOptions = {}): Promise<number> {
-    const result = await this.client.get(
+  unreadSummary(options: RequestOptions = {}): Promise<MemberUnreadSummary> {
+    return this.client.get(
       "/api/v1/notifications/unread-count",
-      unreadCountSchema,
+      unreadSummarySchema,
       options
     );
-    return result.count;
+  }
+
+  async countUnread(options: RequestOptions = {}): Promise<number> {
+    return (await this.unreadSummary(options)).count;
   }
 
   /** Idempotent: a read row keeps its first `readAt`. */

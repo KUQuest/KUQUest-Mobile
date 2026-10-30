@@ -1,19 +1,25 @@
 import {
   Ban,
   Bell,
+  CircleCheck,
+  CircleX,
+  ClipboardCheck,
   Flag,
   FlagOff,
+  Hourglass,
   Scale,
   ShieldCheck,
   type LucideIcon,
 } from "lucide-react-native";
 
+import { questV2PushTypeSchema } from "@/api/questV2Contracts";
 import {
   memberDisputeNotificationTypeSchema,
   memberNotificationTypeSchema,
   type MemberNotification,
   type MemberNotificationType,
 } from "@/api/NotificationApi";
+import { routeForPush } from "@/features/notifications/push/pushPayload";
 import type { ThemeColors } from "@/theme/colors";
 
 export type NotificationTone = "warning" | "success" | "danger" | "neutral";
@@ -30,6 +36,20 @@ export const notificationPresentationByType: Record<
   PENALTY_BAN_APPLIED: { icon: Ban, tone: "danger" },
   PENALTY_BAN_ENDED: { icon: ShieldCheck, tone: "success" },
   CONDUCT_REPORT_UPHELD: { icon: Flag, tone: "warning" },
+};
+
+const questPresentation: Record<
+  ReturnType<typeof questV2PushTypeSchema.parse>,
+  Presentation
+> = {
+  UNDERFILLED_DECISION_PENDING: { icon: Hourglass, tone: "warning" },
+  UNDERFILLED_CONSENT_PENDING: { icon: Hourglass, tone: "warning" },
+  UNDERFILLED_COMPLETED: { icon: CircleCheck, tone: "success" },
+  UNDERFILLED_CANCELLED: { icon: CircleX, tone: "danger" },
+  QUEST_ASSIGNED: { icon: ClipboardCheck, tone: "success" },
+  PROOF_NOT_APPROVED: { icon: CircleX, tone: "danger" },
+  QUEST_COMPLETED_DISPUTE_WINDOW_OPEN: { icon: Scale, tone: "warning" },
+  QUEST_FAILED: { icon: CircleX, tone: "danger" },
 };
 
 const NEUTRAL: Presentation = { icon: Bell, tone: "neutral" };
@@ -50,6 +70,8 @@ export function notificationPresentation(
 ): Presentation {
   if (memberDisputeNotificationTypeSchema.safeParse(notification.type).success)
     return DISPUTE;
+  const quest = questV2PushTypeSchema.safeParse(notification.type);
+  if (quest.success) return questPresentation[quest.data];
   const type = memberNotificationTypeSchema.safeParse(notification.type);
   if (!type.success) return NEUTRAL;
   if (
@@ -79,9 +101,22 @@ export function notificationOpensRespondForm(
   );
 }
 
-/** A decided case opens its Quest, where the Member reads the money result. */
-export function notificationOpensQuest(
+/**
+ * Where a Dispute result or Quest row leads: the Quest, or the partial-start
+ * consent screen for `UNDERFILLED_CONSENT_PENDING` (same as its Push).
+ */
+export function notificationQuestRoute(
   notification: Pick<MemberNotification, "type" | "questId">
-): boolean {
-  return notification.type === "DISPUTE_CASE_DECIDED" && !!notification.questId;
+) {
+  if (!notification.questId) return null;
+  if (notification.type === "DISPUTE_CASE_DECIDED") {
+    return {
+      pathname: "/quest/[id]",
+      params: { id: notification.questId },
+    } as const;
+  }
+  const quest = questV2PushTypeSchema.safeParse(notification.type);
+  return quest.success
+    ? routeForPush({ type: quest.data, questId: notification.questId })
+    : null;
 }

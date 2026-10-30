@@ -1,4 +1,5 @@
 import type {
+  MemberNotificationCategory,
   MemberNotificationType,
   MemberPenaltyResult,
 } from "@/api/NotificationApi";
@@ -18,7 +19,10 @@ type MemberNotificationMessages = {
   markAllRead: string;
   markingAllRead: string;
   unreadOnly: (count: number) => string;
+  unreadCount: (count: number) => string;
   all: string;
+  categories: Record<MemberNotificationCategory, string>;
+  filterByCategory: string;
   today: string;
   yesterday: string;
   loading: string;
@@ -36,6 +40,12 @@ type MemberNotificationMessages = {
   opensRespondForm: string;
   openInbox: (count: number) => string;
   generic: Copy;
+  quest: {
+    /** `until` is the formatted `expiresAt`, or null when the server sent none. */
+    decisionPending: (until: string | null) => Copy;
+    consentPending: (until: string | null) => Copy;
+    completionNotApproved: Copy;
+  };
   types: Record<MemberNotificationType, CopyBuilder>;
   dispute: {
     filedAgainstYou: (questTitle: string | null) => Copy;
@@ -58,7 +68,10 @@ export const memberNotificationMessages: Record<
     markAllRead: "Mark all read",
     markingAllRead: "Marking…",
     unreadOnly: (count) => (count > 0 ? `Unread · ${count}` : "Unread"),
+    unreadCount: (count) => `${count} unread`,
     all: "All",
+    categories: { QUEST: "Quests", DISPUTE: "Disputes", PENALTY: "Penalties" },
+    filterByCategory: "Filter by type",
     today: "Today",
     yesterday: "Yesterday",
     loading: "Loading notifications",
@@ -80,6 +93,24 @@ export const memberNotificationMessages: Record<
     generic: {
       title: "Account update",
       body: "There is an update on your account.",
+    },
+    quest: {
+      decisionPending: (until) => ({
+        title: "Quest needs your decision",
+        body: until
+          ? `Choose whether to proceed before ${until}.`
+          : "Choose whether to proceed.",
+      }),
+      consentPending: (until) => ({
+        title: "Consent needed",
+        body: until
+          ? `Respond to the revised Quest before ${until}.`
+          : "Respond to the revised Quest.",
+      }),
+      completionNotApproved: {
+        title: "Quest failed",
+        body: "The Hirer did not approve the completion.",
+      },
     },
     types: {
       PENALTY_RED_FLAG_APPLIED: (_result, until) => ({
@@ -153,7 +184,10 @@ export const memberNotificationMessages: Record<
     markAllRead: "อ่านทั้งหมด",
     markingAllRead: "กำลังบันทึก…",
     unreadOnly: (count) => (count > 0 ? `ยังไม่อ่าน · ${count}` : "ยังไม่อ่าน"),
+    unreadCount: (count) => `ยังไม่อ่าน ${count} รายการ`,
     all: "ทั้งหมด",
+    categories: { QUEST: "เควสต์", DISPUTE: "ข้อพิพาท", PENALTY: "บทลงโทษ" },
+    filterByCategory: "กรองตามประเภท",
     today: "วันนี้",
     yesterday: "เมื่อวาน",
     loading: "กำลังโหลดการแจ้งเตือน",
@@ -175,6 +209,24 @@ export const memberNotificationMessages: Record<
     generic: {
       title: "อัปเดตบัญชี",
       body: "มีการอัปเดตเกี่ยวกับบัญชีของคุณ",
+    },
+    quest: {
+      decisionPending: (until) => ({
+        title: "เควสต์รอการตัดสินใจ",
+        body: until
+          ? `เลือกว่าจะดำเนินการต่อหรือไม่ ภายใน ${until}`
+          : "เลือกว่าจะดำเนินการต่อหรือไม่",
+      }),
+      consentPending: (until) => ({
+        title: "กรุณายืนยันความยินยอม",
+        body: until
+          ? `ตอบรับเควสต์ที่ปรับปรุงแล้ว ภายใน ${until}`
+          : "ตอบรับเควสต์ที่ปรับปรุงแล้ว",
+      }),
+      completionNotApproved: {
+        title: "เควสต์ล้มเหลว",
+        body: "ผู้ว่าจ้างไม่อนุมัติการเสร็จสิ้นงาน",
+      },
     },
     types: {
       PENALTY_RED_FLAG_APPLIED: (_result, until) => ({
