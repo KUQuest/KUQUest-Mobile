@@ -168,6 +168,8 @@ export interface UserTransaction {
   sourceApi?: "ACTIVITIES" | "TOP_UPS" | "PAYOUTS";
   destinationInfo?: string;
   expiresAt?: string;
+  /** Payout record id when this row is, or merges with, a Payout. */
+  payoutId?: string;
 }
 export interface UserTransactionHistoryResult {
   items: UserTransaction[];
@@ -698,6 +700,7 @@ export class WalletApi {
       if (matched) {
         mergedIds.add(matched.id);
         matched.sourceApi = "PAYOUTS";
+        matched.payoutId = payout.id;
         if (destinationInfo) matched.destinationInfo = destinationInfo;
         if (payout.payoutStatus || payout.status) {
           matched.status =
@@ -717,6 +720,7 @@ export class WalletApi {
           createdAt: payout.createdAt,
           reference: payout.internalReference,
           sourceApi: "PAYOUTS",
+          payoutId: payout.id,
           destinationInfo,
           payoutReservedDeltaSatang: -payoutAmount,
         });

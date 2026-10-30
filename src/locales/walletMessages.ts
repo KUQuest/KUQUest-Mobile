@@ -129,6 +129,79 @@ export interface WalletMessages {
   topUpFailed: string;
   transferPreviewSpendingAfter: string;
   transferPreviewEarningsRemaining: string;
+  payoutAction: string;
+  requestPayoutTitle: string;
+  requestPayoutDesc: string;
+  payoutAvailableEarnings: string;
+  payoutAmountLabel: string;
+  payoutAmountInvalid: string;
+  payoutNoEarnings: string;
+  payoutInsufficientEarnings: string;
+  payoutDestinationLabel: string;
+  payoutManageDestination: string;
+  payoutDestinationLoading: string;
+  payoutDestinationLoadError: string;
+  payoutNoDestinationTitle: string;
+  payoutNoDestinationDesc: string;
+  payoutAddDestination: string;
+  payoutGetQuote: string;
+  payoutQuoting: string;
+  payoutQuoteError: string;
+  payoutQuoteTitle: string;
+  payoutQuoteReceipt: string;
+  payoutQuoteFee: string;
+  payoutQuoteTax: string;
+  payoutQuoteDebit: string;
+  payoutQuoteExpires: (time: string) => string;
+  payoutQuoteNote: string;
+  payoutQuoteExpired: string;
+  payoutQuoteInsufficient: string;
+  payoutEditAmount: string;
+  payoutConfirm: string;
+  payoutSubmitting: string;
+  payoutSubmitError: string;
+  payoutSuccessTitle: string;
+  payoutSuccessDesc: (receipt: string) => string;
+  destinationTitle: string;
+  destinationDesc: string;
+  destinationActiveTitle: string;
+  destinationBankLabel: string;
+  destinationHolderLabel: string;
+  destinationAccountLabel: string;
+  destinationEmptyTitle: string;
+  destinationEmptyDesc: string;
+  destinationLoadError: string;
+  destinationAdd: string;
+  destinationReplace: string;
+  destinationGivenNameLabel: string;
+  destinationSurnameLabel: string;
+  destinationHolderNameLabel: string;
+  destinationBankCodeLabel: string;
+  destinationBankCodeHint: string;
+  destinationAccountNumberLabel: string;
+  destinationFieldRequired: string;
+  destinationSave: string;
+  destinationSaving: string;
+  destinationSaveError: string;
+  destinationRetire: string;
+  destinationRetiring: string;
+  destinationRetireConfirmTitle: string;
+  destinationRetireConfirmDesc: string;
+  destinationRetireError: string;
+  destinationBackToDetails: string;
+  payoutStatusTitle: string;
+  payoutDetailLoading: string;
+  payoutDetailError: string;
+  payoutReceiptLabel: string;
+  payoutFeeLabel: string;
+  payoutTaxLabel: string;
+  payoutDebitLabel: string;
+  payoutFeesMaximumNote: string;
+  payoutStatusHistoryTitle: string;
+  payoutStatusHistoryEmpty: string;
+  payoutHistoryReason: (reason: string) => string;
+  payoutStatusLabels: Record<string, string>;
+  payoutStatusDescriptions: Record<string, string>;
 }
 export const walletMessages: Record<SupportedLocale, WalletMessages> = {
   en: {
@@ -286,6 +359,107 @@ export const walletMessages: Record<SupportedLocale, WalletMessages> = {
     topUpFailed: "This payment failed. Enter an amount to try again.",
     transferPreviewSpendingAfter: "Spending balance after transfer:",
     transferPreviewEarningsRemaining: "Remaining earnings:",
+    payoutAction: "Payout",
+    requestPayoutTitle: "Request a Payout",
+    requestPayoutDesc:
+      "Send Earnings to your verified Thai bank account. An Admin reviews every Payout before it is sent.",
+    payoutAvailableEarnings: "Available Earnings",
+    payoutAmountLabel: "Amount to receive (฿)",
+    payoutAmountInvalid: "Enter an amount greater than ฿0.00",
+    payoutNoEarnings: "No Earnings available for a Payout",
+    payoutInsufficientEarnings: "Amount is more than your Earnings",
+    payoutDestinationLabel: "Pay out to",
+    payoutManageDestination: "Manage",
+    payoutDestinationLoading: "Loading payout account",
+    payoutDestinationLoadError: "Could not load your payout account.",
+    payoutNoDestinationTitle: "Add a payout account first",
+    payoutNoDestinationDesc:
+      "You need a Thai bank account on file before you can request a Payout.",
+    payoutAddDestination: "Add payout account",
+    payoutGetQuote: "Review fees",
+    payoutQuoting: "Getting quote...",
+    payoutQuoteError: "Could not get a Payout quote. Please try again.",
+    payoutQuoteTitle: "Payout summary",
+    payoutQuoteReceipt: "You receive",
+    payoutQuoteFee: "Maximum fee",
+    payoutQuoteTax: "Maximum tax",
+    payoutQuoteDebit: "Taken from Earnings (maximum)",
+    payoutQuoteExpires: (time: string) => `Quote valid until ${time}`,
+    payoutQuoteNote:
+      "The amount is held as a Payout Reserve until an Admin decides. The final fee and tax are confirmed when the Payout settles.",
+    payoutQuoteExpired: "This quote has expired. Review the fees again.",
+    payoutQuoteInsufficient:
+      "Your Earnings no longer cover this Payout. Lower the amount.",
+    payoutEditAmount: "Change amount",
+    payoutConfirm: "Confirm Payout",
+    payoutSubmitting: "Submitting...",
+    payoutSubmitError: "Could not submit your Payout. Please try again.",
+    payoutSuccessTitle: "Payout requested",
+    payoutSuccessDesc: (receipt: string) =>
+      `Your Payout of ${receipt} is waiting for Admin approval.`,
+    destinationTitle: "Payout account",
+    destinationDesc:
+      "The active Thai bank account that receives your Payouts. Account numbers stay masked.",
+    destinationActiveTitle: "Active account",
+    destinationBankLabel: "Bank",
+    destinationHolderLabel: "Account holder",
+    destinationAccountLabel: "Account number",
+    destinationEmptyTitle: "No payout account",
+    destinationEmptyDesc: "Add a Thai bank account to receive Payouts.",
+    destinationLoadError: "Could not load your payout account.",
+    destinationAdd: "Add account",
+    destinationReplace: "Replace account",
+    destinationGivenNameLabel: "Given name",
+    destinationSurnameLabel: "Surname",
+    destinationHolderNameLabel: "Account holder name",
+    destinationBankCodeLabel: "Bank code",
+    destinationBankCodeHint: "For example KBANK or SCB",
+    destinationAccountNumberLabel: "Account number",
+    destinationFieldRequired: "This field is required",
+    destinationSave: "Save account",
+    destinationSaving: "Saving...",
+    destinationSaveError: "Could not save your payout account.",
+    destinationRetire: "Remove account",
+    destinationRetiring: "Removing...",
+    destinationRetireConfirmTitle: "Remove this payout account?",
+    destinationRetireConfirmDesc:
+      "You cannot request a Payout until you add another account.",
+    destinationRetireError: "Could not remove your payout account.",
+    destinationBackToDetails: "Back",
+    payoutStatusTitle: "Payout status",
+    payoutDetailLoading: "Loading Payout",
+    payoutDetailError: "Could not load this Payout.",
+    payoutReceiptLabel: "You receive",
+    payoutFeeLabel: "Fee",
+    payoutTaxLabel: "Tax",
+    payoutDebitLabel: "Taken from Earnings",
+    payoutFeesMaximumNote:
+      "Fee, tax, and total shown are maximums until the Payout settles.",
+    payoutStatusHistoryTitle: "Status history",
+    payoutStatusHistoryEmpty: "No status changes yet",
+    payoutHistoryReason: (reason: string) => `Reason: ${reason}`,
+    payoutStatusLabels: {
+      PENDING_ADMIN_APPROVAL: "Waiting for Admin approval",
+      SUBMITTED_TO_PROVIDER: "Sent to payment provider",
+      PROVIDER_PENDING: "Provider processing",
+      SUCCEEDED: "Paid out",
+      FAILED: "Failed",
+      CANCELLED: "Cancelled",
+      REJECTED: "Rejected",
+    },
+    payoutStatusDescriptions: {
+      PENDING_ADMIN_APPROVAL:
+        "An Admin has not reviewed this Payout yet. The amount stays in your Payout Reserve.",
+      SUBMITTED_TO_PROVIDER:
+        "An Admin approved this Payout and it is being sent to the payment provider.",
+      PROVIDER_PENDING: "The payment provider is processing the transfer.",
+      SUCCEEDED: "The money was sent to your bank account.",
+      FAILED: "The transfer failed. The amount returns to your Earnings.",
+      CANCELLED:
+        "This Payout was cancelled. The amount returns to your Earnings.",
+      REJECTED:
+        "An Admin rejected this Payout. The amount returns to your Earnings.",
+    },
   },
   th: {
     walletTitle: "ภาพรวมกระเป๋าเงิน",
@@ -439,5 +613,101 @@ export const walletMessages: Record<SupportedLocale, WalletMessages> = {
     topUpFailed: "การชำระเงินไม่สำเร็จ กรุณาระบุจำนวนเงินเพื่อลองอีกครั้ง",
     transferPreviewSpendingAfter: "ยอดเงินพร้อมใช้หลังโอน:",
     transferPreviewEarningsRemaining: "รายได้สะสมคงเหลือ:",
+    payoutAction: "ถอนเงิน",
+    requestPayoutTitle: "ขอถอนเงิน",
+    requestPayoutDesc:
+      "ถอนรายได้สะสมเข้าบัญชีธนาคารไทยของคุณ ผู้ดูแลระบบจะตรวจสอบทุกรายการก่อนโอน",
+    payoutAvailableEarnings: "รายได้สะสมที่ใช้ได้",
+    payoutAmountLabel: "จำนวนเงินที่ต้องการรับ (฿)",
+    payoutAmountInvalid: "ระบุจำนวนเงินมากกว่า ฿0.00",
+    payoutNoEarnings: "ไม่มีรายได้สะสมสำหรับการถอนเงิน",
+    payoutInsufficientEarnings: "จำนวนเงินเกินรายได้สะสมของคุณ",
+    payoutDestinationLabel: "โอนเข้าบัญชี",
+    payoutManageDestination: "จัดการ",
+    payoutDestinationLoading: "กำลังโหลดบัญชีรับเงิน",
+    payoutDestinationLoadError: "ไม่สามารถโหลดบัญชีรับเงินได้",
+    payoutNoDestinationTitle: "เพิ่มบัญชีรับเงินก่อน",
+    payoutNoDestinationDesc: "ต้องมีบัญชีธนาคารไทยในระบบก่อนจึงจะขอถอนเงินได้",
+    payoutAddDestination: "เพิ่มบัญชีรับเงิน",
+    payoutGetQuote: "ตรวจสอบค่าธรรมเนียม",
+    payoutQuoting: "กำลังคำนวณ...",
+    payoutQuoteError: "ไม่สามารถคำนวณการถอนเงินได้ โปรดลองอีกครั้ง",
+    payoutQuoteTitle: "สรุปการถอนเงิน",
+    payoutQuoteReceipt: "คุณจะได้รับ",
+    payoutQuoteFee: "ค่าธรรมเนียมสูงสุด",
+    payoutQuoteTax: "ภาษีสูงสุด",
+    payoutQuoteDebit: "หักจากรายได้สะสม (สูงสุด)",
+    payoutQuoteExpires: (time: string) => `ราคานี้ใช้ได้ถึง ${time}`,
+    payoutQuoteNote:
+      "ยอดเงินจะถูกกันไว้ในยอดกำลังถอนจนกว่าผู้ดูแลระบบจะพิจารณา ค่าธรรมเนียมและภาษีจริงจะยืนยันเมื่อการถอนเงินเสร็จสิ้น",
+    payoutQuoteExpired: "ราคานี้หมดอายุแล้ว กรุณาตรวจสอบค่าธรรมเนียมอีกครั้ง",
+    payoutQuoteInsufficient:
+      "รายได้สะสมของคุณไม่พอสำหรับการถอนเงินนี้ กรุณาลดจำนวนเงิน",
+    payoutEditAmount: "เปลี่ยนจำนวนเงิน",
+    payoutConfirm: "ยืนยันการถอนเงิน",
+    payoutSubmitting: "กำลังส่งคำขอ...",
+    payoutSubmitError: "ไม่สามารถส่งคำขอถอนเงินได้ โปรดลองอีกครั้ง",
+    payoutSuccessTitle: "ส่งคำขอถอนเงินแล้ว",
+    payoutSuccessDesc: (receipt: string) =>
+      `คำขอถอนเงิน ${receipt} กำลังรอผู้ดูแลระบบอนุมัติ`,
+    destinationTitle: "บัญชีรับเงิน",
+    destinationDesc: "บัญชีธนาคารไทยที่ใช้รับเงินถอน เลขบัญชีจะแสดงแบบปกปิด",
+    destinationActiveTitle: "บัญชีที่ใช้งานอยู่",
+    destinationBankLabel: "ธนาคาร",
+    destinationHolderLabel: "ชื่อบัญชี",
+    destinationAccountLabel: "เลขบัญชี",
+    destinationEmptyTitle: "ยังไม่มีบัญชีรับเงิน",
+    destinationEmptyDesc: "เพิ่มบัญชีธนาคารไทยเพื่อรับเงินถอน",
+    destinationLoadError: "ไม่สามารถโหลดบัญชีรับเงินได้",
+    destinationAdd: "เพิ่มบัญชี",
+    destinationReplace: "เปลี่ยนบัญชี",
+    destinationGivenNameLabel: "ชื่อ",
+    destinationSurnameLabel: "นามสกุล",
+    destinationHolderNameLabel: "ชื่อบัญชี",
+    destinationBankCodeLabel: "รหัสธนาคาร",
+    destinationBankCodeHint: "เช่น KBANK หรือ SCB",
+    destinationAccountNumberLabel: "เลขบัญชี",
+    destinationFieldRequired: "จำเป็นต้องกรอกช่องนี้",
+    destinationSave: "บันทึกบัญชี",
+    destinationSaving: "กำลังบันทึก...",
+    destinationSaveError: "ไม่สามารถบันทึกบัญชีรับเงินได้",
+    destinationRetire: "ลบบัญชี",
+    destinationRetiring: "กำลังลบ...",
+    destinationRetireConfirmTitle: "ลบบัญชีรับเงินนี้?",
+    destinationRetireConfirmDesc: "คุณจะขอถอนเงินไม่ได้จนกว่าจะเพิ่มบัญชีใหม่",
+    destinationRetireError: "ไม่สามารถลบบัญชีรับเงินได้",
+    destinationBackToDetails: "ย้อนกลับ",
+    payoutStatusTitle: "สถานะการถอนเงิน",
+    payoutDetailLoading: "กำลังโหลดรายการถอนเงิน",
+    payoutDetailError: "ไม่สามารถโหลดรายการถอนเงินนี้ได้",
+    payoutReceiptLabel: "ยอดที่ได้รับ",
+    payoutFeeLabel: "ค่าธรรมเนียม",
+    payoutTaxLabel: "ภาษี",
+    payoutDebitLabel: "หักจากรายได้สะสม",
+    payoutFeesMaximumNote:
+      "ค่าธรรมเนียม ภาษี และยอดรวมที่แสดงเป็นค่าสูงสุด จนกว่าการถอนเงินจะเสร็จสิ้น",
+    payoutStatusHistoryTitle: "ประวัติสถานะ",
+    payoutStatusHistoryEmpty: "ยังไม่มีการเปลี่ยนสถานะ",
+    payoutHistoryReason: (reason: string) => `เหตุผล: ${reason}`,
+    payoutStatusLabels: {
+      PENDING_ADMIN_APPROVAL: "รอผู้ดูแลระบบอนุมัติ",
+      SUBMITTED_TO_PROVIDER: "ส่งให้ผู้ให้บริการชำระเงินแล้ว",
+      PROVIDER_PENDING: "ผู้ให้บริการกำลังดำเนินการ",
+      SUCCEEDED: "โอนเงินสำเร็จ",
+      FAILED: "ไม่สำเร็จ",
+      CANCELLED: "ยกเลิกแล้ว",
+      REJECTED: "ถูกปฏิเสธ",
+    },
+    payoutStatusDescriptions: {
+      PENDING_ADMIN_APPROVAL:
+        "ผู้ดูแลระบบยังไม่ได้ตรวจสอบรายการนี้ ยอดเงินจะถูกกันไว้ในยอดกำลังถอนเงิน",
+      SUBMITTED_TO_PROVIDER:
+        "ผู้ดูแลระบบอนุมัติแล้ว และกำลังส่งให้ผู้ให้บริการชำระเงิน",
+      PROVIDER_PENDING: "ผู้ให้บริการชำระเงินกำลังดำเนินการโอนเงิน",
+      SUCCEEDED: "โอนเงินเข้าบัญชีธนาคารของคุณแล้ว",
+      FAILED: "การโอนไม่สำเร็จ ยอดเงินจะคืนเข้ารายได้สะสม",
+      CANCELLED: "รายการถอนเงินนี้ถูกยกเลิก ยอดเงินจะคืนเข้ารายได้สะสม",
+      REJECTED: "ผู้ดูแลระบบปฏิเสธรายการนี้ ยอดเงินจะคืนเข้ารายได้สะสม",
+    },
   },
 };

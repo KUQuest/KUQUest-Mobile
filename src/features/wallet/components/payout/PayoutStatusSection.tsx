@@ -1,0 +1,200 @@
+import React from "react";
+import { ActivityIndicator, Text, TouchableOpacity, View } from "@/tw";
+import type { PayoutRecord } from "@/api/WalletApi";
+import { formatSatang } from "@/domain/satang";
+import { useLocale } from "@/features/preferences/localeStore";
+import type { WalletMessages } from "@/locales/walletMessages";
+import { colors } from "@/theme/colors";
+import { getLocalizedErrorMessage } from "@/utils/error";
+import {
+  usePayoutQuery,
+  usePayoutStatusHistoryQuery,
+} from "../../api/walletQueries";
+import {
+  formatTransactionDate,
+  formatTransactionTime,
+} from "../../walletModule";
+import payoutStyles from "./payoutStyles";
+
+interface PayoutStatusSectionProps {
+  payoutId: string;
+  messages: WalletMessages;
+}
+
+function statusLabel(m: WalletMessages, status: string): string {
+  return m.payoutStatusLabels[status] ?? status;
+}
+
+function settledAmounts(payout: PayoutRecord) {
+  return {
+    fee: payout.actualFeeSatang ?? payout.maximumFeeSatang,
+    tax: payout.actualTaxSatang ?? payout.maximumTaxSatang,
+    debit: payout.actualDebitSatang ?? payout.maximumDebitSatang,
+    isMaximum: payout.actualDebitSatang == null,
+  };
+}
+
+/** Payout status, amounts, and status history for the transaction detail. */
+export function PayoutStatusSection({
+  payoutId,
+  messages: m,
+}: PayoutStatusSectionProps) {
+  const { locale } = useLocale();
+  const payoutQuery = usePayoutQuery(payoutId);
+  const historyQuery = usePayoutStatusHistoryQuery(payoutId);
+
+  if (payoutQuery.isPending) {
+    return (
+      <View
+        accessibilityLabel={m.payoutDetailLoading}
+        accessibilityLiveRegion="polite"
+        className={payoutStyles.centered}
+        testID="payout-status-loading"
+      >
+        <ActivityIndicator color={colors.worker} size="small" />
+      </View>
+    );
+  }
+
+  if (payoutQuery.isError) {
+    return (
+      <View
+        accessibilityRole="alert"
+        className={payoutStyles.card}
+        testID="payout-status-error"
+      >
+        <Text className={payoutStyles.hintError}>
+          {getLocalizedErrorMessage(payoutQuery.error, locale, {
+            fallback: m.payoutDetailError,
+          })}
+        </Text>
+        <TouchableOpacity
+          accessibilityLabel={m.retry}
+          accessibilityRole="button"
+          className={payoutStyles.secondaryBtn}
+          onPress={() => {
+            void payoutQuery.refetch();
+            void historyQuery.refetch();
+          }}
+          testID="payout-status-retry"
+        >
+          <Text className={payoutStyles.secondaryBtnText}>{m.retry}</Text>
+        </TouchableOpacity>
+      </View>
+    );
+  }
+
+  const payout = payoutQuery.data;
+  const status = payout.status ?? payout.payoutStatus ?? "";
+  const amounts = settledAmounts(payout);
+  const history = historyQuery.data ?? [];
+
+  return (
+    <View className="gap-ku-md" testID="payout-status-section">
+      <View className={payoutStyles.card}>
+        <Text accessibilityRole="header" className={payoutStyles.cardTitle}>
+          {m.payoutStatusTitle}
+        </Text>
+        <Text
+          className={payoutStyles.rowValueStrong}
+          testID="payout-status-label"
+        >
+          {statusLabel(m, status)}
+        </Text>
+        {m.payoutStatusDescriptions[status] ? (
+          <Text className={payoutStyles.note}>
+            {m.payoutStatusDescriptions[status]}
+          </Text>
+        ) : null}
+        {payout.receiptSatang != null ? (
+          <View className={payoutStyles.row}>
+            <Text className={payoutStyles.rowLabel}>
+              {m.payoutReceiptLabel}
+            </Text>
+            <Text className={payoutStyles.rowValue}>
+              {formatSatang(payout.receiptSatang, locale, "exact")}
+            </Text>
+          </View>
+        ) : null}
+        {amounts.fee != null ? (
+          <View className={payoutStyles.row}>
+            <Text className={payoutStyles.rowLabel}>{m.payoutFeeLabel}</Text>
+            <Text className={payoutStyles.rowValue}>
+              {formatSatang(amounts.fee, locale, "exact")}
+            </Text>
+          </View>
+        ) : null}
+        {amounts.tax != null ? (
+          <View className={payoutStyles.row}>
+            <Text className={payoutStyles.rowLabel}>{m.payoutTaxLabel}</Text>
+            <Text className={payoutStyles.rowValue}>
+              {formatSatang(amounts.tax, locale, "exact")}
+            </Text>
+          </View>
+        ) : null}
+        {amounts.debit != null ? (
+          <View className={payoutStyles.row}>
+            <Text className={payoutStyles.rowLabel}>{m.payoutDebitLabel}</Text>
+            <Text className={payoutStyles.rowValue}>
+              {formatSatang(amounts.debit, locale, "exact")}
+            </Text>
+          </View>
+        ) : null}
+        {amounts.isMaximum ? (
+          <Text className={payoutStyles.note}>{m.payoutFeesMaximumNote}</Text>
+        ) : null}
+      </View>
+
+      <View className={payoutStyles.card} testID="payout-status-history">
+        <Text accessibilityRole="header" className={payoutStyles.cardTitle}>
+          {m.payoutStatusHistoryTitle}
+        </Text>
+        {historyQuery.isPending ? (
+          <ActivityIndicator color={colors.worker} size="small" />
+        ) : historyQuery.isError ? (
+          <View accessibilityRole="alert" className="gap-ku-sm">
+            <Text className={payoutStyles.hintError}>
+              {getLocalizedErrorMessage(historyQuery.error, locale, {
+                fallback: m.payoutDetailError,
+              })}
+            </Text>
+            <TouchableOpacity
+              accessibilityLabel={m.retry}
+              accessibilityRole="button"
+              className={payoutStyles.secondaryBtn}
+              onPress={() => void historyQuery.refetch()}
+              testID="payout-history-retry"
+            >
+              <Text className={payoutStyles.secondaryBtnText}>{m.retry}</Text>
+            </TouchableOpacity>
+          </View>
+        ) : history.length === 0 ? (
+          <Text className={payoutStyles.note} testID="payout-history-empty">
+            {m.payoutStatusHistoryEmpty}
+          </Text>
+        ) : (
+          history.map((entry) => (
+            <View
+              accessible
+              className="gap-ku-2"
+              key={entry.id}
+              testID={`payout-history-${entry.id}`}
+            >
+              <Text className={payoutStyles.rowValueStrong}>
+                {statusLabel(m, entry.toStatus)}
+              </Text>
+              <Text className={payoutStyles.note}>
+                {`${formatTransactionDate(entry.occurredAt, locale)} ${formatTransactionTime(entry.occurredAt)}`.trim()}
+              </Text>
+              {entry.reason ? (
+                <Text className={payoutStyles.note}>
+                  {m.payoutHistoryReason(entry.reason)}
+                </Text>
+              ) : null}
+            </View>
+          ))
+        )}
+      </View>
+    </View>
+  );
+}
