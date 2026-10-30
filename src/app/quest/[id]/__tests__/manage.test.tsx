@@ -381,7 +381,7 @@ describe("HirerQuestManageRoute condition edit", () => {
     });
   });
 
-  it("delegates failed-Quest dispute action to confirmation workflow", async () => {
+  it("does not show a dispute action to the Hirer on a failed Quest", async () => {
     mockPush.mockClear();
     mockConfirmFileDispute.mockClear();
     (liveQuestService.getLiveSnapshot as jest.Mock).mockResolvedValue(
@@ -394,9 +394,8 @@ describe("HirerQuestManageRoute condition edit", () => {
       })
     );
     const view = await render(<HirerQuestManageRoute />);
-    const disputeButton = await view.findByTestId("hirer-manage-dispute");
-    await fireEvent.press(disputeButton);
-    expect(mockConfirmFileDispute).toHaveBeenCalledWith("quest-1");
+    await act(async () => undefined);
+    expect(view.queryByTestId("hirer-manage-dispute")).toBeNull();
     expect(mockPush).not.toHaveBeenCalled();
   });
 
@@ -558,7 +557,7 @@ describe("HirerQuestManageRoute condition edit", () => {
     expect((questApi.cancelQuest as jest.Mock).mock.calls[1]?.[2]).toBe("v2");
   });
 
-  it("shows dispute for Hirer or assigned Worker on FAILED, but not Candidate or unassigned Worker", async () => {
+  it("shows dispute for assigned Worker on FAILED, but not Candidate or unassigned Worker", async () => {
     const failedQuest = {
       ...createSnapshot().quest,
       state: QuestStatus.QUEST_FAILED,

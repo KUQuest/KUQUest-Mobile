@@ -80,10 +80,6 @@ export function getLiveHirerItems(
         status,
         statusTone: liveQuestStatusTone(statusValue),
         primaryAction: isDraft ? "edit" : terminal ? "review" : "manage",
-        secondaryAction:
-          quest.state === QuestStatus.QUEST_FAILED
-            ? ("dispute" as const)
-            : undefined,
         ...(quest.state === QuestStatus.QUEST_FAILED &&
         proofReviewableQuestIds?.has(quest.id) === true
           ? { canReviewProof: true }
