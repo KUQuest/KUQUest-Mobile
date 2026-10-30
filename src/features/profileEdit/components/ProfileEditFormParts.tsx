@@ -57,7 +57,7 @@ export function SaveBar({
   onPress: () => void;
 }) {
   return (
-    <SafeAreaView edges={["bottom"]} className={styles.saveBar}>
+    <SafeAreaView edges={["bottom"]} className={styles.saveBarDocked}>
       <View className={styles.saveBarContent}>
         <View className={styles.saveBarInner}>
           <Pressable

@@ -111,7 +111,8 @@ type KeyboardAvoiderInstance = RNKeyboardAvoidingView & {
  * React Native lifts `padding` by `frame.y + frame.height - keyboardY`, where
  * `frame.y` is relative to the parent. A view below a header would lift too
  * little by the header's height, so unless the caller sets
- * `keyboardVerticalOffset`, use the view's distance from the window top.
+ * `keyboardVerticalOffset`, use the part of its window y that `frame.y`
+ * does not already cover.
  */
 export const KeyboardAvoidingView = ({
   keyboardVerticalOffset,
@@ -131,8 +132,9 @@ export const KeyboardAvoidingView = ({
       onLayout: (event: LayoutChangeEvent) => {
         onLayout?.(event);
         if (keyboardVerticalOffset === undefined) {
+          const parentRelativeY = event.nativeEvent.layout.y;
           avoiderRef.current?.viewRef.current?.measureInWindow((_x, y) =>
-            setMeasuredOffset(y)
+            setMeasuredOffset(y - parentRelativeY)
           );
         }
       },
