@@ -892,14 +892,21 @@ export function useFileDisputeMutation() {
         variables.viewerId
       );
     },
-    onError: async (error, variables) => {
+    onError: async (error, { questId, viewerId }) => {
       if (error instanceof ApiError && error.status === 409) {
-        await queryClient.invalidateQueries({
-          queryKey: questBoardKeys.myDisputeCase(
-            variables.questId,
-            variables.viewerId
-          ),
-        });
+        // The Work Hub reads the Dispute window from the snapshot and keeps
+        // the case lookup disabled, so a plain invalidation would not refetch
+        // it. Fetch the case directly and reload the snapshot's window.
+        await Promise.all([
+          queryClient
+            .fetchQuery({
+              queryKey: questBoardKeys.myDisputeCase(questId, viewerId),
+              queryFn: ({ signal }) =>
+                disputeApi.getMyDisputeCase(questId, signal),
+            })
+            .catch(() => undefined),
+          invalidateQuestReads(queryClient, questId, viewerId),
+        ]);
       }
     },
   });

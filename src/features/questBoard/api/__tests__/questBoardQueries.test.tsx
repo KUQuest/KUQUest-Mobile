@@ -29,6 +29,7 @@ import {
   useApplyQuestMutation,
   useCancelQuestMutation,
   useCreateReviewMutation,
+  useFileDisputeMutation,
   useJoinCandidateTeamMutation,
   useCandidateTeamFileLinksQuery,
   useLiveQuestSnapshotQuery,
@@ -40,6 +41,8 @@ import {
   useUpdateReviewMutation,
 } from "../questBoardQueries";
 import { questApi } from "@/api/QuestApi";
+import { ApiError } from "@/api/ApiClient";
+import { disputeApi } from "@/api/DisputeApi";
 
 jest.mock("../../live/liveQuestService", () => ({
   liveQuestService: {
@@ -62,6 +65,14 @@ jest.mock("@/api/QuestApi", () => ({
     selectApplication: jest.fn(),
     joinCandidateTeam: jest.fn(),
     joinCandidateTeamByCode: jest.fn(),
+  },
+}));
+
+jest.mock("@/api/DisputeApi", () => ({
+  ...jest.requireActual("@/api/DisputeApi"),
+  disputeApi: {
+    fileDispute: jest.fn(),
+    getMyDisputeCase: jest.fn(),
   },
 }));
 
@@ -291,6 +302,44 @@ describe("quest board query ownership", () => {
       "cancel-key",
       undefined
     );
+    queryClient.clear();
+  });
+
+  it("reloads the filed case and the snapshot's Dispute window after a 409 filing", async () => {
+    const queryClient = new QueryClient();
+    const viewerId = "viewer-1";
+    const questId = "quest-1";
+    const snapshotKey = questBoardKeys.liveSnapshot(questId, viewerId);
+    queryClient.setQueryData(snapshotKey, { cached: true });
+    const filedCase = {
+      id: "dispute-1",
+      displayId: "DC-000123",
+      questId,
+      status: "DISPUTE_CASE_PENDING",
+      createdAt: "2099-01-01T19:00:00+07:00",
+    };
+    jest
+      .mocked(disputeApi.fileDispute)
+      .mockRejectedValue(
+        new ApiError(409, "CONFLICT", "A Dispute Case already exists")
+      );
+    jest
+      .mocked(disputeApi.getMyDisputeCase)
+      .mockResolvedValue({ case: filedCase } as never);
+    const { result } = await renderHook(() => useFileDisputeMutation(), {
+      wrapper: wrapper(queryClient),
+    });
+
+    await act(async () => {
+      await expect(
+        result.current.mutateAsync({ questId, viewerId })
+      ).rejects.toBeInstanceOf(ApiError);
+    });
+
+    expect(
+      queryClient.getQueryData(questBoardKeys.myDisputeCase(questId, viewerId))
+    ).toEqual({ case: filedCase });
+    expect(queryClient.getQueryState(snapshotKey)?.isInvalidated).toBe(true);
     queryClient.clear();
   });
 

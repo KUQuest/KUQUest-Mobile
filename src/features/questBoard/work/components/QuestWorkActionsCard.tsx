@@ -92,11 +92,31 @@ export default function QuestWorkActionsCard({
       (snapshot.state === QuestStatus.QUEST_COMPLETED &&
         snapshot.assignment?.state ===
           QuestAssignmentStatus.ASSIGNMENT_INCOMPLETE));
+  const serverDispute =
+    "dispute" in snapshot.quest ? snapshot.quest.dispute : undefined;
   const disputeQuery = useMyDisputeCaseQuery(
     snapshot.quest.id,
     viewerId,
-    isFailedWorker
+    isFailedWorker && serverDispute === undefined
   );
+  const pendingDisputeStatus =
+    isFailedWorker && serverDispute === undefined && disputeQuery.isPending;
+  const disputeStatusError =
+    isFailedWorker && serverDispute === undefined && disputeQuery.isError;
+  const filedDispute =
+    serverDispute?.myCase ?? (isFailedWorker ? disputeQuery.data?.case : null);
+  const canFileDispute =
+    serverDispute?.canFile ??
+    (isFailedWorker &&
+      disputeQuery.isSuccess &&
+      disputeQuery.data.case === null);
+  // The snapshot types the case status as a plain string; show only the
+  // statuses the Dispute Case contract names.
+  const filedDisputeStatus = filedDispute
+    ? (disputeCopy.caseStatus as Partial<Record<string, string>>)[
+        filedDispute.status
+      ]
+    : undefined;
   const filingDispute =
     useIsMutating({
       mutationKey: questBoardKeys.disputeFiling(),
@@ -173,10 +193,10 @@ export default function QuestWorkActionsCard({
         </View>
       ) : null}
 
-      {isFailedWorker && !disputeQuery.isPending ? (
+      {isFailedWorker && !pendingDisputeStatus ? (
         <View className={styles.mutedCard}>
           <FailedQuestNotice quest={snapshot.quest} />
-          {disputeQuery.isError ? (
+          {disputeStatusError ? (
             <View className="gap-ku-xs">
               <Text className={styles.bodyText}>{disputeCopy.statusError}</Text>
               <Pressable
@@ -192,17 +212,18 @@ export default function QuestWorkActionsCard({
                 </Text>
               </Pressable>
             </View>
-          ) : disputeQuery.isSuccess && disputeQuery.data.case ? (
-            <Text accessibilityRole="text" className={styles.bodyText}>
-              {disputeCopy.filedStatus}
-            </Text>
-          ) : disputeQuery.isSuccess &&
-            disputeQuery.data.case === null &&
-            onFileDispute &&
-            !(
-              "dispute" in snapshot.quest &&
-              snapshot.quest.dispute?.canFile === false
-            ) ? (
+          ) : filedDispute ? (
+            <View className="gap-ku-xs">
+              <Text accessibilityRole="text" className={styles.bodyText}>
+                {disputeCopy.filedStatus}
+              </Text>
+              <Text accessibilityRole="text" className={styles.bodyText}>
+                {filedDisputeStatus
+                  ? `${disputeCopy.filedCase(filedDispute.displayId)} · ${filedDisputeStatus}`
+                  : disputeCopy.filedCase(filedDispute.displayId)}
+              </Text>
+            </View>
+          ) : canFileDispute && onFileDispute ? (
             <Pressable
               accessibilityRole="button"
               accessibilityLabel={messages.fileDispute}
