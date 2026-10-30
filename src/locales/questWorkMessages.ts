@@ -86,10 +86,25 @@ export interface QuestWorkMessages {
   teamDutyDone: string;
   allocationTitle: string;
   allocationDescription: string;
+  allocationPool: string;
+  allocationSummary: string;
+  allocationTeamShares: string;
+  allocationModePercent: string;
+  allocationModeBaht: string;
+  allocationBahtRoundingHint: string;
+  allocationAmountLabel: string;
   allocationEqual: string;
   allocationTotal: string;
   allocationAvailable: (percent: string) => string;
+  allocationAvailableAmount: (amount: string) => string;
   allocationOverBudget: (percent: string) => string;
+  allocationAmountOverBudget: (amount: string) => string;
+  allocationInvalidInput: string;
+  allocationFixPercentBeforeBaht: string;
+  allocationInvalidAmountInput: string;
+  allocationFieldOverBudget: (maximum: string) => string;
+  allocationFieldOverBudgetAmount: (maximum: string) => string;
+  allocationLeaderShareUnavailable: string;
   allocationPercent: string;
   allocationEstimate: string;
   allocationLeaderShare: string;
@@ -99,6 +114,18 @@ export interface QuestWorkMessages {
   allocationSubmitting: string;
   allocationSaved: string;
   allocationInvalid: string;
+  allocationPreviewTitle: string;
+  allocationPreviewBack: string;
+  allocationPreviewNoticeTitle: string;
+  allocationPreviewNoticeDescription: string;
+  allocationPreviewQuestTitle: string;
+  allocationPreviewTeamRoster: string;
+  allocationPreviewLeaderName: string;
+  allocationPreviewTeammateName: (index: number) => string;
+  allocationPreviewSubmit: string;
+  allocationPreviewSubmitting: string;
+  allocationPreviewAlertTitle: string;
+  allocationPreviewAlertDescription: string;
   viewQuestDetails: string;
 }
 
@@ -212,12 +239,36 @@ export const questWorkMessages: Record<SupportedLocale, QuestWorkMessages> = {
     allocationTitle: "Split the team reward",
     allocationDescription:
       "Adjust teammate shares. Your share updates automatically.",
+    allocationPool: "Total team reward",
+    allocationSummary: "Split summary",
+    allocationTeamShares: "Teammate shares",
+    allocationModePercent: "Percent",
+    allocationModeBaht: "Baht",
+    allocationBahtRoundingHint:
+      "Baht entries convert in 0.01% steps. Teammate shares round down, and any leftover percentage stays with you. The estimate below shows the resulting payout after satang rounding.",
+    allocationAmountLabel: "Amount (฿)",
     allocationEqual: "Split equally",
     allocationTotal: "Total: 100% · entire reward allocated",
     allocationAvailable: (percent) =>
       `Available for this teammate: up to ${percent}%`,
+    allocationAvailableAmount: (amount) =>
+      `Available for this teammate: up to ${amount}`,
     allocationOverBudget: (percent) =>
       `Over budget by ${percent}% · reduce a teammate’s share`,
+    allocationAmountOverBudget: (amount) =>
+      `Over the reward pool by ${amount} · reduce a teammate’s amount`,
+    allocationInvalidInput:
+      "Enter a number from 0 to 100, with up to 2 decimal places.",
+    allocationFixPercentBeforeBaht:
+      "Fix invalid percentage entries before switching to baht.",
+    allocationInvalidAmountInput:
+      "Enter a baht amount from 0 to the reward pool, with up to 2 decimal places.",
+    allocationFieldOverBudget: (maximum) =>
+      `With other shares unchanged, max ${maximum}%.`,
+    allocationFieldOverBudgetAmount: (maximum) =>
+      `With other amounts unchanged, max ${maximum}.`,
+    allocationLeaderShareUnavailable:
+      "Reduce teammate shares to 100% or less to see your remainder.",
     allocationPercent: "Share (%)",
     allocationEstimate: "Estimated reward",
     allocationLeaderShare: "Your remaining share",
@@ -228,6 +279,20 @@ export const questWorkMessages: Record<SupportedLocale, QuestWorkMessages> = {
     allocationSaved:
       "The reward has been split and credited to each member’s Earnings Balance.",
     allocationInvalid: "Enter valid percentages totalling no more than 100%.",
+    allocationPreviewTitle: "Team reward preview",
+    allocationPreviewBack: "Back",
+    allocationPreviewNoticeTitle: "Simulated preview",
+    allocationPreviewNoticeDescription:
+      "Sample data · 1 Team Leader and 4 teammates · Nothing is saved or paid",
+    allocationPreviewQuestTitle: "Sample Group Candidate Quest",
+    allocationPreviewTeamRoster: "1 Team Leader · 4 teammates",
+    allocationPreviewLeaderName: "You · Team Leader",
+    allocationPreviewTeammateName: (index) => "Teammate " + index,
+    allocationPreviewSubmit: "Preview confirmation",
+    allocationPreviewSubmitting: "Previewing…",
+    allocationPreviewAlertTitle: "Preview only",
+    allocationPreviewAlertDescription:
+      "No data was saved and no real payment was made.",
     viewQuestDetails: "View Quest details",
   },
   th: {
@@ -332,10 +397,34 @@ export const questWorkMessages: Record<SupportedLocale, QuestWorkMessages> = {
     allocationTitle: "แบ่งค่าตอบแทนทีม",
     allocationDescription:
       "ปรับส่วนแบ่งของสมาชิก ส่วนแบ่งของคุณจะคำนวณให้อัตโนมัติ",
+    allocationPool: "ค่าตอบแทนทีมทั้งหมด",
+    allocationSummary: "สรุปส่วนแบ่ง",
+    allocationTeamShares: "ส่วนแบ่งลูกทีม",
+    allocationModePercent: "เปอร์เซ็นต์",
+    allocationModeBaht: "บาท",
+    allocationBahtRoundingHint:
+      "ยอดเงินบาทจะแปลงเป็นส่วนแบ่งขั้นละ 0.01% โดยปัดส่วนแบ่งลูกทีมลง เศษเปอร์เซ็นต์ที่แบ่งไม่ลงตัวจะคงเป็นส่วนแบ่งของคุณ ค่าตอบแทนโดยประมาณด้านล่างแสดงยอดหลังปัดเศษสตางค์",
+    allocationAmountLabel: "จำนวนเงิน (บาท)",
     allocationEqual: "แบ่งเท่ากัน",
     allocationTotal: "รวม 100% · แบ่งค่าตอบแทนครบแล้ว",
     allocationAvailable: (percent) => `แบ่งให้สมาชิกคนนี้ได้สูงสุด ${percent}%`,
+    allocationAvailableAmount: (amount) =>
+      `แบ่งให้สมาชิกคนนี้ได้สูงสุด ${amount}`,
     allocationOverBudget: (percent) => `เกิน ${percent}% · ลดส่วนแบ่งของสมาชิก`,
+    allocationAmountOverBudget: (amount) =>
+      `ยอดเกินค่าตอบแทนรวม ${amount} · ลดจำนวนเงินของสมาชิก`,
+    allocationInvalidInput:
+      "กรอกตัวเลขตั้งแต่ 0 ถึง 100 และทศนิยมไม่เกิน 2 ตำแหน่ง",
+    allocationFixPercentBeforeBaht:
+      "แก้ไขเปอร์เซ็นต์ที่ไม่ถูกต้องก่อนเปลี่ยนเป็นโหมดจำนวนเงินบาท",
+    allocationInvalidAmountInput:
+      "กรอกจำนวนเงินบาทตั้งแต่ 0 ถึงค่าตอบแทนรวม และทศนิยมไม่เกิน 2 ตำแหน่ง",
+    allocationFieldOverBudget: (maximum) =>
+      `คงส่วนแบ่งคนอื่นไว้ ไม่เกิน ${maximum}%`,
+    allocationFieldOverBudgetAmount: (maximum) =>
+      `คงยอดคนอื่นไว้ แบ่งได้ไม่เกิน ${maximum}`,
+    allocationLeaderShareUnavailable:
+      "ลดส่วนแบ่งลูกทีมให้รวมไม่เกิน 100% เพื่อดูส่วนแบ่งคงเหลือของคุณ",
     allocationPercent: "ส่วนแบ่ง (%)",
     allocationEstimate: "ค่าตอบแทนโดยประมาณ",
     allocationLeaderShare: "ส่วนแบ่งที่เหลือของคุณ",
@@ -345,6 +434,19 @@ export const questWorkMessages: Record<SupportedLocale, QuestWorkMessages> = {
     allocationSubmitting: "กำลังส่ง…",
     allocationSaved: "แบ่งค่าตอบแทนและโอนเข้ายอดรายได้ของสมาชิกแต่ละคนแล้ว",
     allocationInvalid: "กรุณาระบุเปอร์เซ็นต์ที่ถูกต้อง รวมกันไม่เกิน 100%",
+    allocationPreviewTitle: "ตัวอย่างแบ่งเงินทีม",
+    allocationPreviewBack: "ย้อนกลับ",
+    allocationPreviewNoticeTitle: "หน้าจอตัวอย่างจำลอง",
+    allocationPreviewNoticeDescription:
+      "ข้อมูลสมมติ · หัวหน้าทีม 1 คน และลูกทีม 4 คน · ไม่มีการบันทึกหรือโอนเงินจริง",
+    allocationPreviewQuestTitle: "งานกลุ่มตัวอย่าง · คัดเลือกผู้สมัคร",
+    allocationPreviewTeamRoster: "หัวหน้าทีม 1 คน · สมาชิก 4 คน",
+    allocationPreviewLeaderName: "คุณ · หัวหน้าทีม",
+    allocationPreviewTeammateName: (index) => "สมาชิกทีม " + index,
+    allocationPreviewSubmit: "ดูตัวอย่างการยืนยัน",
+    allocationPreviewSubmitting: "กำลังจำลอง…",
+    allocationPreviewAlertTitle: "ตัวอย่างจำลอง",
+    allocationPreviewAlertDescription: "ไม่มีการบันทึกข้อมูลหรือโอนเงินจริง",
     viewQuestDetails: "ดูรายละเอียดเควสต์",
   },
 };
