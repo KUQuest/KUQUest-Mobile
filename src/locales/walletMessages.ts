@@ -125,6 +125,8 @@ export interface WalletMessages {
   balanceRefreshFailed: string;
   topUpBalanceRefreshRetry: string;
   topUpPaymentFailed: string;
+  topUpExpired: string;
+  topUpFailed: string;
   transferPreviewSpendingAfter: string;
   transferPreviewEarningsRemaining: string;
 }
@@ -279,6 +281,9 @@ export const walletMessages: Record<SupportedLocale, WalletMessages> = {
       "Payment succeeded, but your balance could not refresh.",
     topUpBalanceRefreshRetry: "Retry balance refresh",
     topUpPaymentFailed: "Payment could not be verified. Please try again.",
+    topUpExpired:
+      "This QR code has expired. Enter an amount to create a new one.",
+    topUpFailed: "This payment failed. Enter an amount to try again.",
     transferPreviewSpendingAfter: "Spending balance after transfer:",
     transferPreviewEarningsRemaining: "Remaining earnings:",
   },
@@ -430,6 +435,8 @@ export const walletMessages: Record<SupportedLocale, WalletMessages> = {
     balanceRefreshFailed: "ชำระเงินสำเร็จ แต่ไม่สามารถรีเฟรชยอดเงินได้",
     topUpBalanceRefreshRetry: "ลองรีเฟรชยอดเงินอีกครั้ง",
     topUpPaymentFailed: "ไม่สามารถยืนยันการชำระเงินได้ โปรดลองอีกครั้ง",
+    topUpExpired: "คิวอาร์โค้ดนี้หมดอายุแล้ว กรุณาระบุจำนวนเงินเพื่อสร้างใหม่",
+    topUpFailed: "การชำระเงินไม่สำเร็จ กรุณาระบุจำนวนเงินเพื่อลองอีกครั้ง",
     transferPreviewSpendingAfter: "ยอดเงินพร้อมใช้หลังโอน:",
     transferPreviewEarningsRemaining: "รายได้สะสมคงเหลือ:",
   },

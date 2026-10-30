@@ -92,6 +92,15 @@ export const payoutListItemSchema = z.object({
     .union([z.number(), z.string()])
     .transform(Number)
     .optional(),
+  maximumDebitSatang: z
+    .union([z.number(), z.string()])
+    .transform(Number)
+    .optional(),
+  actualDebitSatang: z
+    .union([z.number(), z.string()])
+    .transform(Number)
+    .nullable()
+    .optional(),
   amountSatang: z.union([z.number(), z.string()]).transform(Number).optional(),
   feeSatang: z.union([z.number(), z.string()]).transform(Number).optional(),
   payoutStatus: z.string().optional(),
@@ -550,12 +559,16 @@ export class WalletApi {
       this.listPayouts(limit, options),
     ]);
 
-    const activities =
-      activitiesRes.status === "fulfilled" ? activitiesRes.value : [];
+    // The ledger is the history's source of truth; without it, surface the
+    // failure so the screen can offer a retry instead of an empty list.
+    if (activitiesRes.status === "rejected") throw activitiesRes.reason;
+    const activities = activitiesRes.value;
     const topUps = topUpsRes.status === "fulfilled" ? topUpsRes.value : [];
     const payouts = payoutsRes.status === "fulfilled" ? payoutsRes.value : [];
 
     const itemsMap = new Map<string, UserTransaction>();
+    // Each row merges with at most one top-up or payout record.
+    const mergedIds = new Set<string>();
 
     // 1. Process ledger activities
     for (const activity of activities) {
@@ -572,6 +585,7 @@ export class WalletApi {
         .replace(/^top-up:/, "");
 
       const matched = Array.from(itemsMap.values()).find((tx) => {
+        if (mergedIds.has(tx.id)) return false;
         if (tx.id.toLowerCase() === topUpIdNorm) return true;
         if (
           topUp.creditedLedgerTransactionId &&
@@ -586,6 +600,7 @@ export class WalletApi {
           if (topUpRefNorm && txRefNorm === topUpRefNorm) return true;
         }
         if (
+          tx.sourceApi === "ACTIVITIES" &&
           tx.type === "TOP_UP" &&
           tx.amountSatang === topUp.creditSatang &&
           Math.abs(
@@ -599,6 +614,7 @@ export class WalletApi {
       });
 
       if (matched) {
+        mergedIds.add(matched.id);
         matched.sourceApi = "TOP_UPS";
         matched.status = topUp.topUpStatus;
         if (topUp.internalReference) {
@@ -627,7 +643,13 @@ export class WalletApi {
 
     // 3. Process payouts from Payouts API
     for (const payout of payouts) {
-      const payoutAmount = payout.principalSatang ?? payout.amountSatang ?? 0;
+      // Show what left Earnings: the settled debit, else the reserved maximum.
+      const payoutAmount =
+        payout.actualDebitSatang ??
+        payout.maximumDebitSatang ??
+        payout.principalSatang ??
+        payout.amountSatang ??
+        0;
       const destinationInfo = payout.destinationMaskedLastFour
         ? `${payout.destinationBankCode ?? "ธนาคาร"} •• ${payout.destinationMaskedLastFour}`
         : payout.destination?.maskedAccount;
@@ -638,6 +660,7 @@ export class WalletApi {
         .replace(/^payout:/, "");
 
       const matched = Array.from(itemsMap.values()).find((tx) => {
+        if (mergedIds.has(tx.id)) return false;
         if (tx.id.toLowerCase() === payoutIdNorm) return true;
         if (
           payout.reserveLedgerTransactionId &&
@@ -659,6 +682,7 @@ export class WalletApi {
           if (payoutRefNorm && txRefNorm === payoutRefNorm) return true;
         }
         if (
+          tx.sourceApi === "ACTIVITIES" &&
           tx.type === "PAYOUT" &&
           tx.amountSatang === payoutAmount &&
           Math.abs(
@@ -672,6 +696,7 @@ export class WalletApi {
       });
 
       if (matched) {
+        mergedIds.add(matched.id);
         matched.sourceApi = "PAYOUTS";
         if (destinationInfo) matched.destinationInfo = destinationInfo;
         if (payout.payoutStatus || payout.status) {

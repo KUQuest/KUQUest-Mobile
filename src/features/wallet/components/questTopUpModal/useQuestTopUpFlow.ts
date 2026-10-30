@@ -133,6 +133,16 @@ export function useQuestTopUpFlow({
   const settleTopUp = useCallback(
     async (topUp: TopUpData) => {
       queryClient.setQueryData(walletKeys.topUpStatus(topUp.id), topUp);
+      if (topUp.topUpStatus === "EXPIRED" || topUp.topUpStatus === "FAILED") {
+        // A dead QR cannot be paid; restart from the amount step.
+        resetTopUp();
+        setVerificationError(
+          topUp.topUpStatus === "EXPIRED"
+            ? walletMessages[locale].topUpExpired
+            : walletMessages[locale].topUpFailed
+        );
+        return;
+      }
       if (topUp.topUpStatus !== "PAID") {
         setVerificationError(messages.topUpPaymentPending);
         return;
@@ -142,12 +152,13 @@ export function useQuestTopUpFlow({
       await invalidateWalletQueries(queryClient);
       onPaid?.();
     },
-    [messages.topUpPaymentPending, onPaid, queryClient]
+    [locale, messages.topUpPaymentPending, onPaid, queryClient, resetTopUp]
   );
   useEffect(() => {
     const topUp = activeTopUp;
     if (
-      topUp?.topUpStatus === "PAID" &&
+      topUp &&
+      topUp.topUpStatus !== "PENDING" &&
       handledPaidIdRef.current !== topUp.id
     ) {
       void settleTopUp(topUp);
