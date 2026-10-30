@@ -20,14 +20,49 @@ jobs:
       - name: Install dependencies
         run: bun install --frozen-lockfile
 
-      - name: Format
-        run: bun run format:check
+      - name: Restore Jest and TypeScript caches
+        uses: actions/cache@v4
+        with:
+          path: ${{ runner.temp }}/ci-cache
+          key: mobile-ci-${{ hashFiles('bun.lock') }}-${{ github.sha }}
+          restore-keys: mobile-ci-${{ hashFiles('bun.lock') }}-
 
-      - name: Lint
-        run: bun run lint
+      - name: Format, lint, typecheck, and test
+        shell: bash
+        run: |
+          set -uo pipefail
 
-      - name: Typecheck
-        run: bun run typecheck
+          cache="$RUNNER_TEMP/ci-cache"
+          mkdir -p "$cache"
 
-      - name: Test
-        run: bun run test
+          names=()
+          pids=()
+          start() {
+            local name=$1
+            shift
+            "$@" >"$RUNNER_TEMP/$name.log" 2>&1 &
+            names+=("$name")
+            pids+=("$!")
+          }
+
+          start format bun run format:check
+          start lint bun run lint
+          start typecheck bun run typecheck --incremental --tsBuildInfoFile "$cache/tsc.tsbuildinfo"
+          start test bun run test --cacheDirectory "$cache/jest"
+
+          status=0
+          for index in "${!pids[@]}"; do
+            name=${names[$index]}
+            result=passed
+            if ! wait "${pids[$index]}"; then
+              result=FAILED
+              status=1
+            fi
+            echo "::group::$name $result"
+            cat "$RUNNER_TEMP/$name.log"
+            echo '::endgroup::'
+            if [ "$result" = FAILED ]; then
+              echo "::error::$name failed"
+            fi
+          done
+          exit "$status"
