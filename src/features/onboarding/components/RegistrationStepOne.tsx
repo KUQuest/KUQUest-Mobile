@@ -23,6 +23,7 @@ export interface RegistrationStepOneProps {
   facultyOptions: SelectOption[];
   departmentOptions: SelectOption[];
   requiresStudentId: boolean;
+  hideTerms?: boolean;
   errors: Record<string, string>;
   onNameChange: (value: string) => void;
   onTelephoneChange: (value: string) => void;
@@ -47,6 +48,7 @@ export function RegistrationStepOne({
   facultyOptions,
   departmentOptions,
   requiresStudentId,
+  hideTerms,
   errors,
   onNameChange,
   onTelephoneChange,
@@ -79,7 +81,6 @@ export function RegistrationStepOne({
         placeholder={msg.occupationPlaceholder}
         options={occupationOptions}
         searchable
-        dropdown
         searchPlaceholder={msg.searchOccupation}
         noResultsMessage={msg.noSearchResults}
         emptyMessage={msg.noSelectOptions}
@@ -107,7 +108,6 @@ export function RegistrationStepOne({
         onValueChange={onFacultyChange}
         error={errors.faculty}
         searchable
-        dropdown
         searchPlaceholder={msg.searchFaculty}
         noResultsMessage={msg.noSearchResults}
         emptyMessage={msg.noSelectOptions}
@@ -125,7 +125,6 @@ export function RegistrationStepOne({
         onValueChange={onDepartmentChange}
         error={errors.department}
         searchable
-        dropdown
         disabled={!faculty}
         searchPlaceholder={msg.searchDepartment}
         noResultsMessage={msg.noSearchResults}
@@ -134,27 +133,35 @@ export function RegistrationStepOne({
         clearSearchLabel={msg.clearSearch}
         closeLabel={msg.closeSelect}
       />
-      <Text className={styles.termsLabel}>{msg.termsAndConditions}</Text>
-      <View className={styles.policySummary}>
-        <Text className={styles.policySummaryTitle}>{msg.privacyPolicy}</Text>
-        <Text className={styles.policySummaryText}>{msg.privacySummary}</Text>
-        <Pressable
-          accessibilityRole="button"
-          accessibilityLabel={msg.readFullPolicy}
-          className={styles.policyReadAction}
-          onPress={onReadPolicy}
-        >
-          <Text className={styles.policyReadActionText}>
-            {msg.readFullPolicy}
-          </Text>
-        </Pressable>
-      </View>
-      <Checkbox
-        label={msg.acceptTerms}
-        checked={acceptedTerms}
-        onChange={onAcceptedTermsChange}
-        error={errors.acceptedTerms}
-      />
+      {hideTerms ? null : (
+        <>
+          <Text className={styles.termsLabel}>{msg.termsAndConditions}</Text>
+          <View className={styles.policySummary}>
+            <Text className={styles.policySummaryTitle}>
+              {msg.privacyPolicy}
+            </Text>
+            <Text className={styles.policySummaryText}>
+              {msg.privacySummary}
+            </Text>
+            <Pressable
+              accessibilityRole="button"
+              accessibilityLabel={msg.readFullPolicy}
+              className={styles.policyReadAction}
+              onPress={onReadPolicy}
+            >
+              <Text className={styles.policyReadActionText}>
+                {msg.readFullPolicy}
+              </Text>
+            </Pressable>
+          </View>
+          <Checkbox
+            label={msg.acceptTerms}
+            checked={acceptedTerms}
+            onChange={onAcceptedTermsChange}
+            error={errors.acceptedTerms}
+          />
+        </>
+      )}
     </>
   );
 }

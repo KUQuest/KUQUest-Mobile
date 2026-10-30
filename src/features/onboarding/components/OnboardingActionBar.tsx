@@ -28,16 +28,16 @@ export function OnboardingActionBar({
     currentStep === 1 && !isEditMode
       ? messages.cancelRegistration
       : messages.back;
-  const primaryLabel =
-    currentStep === 1 || currentStep === 2
-      ? messages.next
-      : isSubmitting
-        ? messages.submitting
-        : submitError
-          ? messages.retrySubmitBtn
-          : isEditMode
-            ? messages.saveChanges
-            : messages.completeBtn;
+  const isFinalAction = isEditMode || currentStep === 3;
+  const primaryLabel = !isFinalAction
+    ? messages.next
+    : isSubmitting
+      ? messages.submitting
+      : submitError
+        ? messages.retrySubmitBtn
+        : isEditMode
+          ? messages.saveChanges
+          : messages.completeBtn;
 
   return (
     <View className={styles.actionBar}>

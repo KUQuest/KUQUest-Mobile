@@ -4,6 +4,8 @@ import { Image, Pressable, ScrollView, Text, View } from "@/tw";
 
 import type { OnboardingStep } from "@/features/auth/types";
 import type { SupportedLocale } from "@/locales/locale";
+import { ScreenHeader } from "@/features/profileEdit/components/ProfileEditFormParts";
+import { profileEditMessages } from "@/locales/profileEditMessages";
 import { onboardingMessages } from "@/locales/registrationOnboarding";
 import type { UnavailableProfileCollections } from "../profilePersistenceCoordinator";
 import type { OnboardingDatePickerState } from "../useOnboardingDatePicker";
@@ -37,6 +39,7 @@ export function OnboardingForm({
   onFacultyChange,
   onRemoveExperience,
   onReadPolicy,
+  onBack,
 }: {
   messages: Messages;
   locale: SupportedLocale;
@@ -56,11 +59,13 @@ export function OnboardingForm({
   onFacultyChange: (faculty: string) => void;
   onRemoveExperience: (index: number) => void;
   onReadPolicy: () => void;
+  onBack: () => void;
 }) {
   const { colors } = useAppTheme();
   const { form, errors } = formState;
+  const editMessages = profileEditMessages[locale];
 
-  return (
+  const scroll = (
     <ScrollView
       className="flex-1"
       contentContainerClassName={styles.scrollContent}
@@ -68,67 +73,67 @@ export function OnboardingForm({
       keyboardShouldPersistTaps="handled"
       showsVerticalScrollIndicator={false}
     >
-      <View className={styles.headerSection}>
-        <Text className={styles.title}>{messages.title}</Text>
-        <Text className={styles.stepTitle}>
-          {isEditMode
-            ? messages.editProfile
-            : currentStep === 1
+      {isEditMode ? null : (
+        <View className={styles.headerSection}>
+          <Text className={styles.title}>{messages.title}</Text>
+          <Text className={styles.stepTitle}>
+            {currentStep === 1
               ? messages.stepTitle
               : currentStep === 2
                 ? messages.step2Title
                 : messages.step3Title}
-        </Text>
-        <Text className={styles.stepIndicator}>
-          {currentStep === 1
-            ? messages.stepIndicator
-            : currentStep === 2
-              ? messages.step2Indicator
-              : messages.step3Indicator}
-        </Text>
-        <View
-          className={styles.progressContainer}
-          accessibilityLabel={messages.progressLabel(currentStep)}
-        >
-          {[1, 2, 3].map((progressStep) => (
-            <View
-              key={progressStep}
-              className={
-                currentStep >= progressStep
-                  ? styles.progressBarActive
-                  : styles.progressBarInactive
-              }
-            />
-          ))}
-        </View>
-        {currentStep === 1 ? (
-          <Pressable
-            accessibilityRole="button"
-            accessibilityLabel={messages.addImage}
-            className={styles.avatarPlaceholder}
-            onPress={() =>
-              void imagePicker.pickImage(
-                (uri) => formState.updateField("profileImage", uri),
-                [1, 1]
-              )
-            }
+          </Text>
+          <Text className={styles.stepIndicator}>
+            {currentStep === 1
+              ? messages.stepIndicator
+              : currentStep === 2
+                ? messages.step2Indicator
+                : messages.step3Indicator}
+          </Text>
+          <View
+            className={styles.progressContainer}
+            accessibilityLabel={messages.progressLabel(currentStep)}
           >
-            {form.profileImage ? (
-              <Image
-                source={{ uri: form.profileImage }}
-                className={styles.avatarImage}
-                accessibilityRole="image"
-                accessibilityLabel={messages.profileImageLabel}
+            {[1, 2, 3].map((progressStep) => (
+              <View
+                key={progressStep}
+                className={
+                  currentStep >= progressStep
+                    ? styles.progressBarActive
+                    : styles.progressBarInactive
+                }
               />
-            ) : (
-              <UserRound size={40} color={colors.textMuted} strokeWidth={2} />
-            )}
-            <View className={styles.editBadge}>
-              <Pencil size={16} color={colors.onPrimary} strokeWidth={2} />
-            </View>
-          </Pressable>
-        ) : null}
-      </View>
+            ))}
+          </View>
+          {currentStep === 1 ? (
+            <Pressable
+              accessibilityRole="button"
+              accessibilityLabel={messages.addImage}
+              className={styles.avatarPlaceholder}
+              onPress={() =>
+                void imagePicker.pickImage(
+                  (uri) => formState.updateField("profileImage", uri),
+                  [1, 1]
+                )
+              }
+            >
+              {form.profileImage ? (
+                <Image
+                  source={{ uri: form.profileImage }}
+                  className={styles.avatarImage}
+                  accessibilityRole="image"
+                  accessibilityLabel={messages.profileImageLabel}
+                />
+              ) : (
+                <UserRound size={40} color={colors.textMuted} strokeWidth={2} />
+              )}
+              <View className={styles.editBadge}>
+                <Pencil size={16} color={colors.onPrimary} strokeWidth={2} />
+              </View>
+            </Pressable>
+          ) : null}
+        </View>
+      )}
 
       {submitError && currentStep !== 3 ? (
         <View className={styles.submitErrorCard} accessibilityRole="alert">
@@ -140,7 +145,13 @@ export function OnboardingForm({
       <MotionView
         key={`step-content-${currentStep}`}
         entering={getOnboardingTransition("in", reduceMotion)}
-        className={currentStep === 3 ? "w-full" : styles.formSection}
+        className={
+          isEditMode
+            ? styles.editFormSection
+            : currentStep === 3
+              ? "w-full"
+              : styles.formSection
+        }
       >
         {currentStep === 1 ? (
           <RegistrationStepOne
@@ -156,6 +167,7 @@ export function OnboardingForm({
             facultyOptions={facultyOptions}
             departmentOptions={departmentOptions}
             requiresStudentId={requiresStudentId}
+            hideTerms={isEditMode}
             errors={errors}
             onNameChange={(name) => formState.updateField("name", name)}
             onTelephoneChange={(telephone) =>
@@ -224,5 +236,19 @@ export function OnboardingForm({
         ) : null}
       </MotionView>
     </ScrollView>
+  );
+
+  if (!isEditMode) return scroll;
+  return (
+    <View className="flex-1">
+      <View className="px-ku-lg">
+        <ScreenHeader
+          title={editMessages.academicRegistration}
+          backLabel={editMessages.back}
+          onBack={onBack}
+        />
+      </View>
+      {scroll}
+    </View>
   );
 }

@@ -234,7 +234,7 @@ export function useOnboardingController() {
   };
 
   const handleComplete = async () => {
-    if (!validateStepThree()) return;
+    if (!isEditMode && !validateStepThree()) return;
     setSubmitError(null);
     const result = await persistence.save(form, unavailableCollections);
     if (result.kind === "session-expired") {
@@ -290,10 +290,12 @@ export function useOnboardingController() {
   };
 
   const onBackPress = () => {
-    if (currentStep === 1 || !goBack()) leaveRegistration();
+    if (isEditMode || currentStep === 1 || !goBack()) leaveRegistration();
   };
   const onPrimaryPress = () => {
-    if (currentStep === 1) {
+    if (isEditMode) {
+      if (validate()) void handleComplete();
+    } else if (currentStep === 1) {
       if (validate()) advance();
     } else if (currentStep === 2) {
       advance();
@@ -328,6 +330,7 @@ export function useOnboardingController() {
         onFacultyChange: handleFacultyChange,
         onRemoveExperience: removeExperience,
         onReadPolicy: () => setPolicyVisible(true),
+        onBack: onBackPress,
       },
       actionBarProps: {
         messages,
