@@ -34,6 +34,7 @@ import {
   QuestMode,
   QuestParticipation,
   QuestStatus,
+  QuestTeamRole,
 } from "../../domain/types";
 
 export interface QuestWorkActionsCardProps {
@@ -107,11 +108,13 @@ export default function QuestWorkActionsCard({
     isFailedWorker && serverDispute === undefined && disputeQuery.isError;
   const filedDispute =
     serverDispute?.myCase ?? (isFailedWorker ? disputeQuery.data?.case : null);
+  // Only the Team Leader files for a Candidate Team.
   const canFileDispute =
-    serverDispute?.canFile ??
-    (isFailedWorker &&
-      disputeQuery.isSuccess &&
-      disputeQuery.data.case === null);
+    snapshot.teamRole !== QuestTeamRole.MEMBER &&
+    (serverDispute?.canFile ??
+      (isFailedWorker &&
+        disputeQuery.isSuccess &&
+        disputeQuery.data.case === null));
   // The snapshot types the case status as a plain string; show only the
   // statuses the Dispute Case contract names.
   const filedDisputeStatus = filedDispute

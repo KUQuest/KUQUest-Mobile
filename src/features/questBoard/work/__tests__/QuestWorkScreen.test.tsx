@@ -1258,6 +1258,53 @@ describe("QuestWorkScreen", () => {
       ).toBeTruthy();
     });
 
+    it("hides File Dispute from a Team Member and keeps it for the Team Leader", async () => {
+      const failed = {
+        ...groupCandidate,
+        state: "QUEST_FAILED" as const,
+        assignment: {
+          ...defaultAssignment,
+          state: "ASSIGNMENT_INCOMPLETE" as const,
+          questState: "QUEST_FAILED" as const,
+        },
+      };
+      mockMineDisputeQuery.mockReturnValue({
+        isPending: false,
+        isError: false,
+        isSuccess: true,
+        isFetching: false,
+        data: { case: null },
+        refetch: jest.fn(),
+      });
+      mockedGetSnapshot.mockResolvedValue(
+        makeSnapshot({
+          ...failed,
+          team: makeTeam("worker-2"),
+          teamRole: "MEMBER",
+        })
+      );
+      const member = await renderWithQueryClient(
+        <QuestWorkScreen questId="quest-work-1" viewerId="worker-1" />
+      );
+      expect(await member.findByTestId("team-work-member")).toBeTruthy();
+      expect(member.queryByRole("button", { name: "File Dispute" })).toBeNull();
+      await member.unmount();
+
+      mockedGetSnapshot.mockResolvedValue(
+        makeSnapshot({
+          ...failed,
+          team: makeTeam("worker-1"),
+          teamRole: "LEADER",
+        })
+      );
+      const leader = await renderWithQueryClient(
+        <QuestWorkScreen questId="quest-work-1" viewerId="worker-1" />
+      );
+      expect(
+        await leader.findByRole("button", { name: "File Dispute" })
+      ).toBeTruthy();
+    });
+
     it("falls back to the shared Work Hub while the Team Leader is unknown", async () => {
       mockedGetSnapshot.mockResolvedValue(
         makeSnapshot({
