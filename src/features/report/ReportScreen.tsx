@@ -1,5 +1,4 @@
 import { useState } from "react";
-import { Platform } from "react-native";
 import { useLocalSearchParams, useRouter } from "expo-router";
 import { AlertCircle, Check, ChevronLeft } from "lucide-react-native";
 import { useSafeAreaInsets } from "react-native-safe-area-context";
@@ -195,7 +194,7 @@ export default function ReportScreen() {
 
       <KeyboardAvoidingView
         className={styles.keyboardAvoiding}
-        behavior={Platform.OS === "ios" ? "padding" : undefined}
+        behavior="padding"
       >
         {step === "submitted" ? (
           <ScrollView

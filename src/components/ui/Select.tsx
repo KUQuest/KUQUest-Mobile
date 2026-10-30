@@ -3,7 +3,6 @@ import { cn } from "@/tw/cn";
 import {
   Keyboard,
   Modal,
-  Platform,
   Pressable as RNPressable,
   useWindowDimensions,
 } from "react-native";
@@ -306,7 +305,7 @@ export const Select = React.forwardRef<
               >
                 <KeyboardAvoidingView
                   className={styles.keyboardAvoidingView}
-                  behavior={Platform.OS === "ios" ? "padding" : "height"}
+                  behavior="padding"
                 >
                   <Pressable
                     className={styles.modalContent}

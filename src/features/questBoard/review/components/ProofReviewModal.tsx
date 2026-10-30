@@ -1,4 +1,4 @@
-import { Modal, Platform } from "react-native";
+import { Modal } from "react-native";
 import { ShieldCheck, X } from "lucide-react-native";
 
 import { useLocale } from "@/features/preferences/localeStore";
@@ -53,10 +53,7 @@ export function ProofReviewModal({
         className={styles.proofSheetBackdrop}
         onPress={onClose}
       >
-        <KeyboardAvoidingView
-          behavior={Platform.OS === "ios" ? "padding" : "height"}
-          className="flex-1 justify-end"
-        >
+        <KeyboardAvoidingView behavior="padding" className="flex-1 justify-end">
           <Pressable
             accessibilityRole="none"
             accessible={false}

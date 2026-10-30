@@ -1,4 +1,4 @@
-import { Modal, Platform } from "react-native";
+import { Modal } from "react-native";
 import { Flag, X } from "lucide-react-native";
 
 import { Button } from "@/components/ui/Button";
@@ -60,10 +60,7 @@ export function ConductReportSheet({
         className={styles.proofSheetBackdrop}
         onPress={closeReport}
       >
-        <KeyboardAvoidingView
-          behavior={Platform.OS === "ios" ? "padding" : "height"}
-          className="flex-1 justify-end"
-        >
+        <KeyboardAvoidingView behavior="padding" className="flex-1 justify-end">
           <Pressable
             accessibilityRole="none"
             accessible={false}

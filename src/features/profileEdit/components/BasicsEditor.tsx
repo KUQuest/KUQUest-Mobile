@@ -1,5 +1,4 @@
 import React from "react";
-import { Platform } from "react-native";
 import * as ImagePicker from "expo-image-picker";
 import { Pencil } from "lucide-react-native";
 import { limitImagePixels } from "@/api/fileUpload";
@@ -96,10 +95,7 @@ export function BasicsEditor({
 
   return (
     <ScreenLayout edges={["top", "left", "right"]} className={styles.safeArea}>
-      <KeyboardAvoidingView
-        className={styles.screen}
-        behavior={Platform.OS === "ios" ? "padding" : "height"}
-      >
+      <KeyboardAvoidingView className={styles.screen} behavior="padding">
         <ScrollView
           contentContainerClassName={styles.formContent}
           keyboardShouldPersistTaps="handled"
