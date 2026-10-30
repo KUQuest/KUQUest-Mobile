@@ -8,7 +8,13 @@ import { Platform } from "react-native";
 import { sessionKeys } from "@/features/auth/sessionQueries";
 import type { AuthSession } from "@/features/auth/types";
 import { invalidateQuestReads } from "@/features/questBoard/api/questBoardQueries";
-import { parsePushPayload, routeForPush } from "./pushPayload";
+import { invalidateNotificationQueries } from "@/features/notifications/inbox/notificationQueries";
+import {
+  MEMBER_PUSH_ROUTE,
+  parseMemberPushPayload,
+  parsePushPayload,
+  routeForPush,
+} from "./pushPayload";
 import { QuestV2PushTypeValue } from "@/api/questV2Contracts";
 import { createPushRegistrationManager, isPushEnabled } from "./pushNative";
 import "./pushTask";
@@ -37,9 +43,13 @@ export function PushNotificationHost() {
   useEffect(() => {
     if (Platform.OS !== "android" || !viewerId) return;
     const open = (response: Notifications.NotificationResponse) => {
-      const payload = parsePushPayload(
-        response.notification.request.content.data
-      );
+      const data = response.notification.request.content.data;
+      if (parseMemberPushPayload(data)) {
+        void invalidateNotificationQueries(queryClient);
+        router.push(MEMBER_PUSH_ROUTE);
+        return;
+      }
+      const payload = parsePushPayload(data);
       if (!payload) return;
       void invalidateQuestReads(
         queryClient,

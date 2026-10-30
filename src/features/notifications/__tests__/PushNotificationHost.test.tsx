@@ -28,8 +28,9 @@ jest.mock("expo-notifications", () => ({
   requestPermissionsAsync: jest.fn().mockResolvedValue({ granted: false }),
   setNotificationChannelAsync: jest.fn().mockResolvedValue(undefined),
 }));
+const mockPush = jest.fn();
 jest.mock("expo-router", () => ({
-  useRouter: () => ({ push: jest.fn() }),
+  useRouter: () => ({ push: mockPush }),
 }));
 jest.mock("@/features/questBoard/api/questBoardQueries", () => ({
   invalidateQuestReads: jest.fn(),
@@ -115,5 +116,25 @@ describe("PushNotificationHost", () => {
     await waitFor(() =>
       expect(Notifications.setNotificationChannelAsync).toHaveBeenCalledTimes(2)
     );
+  });
+
+  it("opens the notification inbox for a penalty Push tap", async () => {
+    setPushEnabled(false);
+    jest.mocked(Notifications.getLastNotificationResponse).mockReturnValueOnce({
+      notification: {
+        request: {
+          content: {
+            data: {
+              type: "PENALTY_RED_FLAG_APPLIED",
+              eventKey: "penalty-applied:p-1",
+            },
+          },
+        },
+      },
+    } as unknown as Notifications.NotificationResponse);
+
+    await renderHost();
+
+    expect(mockPush).toHaveBeenCalledWith("/notifications");
   });
 });
