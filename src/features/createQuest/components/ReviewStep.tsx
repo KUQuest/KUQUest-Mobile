@@ -164,20 +164,6 @@ export function ReviewStep({
           <Text className={styles.fundingFormula}>
             {messages.fundingPerPerson(rewardPerPerson, escrow.headcount)}
           </Text>
-          <View className={styles.escrowRows}>
-            <View className={styles.escrowRow}>
-              <Text className={styles.escrowLabel}>{messages.rewardPool}</Text>
-              <Text className={styles.escrowValue}>
-                {formatSatang(escrow.rewardPoolSatang, locale)}
-              </Text>
-            </View>
-            <View className={styles.escrowRow}>
-              <Text className={styles.escrowLabel}>{messages.platformFee}</Text>
-              <Text className={styles.escrowValue}>
-                {formatSatang(escrow.platformFeeSatang, locale)}
-              </Text>
-            </View>
-          </View>
         </View>
         <View className={styles.publishCheckNoteRow}>
           <Info color={colors.textMuted} size={16} strokeWidth={2} />

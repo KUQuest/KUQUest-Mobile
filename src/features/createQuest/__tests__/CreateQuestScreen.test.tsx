@@ -535,7 +535,7 @@ describe("CreateQuestScreen", () => {
     expect(
       within(
         view.getByTestId("create-quest-deadline-datetime-time-btn")
-      ).getByText(/^(End time|เวลาที่สิ้นสุด)$/)
+      ).getByText(/^(Time|เวลา)$/)
     ).toBeTruthy();
 
     await fireEvent.press(
