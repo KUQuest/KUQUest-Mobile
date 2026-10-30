@@ -20,6 +20,7 @@ import { memberNotificationCopy } from "./memberNotificationCopy";
 import {
   useMarkNotificationsReadMutation,
   useNotificationsQuery,
+  useUnreadNotificationCountQuery,
 } from "./notificationQueries";
 
 const styles = {
@@ -103,7 +104,10 @@ export function NotificationInboxScreen() {
   const query = useNotificationsQuery(unreadOnly);
   const markRead = useMarkNotificationsReadMutation();
   const items = query.data?.pages.flatMap((page) => page.items) ?? [];
-  const hasUnread = items.some((item) => item.readAt === null);
+  // The badge count covers pages not loaded yet.
+  const unreadCount = useUnreadNotificationCountQuery().data ?? 0;
+  const hasUnread =
+    unreadCount > 0 || items.some((item) => item.readAt === null);
 
   const openRow = useCallback(
     (item: MemberNotification) => {
@@ -134,7 +138,7 @@ export function NotificationInboxScreen() {
       <StateView
         variant="error"
         title={messages.error}
-        description={messages.error}
+        description={messages.errorDescription}
         actionLabel={messages.retry}
         onAction={() => void query.refetch()}
       />

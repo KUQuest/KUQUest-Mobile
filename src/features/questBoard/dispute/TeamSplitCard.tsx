@@ -238,7 +238,7 @@ function TeamSplitForm({
           onSuccess: () =>
             showSweetAlert({
               title: messages.successTitle,
-              message: "",
+              message: messages.successBody,
               variant: SweetAlertVariant.Success,
             }),
           onError: (error) =>

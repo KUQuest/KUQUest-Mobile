@@ -8,20 +8,23 @@ import { useMyDisputeCaseQuery } from "../api/questBoardQueries";
 /**
  * Who won the viewer's own decided Dispute Case. Only the filer can read the
  * resolution (`getMyQuestDisputeCase`); the Quest snapshot names the status
- * but not the paid Worker or amount.
+ * but not the paid Worker or amount. A Candidate Team case pays through the
+ * team split, so `teamCase` shows only the dismissed line.
  */
 export function DisputeOutcome({
   questId,
   viewerId,
   status,
+  teamCase = false,
 }: {
   questId: string;
   viewerId: string | null;
   status: string;
+  teamCase?: boolean;
 }) {
   const { locale } = useLocale();
   const messages = disputeMessages[locale];
-  const decided = status === "DISPUTE_CASE_RESOLVED";
+  const decided = status === "DISPUTE_CASE_RESOLVED" && !teamCase;
   const query = useMyDisputeCaseQuery(questId, viewerId, decided);
 
   let text: string | null = null;

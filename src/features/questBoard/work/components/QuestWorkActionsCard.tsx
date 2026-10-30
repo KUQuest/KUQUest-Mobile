@@ -115,6 +115,8 @@ export default function QuestWorkActionsCard({
     serverDispute?.myCase ?? (isFailedWorker ? disputeQuery.data?.case : null);
   const filedDispute = ownDispute ?? serverDispute?.teamCase ?? null;
   const isTeamMemberViewer = serverDispute?.viewerRole === "TEAM_MEMBER";
+  const isTeamCase =
+    serverDispute?.viewerRole === "TEAM_LEADER" || isTeamMemberViewer;
   const teamSplit = serverDispute?.teamSplit ?? null;
   // Only the Team Leader files for a Candidate Team.
   const canFileDispute =
@@ -216,7 +218,12 @@ export default function QuestWorkActionsCard({
 
       {isFailedWorker && !pendingDisputeStatus ? (
         <View className={styles.mutedCard}>
-          <FailedQuestNotice quest={snapshot.quest} />
+          <FailedQuestNotice
+            quest={snapshot.quest}
+            showFilingWindow={
+              snapshot.teamRole !== QuestTeamRole.MEMBER && !isTeamMemberViewer
+            }
+          />
           {disputeStatusError ? (
             <View className="gap-ku-xs">
               <Text className={styles.bodyText}>{disputeCopy.statusError}</Text>
@@ -235,19 +242,27 @@ export default function QuestWorkActionsCard({
             </View>
           ) : filedDispute ? (
             <View className="gap-ku-xs">
+              {ownDispute ? (
+                <Text accessibilityRole="text" className={styles.bodyText}>
+                  {disputeCopy.filedStatus}
+                </Text>
+              ) : null}
               <Text accessibilityRole="text" className={styles.bodyText}>
-                {disputeCopy.filedStatus}
-              </Text>
-              <Text accessibilityRole="text" className={styles.bodyText}>
-                {filedDisputeStatus
-                  ? `${disputeCopy.filedCase(filedDispute.displayId)} · ${filedDisputeStatus}`
-                  : disputeCopy.filedCase(filedDispute.displayId)}
+                {[
+                  isTeamCase
+                    ? teamSplitMessages[locale].teamCase(filedDispute.displayId)
+                    : disputeCopy.filedCase(filedDispute.displayId),
+                  filedDisputeStatus,
+                ]
+                  .filter(Boolean)
+                  .join(" · ")}
               </Text>
               {ownDispute ? (
                 <DisputeOutcome
                   questId={snapshot.quest.id}
                   viewerId={viewerId}
                   status={ownDispute.status}
+                  teamCase={isTeamCase}
                 />
               ) : null}
             </View>

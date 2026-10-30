@@ -51,6 +51,7 @@ describe("NotificationInboxScreen", () => {
   beforeEach(() => {
     jest.clearAllMocks();
     api.markRead.mockResolvedValue(undefined);
+    api.countUnread.mockResolvedValue(0);
   });
 
   it("shows app-written copy, a generic row for an unknown type, and marks a row read on tap", async () => {
@@ -111,6 +112,33 @@ describe("NotificationInboxScreen", () => {
     expect(api.listNotifications).toHaveBeenLastCalledWith(
       expect.objectContaining({ cursor: "c-2" }),
       expect.anything()
+    );
+  });
+
+  it("offers Mark all read when unread rows sit on pages not loaded yet", async () => {
+    api.countUnread.mockResolvedValue(3);
+    api.listNotifications.mockResolvedValue({
+      items: [unknownType],
+      nextCursor: "c-2",
+    });
+
+    await renderWithQueryClient(<NotificationInboxScreen />);
+
+    expect(
+      await screen.findByTestId("notifications-mark-all-read")
+    ).toBeTruthy();
+  });
+
+  it("explains a load failure without repeating the title", async () => {
+    api.listNotifications.mockRejectedValue(new Error("offline"));
+
+    await renderWithQueryClient(<NotificationInboxScreen />);
+
+    expect(
+      await screen.findByText("Check your connection and try again.")
+    ).toBeTruthy();
+    expect(screen.getAllByText("Unable to load notifications.")).toHaveLength(
+      1
     );
   });
 });

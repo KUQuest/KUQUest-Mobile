@@ -9,7 +9,10 @@ import {
   liveQuestService,
   type LiveQuestSnapshot,
 } from "../../live/liveQuestService";
-import type { QuestV2Detail } from "@/api/questV2Contracts";
+import type {
+  QuestV2Detail,
+  QuestV2DisputeWindow,
+} from "@/api/questV2Contracts";
 import { ApiError } from "@/api/ApiClient";
 import { renderWithQueryClient } from "@/testing/queryTestUtils";
 import { questApi } from "@/api/QuestApi";
@@ -646,13 +649,22 @@ describe("QuestWorkScreen", () => {
         },
       },
       shows: [
-        "Case DC-000200 · Admin resolved the case",
+        "Team Dispute Case DC-000200 · Admin resolved the case",
         "Waiting for the Team Leader to split.",
       ],
+      hides: ["Dispute filed", /You can file a Dispute Case/],
     },
   ])(
     "hides File Dispute for $name from the failed-Quest snapshot",
-    async ({ dispute, shows }) => {
+    async ({
+      dispute,
+      shows,
+      hides,
+    }: {
+      dispute: QuestV2DisputeWindow;
+      shows: string[];
+      hides?: (string | RegExp)[];
+    }) => {
       mockMineDisputeQuery.mockReturnValue({
         isPending: false,
         isError: false,
@@ -681,6 +693,9 @@ describe("QuestWorkScreen", () => {
       expect(view.queryByRole("button", { name: "File Dispute" })).toBeNull();
       for (const text of shows) {
         expect(view.getByText(text)).toBeTruthy();
+      }
+      for (const text of hides ?? []) {
+        expect(view.queryByText(text)).toBeNull();
       }
     }
   );

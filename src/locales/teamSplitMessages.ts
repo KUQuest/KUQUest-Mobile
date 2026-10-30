@@ -28,6 +28,7 @@ export interface TeamSplitMessages {
   confirm: string;
   cancel: string;
   successTitle: string;
+  successBody: string;
   errorTitle: string;
   errors: {
     invalid: string;
@@ -75,6 +76,7 @@ export const teamSplitMessages: Record<SupportedLocale, TeamSplitMessages> = {
     confirm: "Confirm",
     cancel: "Cancel",
     successTitle: "Split confirmed",
+    successBody: "Each member is paid by these shares.",
     errorTitle: "Couldn't confirm the split",
     errors: {
       invalid: "Every member needs a share and the total must be exactly 100%.",
@@ -118,6 +120,7 @@ export const teamSplitMessages: Record<SupportedLocale, TeamSplitMessages> = {
     confirm: "ยืนยัน",
     cancel: "ยกเลิก",
     successTitle: "ยืนยันการแบ่งเงินแล้ว",
+    successBody: "สมาชิกแต่ละคนจะได้รับเงินตามส่วนแบ่งนี้",
     errorTitle: "ยืนยันการแบ่งเงินไม่สำเร็จ",
     errors: {
       invalid: "สมาชิกทุกคนต้องมีส่วนแบ่ง และผลรวมต้องเท่ากับ 100% พอดี",

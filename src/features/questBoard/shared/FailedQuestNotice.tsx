@@ -9,11 +9,16 @@ import { useServerCountdown } from "./useServerCountdown";
 /**
  * Server-owned facts after a Quest fails: the Dispute window and the money
  * hold. Renders nothing unless the Server sent `dispute` or `moneyHold`.
+ * `showFilingWindow` is false for a viewer the app gives no File Dispute
+ * action (the Hirer, a Candidate Team member), so the notice never invites
+ * them to file.
  */
 export function FailedQuestNotice({
   quest,
+  showFilingWindow = true,
 }: {
   quest: LiveQuestSnapshot["quest"];
+  showFilingWindow?: boolean;
 }) {
   const { locale } = useLocale();
   const messages = disputeMessages[locale];
@@ -24,7 +29,7 @@ export function FailedQuestNotice({
 
   const minutes = remaining ? Math.floor(remaining / 60_000) : 0;
   const lines: { key: string; text: string }[] = [];
-  if (dispute && !dispute.myCase) {
+  if (dispute && showFilingWindow && !dispute.myCase && !dispute.teamCase) {
     lines.push(
       remaining
         ? {
