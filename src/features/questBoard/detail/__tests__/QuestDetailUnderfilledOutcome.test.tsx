@@ -118,6 +118,27 @@ function body(cancellationReason: string | null, ownDeclined = false) {
 }
 
 describe("Quest underfilled cancellation outcomes", () => {
+  it("hides the team entry when a status card is displayed", async () => {
+    const snapshot = {
+      ...(liveSnapshot(null) as object),
+      mode: QuestMode.CANDIDATE,
+      team: {},
+      underfilled: null,
+    } as never;
+    const screen = await renderWithAppTheme(
+      <LiveEntrySurface
+        snapshot={snapshot}
+        locale="en"
+        groupMessages={messages}
+        hideTeamEntry
+        onOpenTeam={() => undefined}
+        onOpenCandidateReview={() => undefined}
+        onOpenPartialConsent={() => undefined}
+      />
+    );
+    expect(screen.queryByTestId("quest-team-entry-surface")).toBeNull();
+  });
+
   it("shows authoritative reason and worker-safe copy on the entry surface", async () => {
     const cases = [
       ["HIRER_CANCELLED", messages.hirerCancelled],
