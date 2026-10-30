@@ -136,7 +136,7 @@ describe("MyQuestListScreen", () => {
     });
   });
 
-  it("keeps completed and closed Hirer Quests in history with review actions that open the review Popup", async () => {
+  it("keeps completed and failed group Quests in history with proof-required history actions", async () => {
     mockHirerList.mockResolvedValue([
       {
         ...draftQuest("completed-1", "Completed Quest", "QUEST_OPEN"),
@@ -149,6 +149,9 @@ describe("MyQuestListScreen", () => {
       {
         ...draftQuest("failed-1", "Failed Quest", "QUEST_OPEN"),
         state: "QUEST_FAILED",
+        mode: "FIRST_COME_FIRST_SERVED",
+        participation: "GROUP",
+        proofRequired: true,
       },
     ] as never);
 
@@ -165,10 +168,26 @@ describe("MyQuestListScreen", () => {
     });
     expect(screen.getByTestId("my-quest-list-action-completed-1")).toBeTruthy();
     await fireEvent.press(
+      screen.getByTestId("my-quest-list-secondary-completed-1")
+    );
+    expect(mockPush).toHaveBeenLastCalledWith({
+      pathname: "/quest/[id]/proof-review",
+      params: { id: "completed-1" },
+    });
+    await fireEvent.press(
+      screen.getByTestId("my-quest-list-secondary-failed-1")
+    );
+    expect(mockPush).toHaveBeenLastCalledWith({
+      pathname: "/quest/[id]/proof-review",
+      params: { id: "failed-1" },
+    });
+    await fireEvent.press(
       screen.getByTestId("my-quest-list-action-completed-1")
     );
-    expect(mockPush).not.toHaveBeenCalled();
     expect(await screen.findByTestId("quest-review-modal")).toBeTruthy();
+    expect(
+      screen.queryByTestId("my-quest-list-secondary-cancelled-1")
+    ).toBeNull();
   });
 
   it("shows proof review only when failed Quest proof list is reviewable", async () => {

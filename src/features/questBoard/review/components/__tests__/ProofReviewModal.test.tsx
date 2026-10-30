@@ -33,6 +33,7 @@ const proof: QuestV2ProofSubmission = {
       position: 0,
       uploadStatus: "PROOF_FILE_READY",
       url: "https://example.com/proof-image.png",
+      urlExpiresAt: "2099-10-30T00:00:00Z",
       failureCode: null,
     },
     {
@@ -72,9 +73,7 @@ describe("ProofReviewModal", () => {
   it("opens image evidence in the fullscreen viewer and closes it", async () => {
     const view = await renderModal(jest.fn());
 
-    expect(
-      view.getByRole("button", { name: /Preview|ดูตัวอย่าง/ })
-    ).toBeTruthy();
+    expect(view.getByTestId("proof-review-preview-0")).toBeTruthy();
     await fireEvent.press(view.getByTestId("proof-review-preview-0"));
 
     const image = await view.findByTestId("image-viewer-image");

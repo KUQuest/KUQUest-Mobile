@@ -51,6 +51,7 @@ import { useAppTheme } from "@/features/workspace/AppThemeProvider";
 import {
   QuestActor,
   QuestApplicationStatus,
+  QuestAssignmentStatus,
   QuestEditRequestStatus,
   QuestMode,
   QuestNextAction,
@@ -318,7 +319,11 @@ export default function HirerQuestManageScreen({
         (application) =>
           application.state === QuestApplicationStatus.APPLICATION_APPLIED
       ).length;
-  const assignedCount = snapshot.assignments.length;
+  // A Worker who left keeps a cancelled Assignment; it no longer fills a slot.
+  const assignedCount = snapshot.assignments.filter(
+    (assignment) =>
+      assignment.state !== QuestAssignmentStatus.ASSIGNMENT_CANCELLED
+  ).length;
   const proposalCountLabel = isGroup
     ? messages.submittedTeamCount(proposalCount)
     : messages.applicationCount(proposalCount);
@@ -527,7 +532,7 @@ export default function HirerQuestManageScreen({
 
         {snapshot.state === QuestStatus.QUEST_FAILED ||
         snapshot.state === QuestStatus.QUEST_COMPLETED ? (
-          <FailedQuestNotice quest={quest} />
+          <FailedQuestNotice quest={quest} showFilingWindow={showDispute} />
         ) : null}
         <FiledConductReports
           messages={conductReport.messages}

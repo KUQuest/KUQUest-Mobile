@@ -65,4 +65,32 @@ describe("getQuestDetailProjection", () => {
     expect(projection.participantCount).toBe(2);
     expect(projection.quest.acceptedParticipants).toBe(2);
   });
+
+  it("counts the Worker of a finished SINGLE Quest, whose roster is empty", () => {
+    const base = workerSnapshot({
+      id: "quest-single-1",
+      title: "Single Quest",
+      state: "QUEST_COMPLETED",
+    });
+    const snapshot = {
+      ...base,
+      participation: "SINGLE",
+      participants: [],
+      quest: { ...base.quest, participation: "SINGLE", headcount: 1 },
+      assignments: [
+        {
+          questId: "quest-single-1",
+          workerId: "worker-1",
+          state: "ASSIGNMENT_COMPLETED",
+          questState: "QUEST_COMPLETED",
+          startedAt: null,
+        },
+      ],
+    } as never;
+
+    const projection = getQuestDetailProjection(snapshot);
+
+    expect(projection.participantCount).toBe(1);
+    expect(projection.quest.acceptedParticipants).toBe(1);
+  });
 });

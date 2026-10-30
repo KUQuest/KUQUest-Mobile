@@ -1,7 +1,9 @@
 import {
   hasHandledTransition,
+  localizedMemberPushCopy,
   localizedPushCopy,
   markTransitionHandled,
+  parseMemberPushPayload,
   parsePushPayload,
   routeForPush,
 } from "../push/pushPayload";
@@ -153,5 +155,50 @@ describe("push payload", () => {
     }
     expect(await hasHandledTransition(storage, "t-1")).toBe(false);
     expect(await hasHandledTransition(storage, "bulk-149")).toBe(true);
+  });
+});
+
+describe("member penalty push", () => {
+  const base = {
+    type: "PENALTY_BAN_APPLIED",
+    eventKey: "penalty-applied:p-1",
+    transitionId: "t-9",
+    result: "TEMPORARY_BAN",
+    ladder: "MISCONDUCT",
+    expiresAt: "2026-11-06T10:00:00.000Z",
+  };
+
+  it("accepts a payload without questId or notificationId", () => {
+    const parsed = parseMemberPushPayload(base);
+    expect(parsed).toMatchObject({
+      type: "PENALTY_BAN_APPLIED",
+      eventKey: "penalty-applied:p-1",
+    });
+    expect(parsePushPayload(base)).toBeNull();
+    expect(
+      parseMemberPushPayload({ type: "CONDUCT_REPORT_UPHELD", eventKey: "c-1" })
+    ).not.toBeNull();
+    expect(parseMemberPushPayload({ ...base, eventKey: " " })).toBeNull();
+  });
+
+  it("words the ban by result with the app's own copy", () => {
+    const temporary = parseMemberPushPayload(base);
+    const permanent = parseMemberPushPayload({
+      type: "PENALTY_BAN_APPLIED",
+      eventKey: "k",
+      result: "PERMANENT_BAN",
+    });
+    expect(temporary && localizedMemberPushCopy(temporary, "en").title).toMatch(
+      /^Account banned until /
+    );
+    expect(temporary && localizedMemberPushCopy(temporary, "en").body).toBe(
+      "While the ban lasts, you cannot sign in and your Wallet is frozen."
+    );
+    expect(permanent && localizedMemberPushCopy(permanent, "en").title).toBe(
+      "Your account is permanently banned"
+    );
+    expect(permanent && localizedMemberPushCopy(permanent, "th").title).toBe(
+      "บัญชีของคุณถูกแบนถาวร"
+    );
   });
 });

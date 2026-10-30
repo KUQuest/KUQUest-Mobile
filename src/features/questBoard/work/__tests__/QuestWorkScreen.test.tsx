@@ -9,7 +9,10 @@ import {
   liveQuestService,
   type LiveQuestSnapshot,
 } from "../../live/liveQuestService";
-import type { QuestV2Detail } from "@/api/questV2Contracts";
+import type {
+  QuestV2Detail,
+  QuestV2DisputeWindow,
+} from "@/api/questV2Contracts";
 import { ApiError } from "@/api/ApiClient";
 import { renderWithQueryClient } from "@/testing/queryTestUtils";
 import { questApi } from "@/api/QuestApi";
@@ -618,9 +621,50 @@ describe("QuestWorkScreen", () => {
       },
       shows: ["Dispute filed", "Case DC-000123 · Waiting for Admin review"],
     },
+    {
+      name: "a Team member reading the Team Leader's case and split",
+      dispute: {
+        canFile: false,
+        windowEndsAt: "2099-01-02T18:00:00+07:00",
+        viewerRole: "TEAM_MEMBER" as const,
+        myCase: null,
+        teamCase: {
+          id: "dispute-2",
+          displayId: "DC-000200",
+          status: "DISPUTE_CASE_RESOLVED",
+          createdAt: "2099-01-01T19:00:00+07:00",
+        },
+        teamSplit: {
+          disputeCaseId: "dispute-2",
+          status: "AWAITING_SPLIT" as const,
+          splitSource: null,
+          approvedAmountSatang: 50000,
+          deadlineAt: "2099-01-03T18:00:00+07:00",
+          confirmedAt: null,
+          paidAt: null,
+          paymentPending: false,
+          viewerIsLeader: false,
+          canSubmitSplit: false,
+          members: [],
+        },
+      },
+      shows: [
+        "Team Dispute Case DC-000200 · Admin resolved the case",
+        "Waiting for the Team Leader to split.",
+      ],
+      hides: ["Dispute filed", /You can file a Dispute Case/],
+    },
   ])(
     "hides File Dispute for $name from the failed-Quest snapshot",
-    async ({ dispute, shows }) => {
+    async ({
+      dispute,
+      shows,
+      hides,
+    }: {
+      dispute: QuestV2DisputeWindow;
+      shows: string[];
+      hides?: (string | RegExp)[];
+    }) => {
       mockMineDisputeQuery.mockReturnValue({
         isPending: false,
         isError: false,
@@ -649,6 +693,9 @@ describe("QuestWorkScreen", () => {
       expect(view.queryByRole("button", { name: "File Dispute" })).toBeNull();
       for (const text of shows) {
         expect(view.getByText(text)).toBeTruthy();
+      }
+      for (const text of hides ?? []) {
+        expect(view.queryByText(text)).toBeNull();
       }
     }
   );

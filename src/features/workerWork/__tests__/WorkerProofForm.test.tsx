@@ -1,6 +1,7 @@
 import { fireEvent, waitFor } from "@testing-library/react-native";
 import { File } from "expo-file-system";
 import * as ImagePicker from "expo-image-picker";
+import { Linking } from "react-native";
 
 import { ApiError } from "@/api/ApiClient";
 import { questApi } from "@/api/QuestApi";
@@ -8,6 +9,7 @@ import { SweetAlertHost } from "@/components/ui/SweetAlert";
 import { renderWithQueryClient } from "@/testing/queryTestUtils";
 import { workerSnapshot } from "@/testing/workerSnapshotFixtures";
 import { workerWorkMessages } from "@/locales/workerWorkMessages";
+import { questBoardMessages } from "@/locales/questBoardMessages";
 import { WorkerProofForm } from "../components/WorkerProofForm";
 
 jest.mock("@/features/preferences/localeStore", () => ({
@@ -44,6 +46,10 @@ jest.mock("expo-file-system", () => ({
     jest.fn().mockImplementation(() => ({ size: 2 * 1024 * 1024 })),
     { pickFileAsync: jest.fn() }
   ),
+}));
+jest.mock("expo-sharing", () => ({
+  isAvailableAsync: jest.fn(),
+  shareAsync: jest.fn(),
 }));
 jest.mock("expo-image-picker", () => ({
   launchImageLibraryAsync: jest.fn(),
@@ -741,6 +747,121 @@ describe("WorkerProofForm", () => {
 
     expect(screen.getByText("Proof sent · Awaiting review")).toBeTruthy();
     expect(screen.queryByRole("button", { name: "Submit proof" })).toBeNull();
+  });
+
+  it("lets the submitting Worker open a ready file from sent Proof history", async () => {
+    const openURL = jest.spyOn(Linking, "openURL").mockResolvedValue(true);
+    const screen = await renderForm(
+      workerSnapshot({
+        id: "quest-1",
+        title: "Print flyers",
+        state: "QUEST_COMPLETED",
+        assignmentState: "ASSIGNMENT_COMPLETED",
+        proofs: [
+          {
+            id: "proof-history-1",
+            questId: "quest-1",
+            workerId: "worker-1",
+            teamId: null,
+            submittedByUserId: "worker-1",
+            description: "Done",
+            status: "PROOF_APPROVED",
+            submittedAt: "2026-10-01T10:00:00Z",
+            createdAt: "2026-10-01T09:30:00Z",
+            updatedAt: "2026-10-01T10:00:00Z",
+            visibility: "FULL",
+            fileIds: ["file-history-1"],
+            files: [
+              {
+                fileId: "file-history-1",
+                contentType: "application/pdf",
+                sizeBytes: 1024,
+                position: 0,
+                uploadStatus: "PROOF_FILE_READY",
+                failureCode: null,
+                url: "https://files.example.test/completed-proof.pdf",
+                urlExpiresAt: "2030-01-01T00:15:00.000Z",
+              },
+            ],
+          },
+        ],
+      })
+    );
+
+    expect(screen.getByText("File 1 · application/pdf · 1 KB")).toBeTruthy();
+    expect(screen.getByText("Link expires 1 Jan 2030, 07:15")).toBeTruthy();
+    await fireEvent.press(
+      screen.getByTestId("proof-submission-open-file-proof-history-1-0")
+    );
+    expect(openURL).toHaveBeenCalledWith(
+      "https://files.example.test/completed-proof.pdf"
+    );
+    openURL.mockRestore();
+  });
+
+  it("keeps unavailable files in history without showing storage details", async () => {
+    const screen = await renderForm(
+      workerSnapshot({
+        id: "quest-1",
+        title: "Print flyers",
+        state: "QUEST_COMPLETED",
+        assignmentState: "ASSIGNMENT_COMPLETED",
+        proofs: [
+          {
+            id: "proof-unavailable-1",
+            questId: "quest-1",
+            workerId: "worker-1",
+            teamId: null,
+            submittedByUserId: "worker-1",
+            description: "Done",
+            status: "PROOF_APPROVED",
+            submittedAt: "2026-10-01T10:00:00Z",
+            createdAt: "2026-10-01T09:30:00Z",
+            updatedAt: "2026-10-01T10:00:00Z",
+            visibility: "FULL",
+            fileIds: ["file-unavailable-1"],
+            files: [
+              {
+                fileId: "file-unavailable-1",
+                contentType: "application/pdf",
+                sizeBytes: 1024,
+                position: 0,
+                uploadStatus: "PROOF_FILE_READY",
+                failureCode: null,
+                url: null,
+                urlExpiresAt: null,
+              },
+              {
+                fileId: null,
+                contentType: null,
+                sizeBytes: null,
+                position: 1,
+                uploadStatus: "PROOF_FILE_FAILED",
+                failureCode: "PRIVATE_STORAGE_OBJECT_KEY",
+                url: null,
+                urlExpiresAt: null,
+              },
+            ],
+          },
+        ],
+      }),
+      jest.fn(),
+      "worker-1",
+      undefined
+    );
+
+    expect(
+      screen.getAllByText(questBoardMessages.en.proofReviewPreviewUnavailable)
+    ).toHaveLength(1);
+    expect(
+      screen.getByText(
+        questBoardMessages.en.proofReviewFileStatus("PROOF_FILE_FAILED")
+      )
+    ).toBeTruthy();
+    expect(screen.queryByText("PRIVATE_STORAGE_OBJECT_KEY")).toBeNull();
+    expect(
+      screen.getByTestId("proof-submission-refresh-file-proof-unavailable-1-0")
+    ).toBeTruthy();
   });
 
   it("submits an existing ready draft without local file copies", async () => {
