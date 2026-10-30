@@ -1,6 +1,15 @@
 const styles = {
-  penaltyCard:
-    "self-stretch gap-ku-md rounded-ku-card border border-ku-border-warning bg-ku-surface-warning p-ku-md",
+  penaltyCard: "self-stretch gap-ku-md",
+  penaltyRedFlag:
+    "gap-ku-sm rounded-ku-card border border-ku-border-danger bg-ku-surface-danger p-ku-md",
+  penaltyRedFlagHeader: "flex-row items-center gap-ku-sm",
+  penaltyRedFlagTitle: "font-ku-bold text-ku-subtitle text-ku-danger-dark",
+  penaltyRedFlagUntil:
+    "font-ku-semibold text-ku-body-small text-ku-danger-dark",
+  penaltyRedFlagLabel: "font-ku-regular text-ku-body-small text-ku-text-strong",
+  penaltyRedFlagItem: "flex-row items-center gap-ku-sm",
+  penaltyLadderCard:
+    "gap-ku-sm rounded-ku-card border border-ku-border-warning bg-ku-surface-warning p-ku-md",
   penaltyTitle: "font-ku-bold text-ku-subtitle text-ku-text-strong",
   penaltyLadder: "gap-ku-xs",
   penaltyLadderLabel: "font-ku-semibold text-ku-label text-ku-text-secondary",

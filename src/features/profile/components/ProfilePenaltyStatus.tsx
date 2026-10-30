@@ -1,6 +1,9 @@
+import { Ban, Flag } from "lucide-react-native";
+
 import { cn } from "@/tw/cn";
 import { Text, View } from "@/tw";
 import { formatTimestampDateTime } from "@/domain/datetime";
+import { useAppTheme } from "@/features/workspace/AppThemeProvider";
 import { useLocale } from "@/features/preferences/localeStore";
 import { profileMessages } from "@/locales/profileMessages";
 import type { PenaltyResult } from "@/locales/profileMessages";
@@ -23,7 +26,7 @@ function PenaltyLadder({
   const messages = profileMessages[locale];
   const steps = Array.from({ length: ladderLength }, (_, step) => step);
   return (
-    <View className={styles.penaltyLadder}>
+    <View className={styles.penaltyLadderCard}>
       <Text className={styles.penaltyLadderLabel}>{label}</Text>
       <View
         className={styles.penaltySteps}
@@ -55,6 +58,7 @@ function PenaltyLadder({
 export function ProfilePenaltyStatus() {
   const { locale } = useLocale();
   const messages = profileMessages[locale];
+  const { colors } = useAppTheme();
   const { data } = usePenaltyStatusQuery();
   if (!data) return null;
 
@@ -69,15 +73,37 @@ export function ProfilePenaltyStatus() {
 
   return (
     <View className={styles.penaltyCard} testID="profile-penalty-status">
-      <Text accessibilityRole="header" className={styles.penaltyTitle}>
-        {messages.penaltyStatusTitle}
-      </Text>
       {redFlagExpiresAt && (
-        <Text className={styles.penaltyText}>
-          {messages.penaltyRedFlagActive(
-            formatTimestampDateTime(redFlagExpiresAt, locale)
-          )}
-        </Text>
+        <View
+          accessible
+          accessibilityRole="alert"
+          className={styles.penaltyRedFlag}
+          testID="profile-red-flag"
+        >
+          <View className={styles.penaltyRedFlagHeader}>
+            <Flag color={colors.danger} size={20} strokeWidth={2} />
+            <Text
+              accessibilityRole="header"
+              className={styles.penaltyRedFlagTitle}
+            >
+              {messages.penaltyRedFlagTitle}
+            </Text>
+          </View>
+          <Text className={styles.penaltyRedFlagUntil}>
+            {messages.penaltyRedFlagActive(
+              formatTimestampDateTime(redFlagExpiresAt, locale)
+            )}
+          </Text>
+          {messages.penaltyRedFlagRestrictions.map((restriction) => (
+            <View className={styles.penaltyRedFlagItem} key={restriction}>
+              <Ban color={colors.danger} size={16} strokeWidth={2} />
+              <Text className={styles.penaltyRedFlagLabel}>{restriction}</Text>
+            </View>
+          ))}
+          <Text className={styles.penaltyRedFlagLabel}>
+            {messages.penaltyRedFlagExistingQuests}
+          </Text>
+        </View>
       )}
       {misconduct.strikeCount > 0 && (
         <PenaltyLadder

@@ -1,5 +1,6 @@
 import React, { useState } from "react";
 import { useQueryClient } from "@tanstack/react-query";
+import Constants from "expo-constants";
 import { useRouter } from "expo-router";
 import { Modal } from "react-native";
 import {
@@ -9,7 +10,6 @@ import {
   ChevronRight,
   Code2,
   Globe2,
-  Info,
   LogOut,
   Pencil,
   type LucideIcon,
@@ -28,6 +28,13 @@ import { useAppTheme } from "@/features/workspace/AppThemeProvider";
 import { spacing } from "@/theme/spacing";
 import styles from "./styles/settingsStyles";
 import { goBackOrReplace } from "@/utils/navigation";
+
+function appVersionLabel(): string {
+  const config = Constants.expoConfig;
+  const version = config?.version ?? "";
+  const build = config?.android?.versionCode ?? config?.ios?.buildNumber;
+  return build === undefined ? version : `${version} (${build})`;
+}
 
 function SettingsRow({
   icon: Icon,
@@ -207,9 +214,9 @@ export default function SettingsScreen() {
           </View>
 
           <View className={styles.footer}>
-            <Info color={colors.textMuted} size={18} strokeWidth={2} />
-            <Text className={styles.version}>{messages.version}</Text>
-            <Text className={styles.version}>{messages.aboutDescription}</Text>
+            <Text className={styles.version}>
+              {messages.version} {appVersionLabel()}
+            </Text>
           </View>
 
           <Pressable
