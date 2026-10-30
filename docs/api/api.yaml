@@ -3261,6 +3261,76 @@ paths:
                       message: 
                         type: string
                 additionalProperties: false
+  /api/v1/profile/penalty-status: 
+    get: 
+      tags: 
+        - Profile
+      summary: Get own Member Penalty status
+      description: "Returns the strike count and the next result on the Misconduct ladder and the Review ladder, and the Red Flag expiry when a Red Flag is active. An exempt violation does not count as a strike. A Member Ban returns 403 MEMBER_BANNED with the ban details."
+      operationId: getOwnPenaltyStatus
+      responses: 
+        "200": 
+          description: Response for status 200
+          content: 
+            application/json: 
+              schema: 
+                type: object
+                required: 
+                  - success
+                  - data
+                properties: 
+                  success: 
+                    const: true
+                    type: boolean
+                  data: 
+                    type: object
+                    required: 
+                      - misconduct
+                      - review
+                      - redFlagExpiresAt
+                    properties: 
+                      misconduct: 
+                        type: object
+                        required: 
+                          - strikeCount
+                          - ladderLength
+                          - nextResult
+                        properties: 
+                          strikeCount: 
+                            minimum: 0
+                            type: integer
+                          ladderLength: 
+                            minimum: 1
+                            type: integer
+                          nextResult: 
+                            type: string
+                            enum: 
+                              - PENALTY_RED_FLAG
+                              - PENALTY_TEMPORARY_BAN_7_DAYS
+                              - PENALTY_PERMANENT_BAN
+                      review: 
+                        type: object
+                        required: 
+                          - strikeCount
+                          - ladderLength
+                          - nextResult
+                        properties: 
+                          strikeCount: 
+                            minimum: 0
+                            type: integer
+                          ladderLength: 
+                            minimum: 1
+                            type: integer
+                          nextResult: 
+                            type: string
+                            enum: 
+                              - PENALTY_TEMPORARY_BAN_7_DAYS
+                              - PENALTY_TEMPORARY_BAN_1_MONTH
+                              - PENALTY_PERMANENT_BAN
+                      redFlagExpiresAt: 
+                        nullable: true
+                        type: string
+                        format: date-time
   /api/v1/profile/reviews: 
     get: 
       tags: 

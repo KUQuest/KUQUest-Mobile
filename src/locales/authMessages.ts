@@ -1,3 +1,5 @@
+import type { MemberBan } from "../api/ApiClient";
+import { formatTimestampDateTime } from "../domain/datetime";
 import { AuthErrorCode } from "../features/auth/types";
 import { SupportedLocale } from "./locale";
 
@@ -17,6 +19,8 @@ export interface AuthMessages {
   stagingTestHeading: string;
   stagingTestSignInFailed: string;
   errors: Record<AuthErrorCode, string>;
+  memberBannedUntil: (date: string) => string;
+  memberBannedPermanent: string;
 }
 
 export const authMessages: Record<SupportedLocale, AuthMessages> = {
@@ -45,7 +49,11 @@ export const authMessages: Record<SupportedLocale, AuthMessages> = {
       OAUTH_FAILED: "Failed to log in with Google. Please try again.",
       API_ERROR: "Unable to connect to authentication server. Please retry.",
       SESSION_EXPIRED: "Your session has expired. Please log in again.",
+      MEMBER_BANNED: "Your account is banned from signing in.",
     },
+    memberBannedUntil: (date) =>
+      `Your account is banned from signing in until ${date}.`,
+    memberBannedPermanent: "Your account is permanently banned.",
   },
   th: {
     signInWithGoogle: "ดำเนินการต่อด้วย Google",
@@ -72,7 +80,11 @@ export const authMessages: Record<SupportedLocale, AuthMessages> = {
       OAUTH_FAILED: "เข้าสู่ระบบด้วย Google ไม่สำเร็จ กรุณาลองใหม่อีกครั้ง",
       API_ERROR: "ไม่สามารถเชื่อมต่อระบบยืนยันตัวตนได้ กรุณาลองใหม่อีกครั้ง",
       SESSION_EXPIRED: "เซสชันของคุณหมดอายุแล้ว กรุณาเข้าสู่ระบบอีกครั้ง",
+      MEMBER_BANNED: "บัญชีของคุณถูกแบน เข้าสู่ระบบไม่ได้",
     },
+    memberBannedUntil: (date) =>
+      `บัญชีของคุณถูกแบน เข้าสู่ระบบไม่ได้จนถึง ${date}`,
+    memberBannedPermanent: "บัญชีของคุณถูกแบนถาวร",
   },
 };
 
@@ -81,4 +93,18 @@ export function getAuthErrorText(
   locale: SupportedLocale = "th"
 ): string {
   return authMessages[locale].errors[code] || code;
+}
+
+export function getMemberBanText(
+  memberBan: MemberBan | undefined,
+  locale: SupportedLocale = "th"
+): string {
+  const messages = authMessages[locale];
+  if (memberBan?.permanent) return messages.memberBannedPermanent;
+  if (memberBan?.bannedUntil) {
+    return messages.memberBannedUntil(
+      formatTimestampDateTime(memberBan.bannedUntil, locale)
+    );
+  }
+  return messages.errors.MEMBER_BANNED;
 }
