@@ -47,7 +47,18 @@ const unknownType = {
   expiresAt: null,
 };
 
+const todayRow = {
+  ...unknownType,
+  id: "n-3",
+  createdAt: "2026-10-31T02:00:00Z",
+  readAt: "2026-10-31T03:00:00Z",
+};
+
 describe("NotificationInboxScreen", () => {
+  afterEach(() => {
+    jest.useRealTimers();
+  });
+
   beforeEach(() => {
     jest.clearAllMocks();
     api.markRead.mockResolvedValue(undefined);
@@ -140,5 +151,78 @@ describe("NotificationInboxScreen", () => {
     expect(screen.getAllByText("Unable to load notifications.")).toHaveLength(
       1
     );
+  });
+
+  it("groups rows under Today and Yesterday section headers", async () => {
+    jest.useFakeTimers({
+      now: new Date("2026-10-31T05:00:00Z"),
+      advanceTimers: true,
+    });
+    api.listNotifications.mockResolvedValue({
+      items: [todayRow, redFlag, unknownType],
+      nextCursor: null,
+    });
+
+    await renderWithQueryClient(<NotificationInboxScreen />);
+
+    expect(await screen.findByText("Today")).toBeTruthy();
+    expect(screen.getByText("Yesterday")).toBeTruthy();
+    expect(screen.getByText("29 Oct 2026")).toBeTruthy();
+  });
+
+  it("shows the unread count on the Unread chip", async () => {
+    api.countUnread.mockResolvedValue(3);
+    api.listNotifications.mockResolvedValue({
+      items: [redFlag],
+      nextCursor: null,
+    });
+
+    await renderWithQueryClient(<NotificationInboxScreen />);
+
+    expect(await screen.findByText("Unread · 3")).toBeTruthy();
+    expect(
+      screen.getByTestId("notifications-filter-unread").props.accessibilityState
+    ).toEqual({ selected: false });
+  });
+
+  it("hides the count on the Unread chip when nothing is unread", async () => {
+    api.listNotifications.mockResolvedValue({
+      items: [unknownType],
+      nextCursor: null,
+    });
+
+    await renderWithQueryClient(<NotificationInboxScreen />);
+
+    expect(await screen.findByText("Unread")).toBeTruthy();
+    expect(screen.queryByText(/Unread ·/)).toBeNull();
+  });
+
+  it("marks only rows that open the profile with a chevron and hint", async () => {
+    api.listNotifications.mockResolvedValue({
+      items: [redFlag, unknownType],
+      nextCursor: null,
+    });
+
+    await renderWithQueryClient(<NotificationInboxScreen />);
+    await screen.findByText("Account update");
+
+    expect(screen.getByTestId("notification-chevron-n-1")).toBeTruthy();
+    expect(screen.queryByTestId("notification-chevron-n-2")).toBeNull();
+    expect(
+      screen.getByTestId("notification-row-n-1").props.accessibilityHint
+    ).toBe("Unread. Opens your profile");
+    expect(
+      screen.getByTestId("notification-row-n-2").props.accessibilityHint
+    ).toBeUndefined();
+  });
+
+  it("tells an Unread-only Member they are all caught up", async () => {
+    api.listNotifications.mockResolvedValue({ items: [], nextCursor: null });
+
+    await renderWithQueryClient(<NotificationInboxScreen />);
+    expect(await screen.findByText("No notifications yet")).toBeTruthy();
+
+    await fireEvent.press(screen.getByTestId("notifications-filter-unread"));
+    expect(await screen.findByText("You're all caught up")).toBeTruthy();
   });
 });
