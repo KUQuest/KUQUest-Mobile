@@ -755,6 +755,16 @@ describe("LiveQuestService", () => {
     );
 
     expect(snapshot.teamRewardAllocation).toEqual(allocation);
+
+    mockedQuestApi.listCandidateTeams.mockRejectedValue(
+      new ApiError(404, "QUEST_NOT_FOUND", "Quest not found")
+    );
+    const withoutRoster = await liveQuestService.getLiveSnapshot(
+      "quest-team-cancelled",
+      "worker-1"
+    );
+    expect(withoutRoster.teamRole).toBe("UNKNOWN");
+    expect(withoutRoster.teamRewardAllocation).toEqual(allocation);
   });
 
   it("keeps the issued Join Code for the Team Leader after the list read hides it", async () => {

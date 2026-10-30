@@ -1183,6 +1183,81 @@ describe("QuestWorkScreen", () => {
       ).toBeTruthy();
     });
 
+    it("offers the split to the Team Leader, and only the Leader, after cancellation", async () => {
+      const allocation = (viewerIsLeader: boolean) =>
+        ({
+          status: "PENDING",
+          leaderId: "worker-1",
+          totalRewardSatang: 20_000,
+          deadlineAt: "2099-08-27T12:00:00.000Z",
+          settledAt: null,
+          viewerIsLeader,
+          members: [
+            {
+              memberId: "worker-1",
+              displayName: "Aphinya",
+              isLeader: true,
+              percentageBasisPoints: null,
+              rewardSatang: null,
+            },
+            {
+              memberId: "worker-2",
+              displayName: "Nichakan",
+              isLeader: false,
+              percentageBasisPoints: null,
+              rewardSatang: null,
+            },
+          ],
+        }) as never;
+      mockedGetSnapshot.mockResolvedValue(
+        makeSnapshot({
+          ...groupCandidate,
+          state: "QUEST_CANCELLED",
+          team: makeTeam("worker-1"),
+          teamRole: "LEADER",
+          teamRewardAllocation: allocation(true),
+        })
+      );
+      const leader = await renderWithQueryClient(
+        <QuestWorkScreen questId="quest-work-1" viewerId="worker-1" />
+      );
+      expect(await leader.findByText("Split the team reward")).toBeTruthy();
+      await leader.unmount();
+
+      mockedGetSnapshot.mockResolvedValue(
+        makeSnapshot({
+          ...groupCandidate,
+          state: "QUEST_CANCELLED",
+          team: makeTeam("worker-2"),
+          teamRole: "MEMBER",
+          teamRewardAllocation: allocation(false),
+        })
+      );
+      const member = await renderWithQueryClient(
+        <QuestWorkScreen questId="quest-work-1" viewerId="worker-2" />
+      );
+      expect(await member.findByTestId("team-work-member")).toBeTruthy();
+      expect(member.queryByText("Split the team reward")).toBeNull();
+      await member.unmount();
+
+      // The Team roster read failed, so only the allocation names the Leader.
+      mockedGetSnapshot.mockResolvedValue(
+        makeSnapshot({
+          ...groupCandidate,
+          state: "QUEST_CANCELLED",
+          team: null,
+          teamRole: "UNKNOWN",
+          teamRewardAllocation: allocation(true),
+        })
+      );
+      const unknownRole = await renderWithQueryClient(
+        <QuestWorkScreen questId="quest-work-1" viewerId="worker-1" />
+      );
+      expect(
+        await unknownRole.findByText("Split the team reward")
+      ).toBeTruthy();
+    });
+
     it("falls back to the shared Work Hub while the Team Leader is unknown", async () => {
       mockedGetSnapshot.mockResolvedValue(
         makeSnapshot({

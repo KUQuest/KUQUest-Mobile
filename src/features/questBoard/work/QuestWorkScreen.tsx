@@ -34,6 +34,7 @@ import QuestWorkStatusCard from "./components/QuestWorkStatusCard";
 import { QuestWorkFrame } from "./QuestWorkFrame";
 import TeamLeaderWorkScreen from "./TeamLeaderWorkScreen";
 import TeamMemberWorkScreen from "./TeamMemberWorkScreen";
+import TeamRewardAllocationCard from "./components/TeamRewardAllocationCard";
 import {
   useQuestWorkFeature,
   type QuestWorkFeatureProps,
@@ -314,8 +315,23 @@ export default function QuestWorkScreen(props: QuestWorkScreenProps) {
       />
     );
   }
+  // The Team roster can be unreadable, but the Server still names the Leader
+  // who owes a pending split.
+  const pendingLeaderSplit =
+    snapshot.teamRewardAllocation?.status === "PENDING" &&
+    snapshot.teamRewardAllocation.viewerIsLeader
+      ? snapshot.teamRewardAllocation
+      : null;
   return (
     <QuestWorkFrame {...frame}>
+      {pendingLeaderSplit ? (
+        <TeamRewardAllocationCard
+          allocation={pendingLeaderSplit}
+          messages={messages}
+          submitting={allocationSending}
+          onSubmit={submitTeamRewardAllocation}
+        />
+      ) : null}
       {statusCard}
       {settlementCard}
       {proofForm}
