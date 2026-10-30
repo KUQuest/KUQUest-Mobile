@@ -97,16 +97,45 @@ describe("ProofReviewModal", () => {
     });
   });
 
-  it("scrolls the non-approval reason into view when focused", async () => {
+  it("shows the non-approval reason dialog only after tapping do not approve", async () => {
+    const view = await renderModal(jest.fn());
+
+    expect(view.queryByTestId("proof-review-reason-input")).toBeNull();
+    await fireEvent.press(view.getByTestId("proof-review-not-approve"));
+
+    expect(await view.findByTestId("proof-review-reason-dialog")).toBeTruthy();
+    expect(view.getByTestId("proof-review-reason-input")).toBeTruthy();
+  });
+
+  it("scrolls the reason field into view when it receives focus", async () => {
     const scrollToEnd = jest
       .spyOn(NativeScrollView.prototype, "scrollToEnd")
       .mockImplementation(() => undefined);
     const view = await renderModal(jest.fn());
 
-    await fireEvent(view.getByTestId("proof-review-reason-input"), "focus");
+    await fireEvent.press(view.getByTestId("proof-review-not-approve"));
+    await fireEvent(
+      await view.findByTestId("proof-review-reason-input"),
+      "focus"
+    );
 
     expect(scrollToEnd).toHaveBeenCalledWith({ animated: true });
     scrollToEnd.mockRestore();
+  });
+
+  it("closes the non-approval reason dialog without submitting", async () => {
+    const onReview = jest.fn();
+    const view = await renderModal(onReview);
+
+    await fireEvent.press(view.getByTestId("proof-review-not-approve"));
+    await fireEvent.press(
+      await view.findByTestId("proof-review-cancel-not-approved")
+    );
+
+    await waitFor(() => {
+      expect(view.queryByTestId("proof-review-reason-dialog")).toBeNull();
+    });
+    expect(onReview).not.toHaveBeenCalled();
   });
 
   it("requires a non-empty reason before submitting non-approval", async () => {
@@ -115,6 +144,10 @@ describe("ProofReviewModal", () => {
     const view = await renderModal(onReview, onClose);
 
     await fireEvent.press(view.getByTestId("proof-review-not-approve"));
+    await view.findByTestId("proof-review-reason-dialog");
+    await fireEvent.press(
+      view.getByTestId("proof-review-confirm-not-approved")
+    );
 
     expect(await view.findByTestId("proof-review-error")).toBeTruthy();
     expect(onReview).not.toHaveBeenCalled();
@@ -124,7 +157,9 @@ describe("ProofReviewModal", () => {
       await view.findByTestId("proof-review-reason-input"),
       "The submitted result does not match the completion conditions."
     );
-    await fireEvent.press(view.getByTestId("proof-review-not-approve"));
+    await fireEvent.press(
+      view.getByTestId("proof-review-confirm-not-approved")
+    );
 
     await waitFor(() => {
       expect(onReview).toHaveBeenCalledWith({
@@ -134,5 +169,32 @@ describe("ProofReviewModal", () => {
       });
       expect(onClose).toHaveBeenCalled();
     });
+  });
+
+  it("keeps the reason dialog open and preserves the reason after a failed decision", async () => {
+    const onReview = jest
+      .fn()
+      .mockReturnValueOnce(false)
+      .mockReturnValueOnce(true);
+    const onClose = jest.fn();
+    const view = await renderModal(onReview, onClose);
+
+    await fireEvent.press(view.getByTestId("proof-review-not-approve"));
+    const reasonInput = await view.findByTestId("proof-review-reason-input");
+    await fireEvent.changeText(reasonInput, "The evidence is incomplete.");
+    await fireEvent.press(
+      view.getByTestId("proof-review-confirm-not-approved")
+    );
+
+    expect(await view.findByTestId("proof-review-error")).toBeTruthy();
+    expect(view.getByTestId("proof-review-reason-input").props.value).toBe(
+      "The evidence is incomplete."
+    );
+    expect(onClose).not.toHaveBeenCalled();
+
+    await fireEvent.press(
+      view.getByTestId("proof-review-confirm-not-approved")
+    );
+    await waitFor(() => expect(onClose).toHaveBeenCalled());
   });
 });

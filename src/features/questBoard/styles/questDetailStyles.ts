@@ -172,6 +172,13 @@ const styles = {
     "absolute bg-ku-overlay items-center justify-center right-[4px] rounded-ku-pill top-[4px] h-[28px] w-[28px]",
   proofValidation: "text-ku-danger-dark font-ku-medium text-ku-label mt-ku-sm",
   proofSheetActions: "flex-row gap-ku-sm pt-ku-12",
+  proofReviewReasonBackdrop: "bg-ku-overlay flex-1 justify-center px-ku-lg",
+  proofReviewReasonDialog:
+    "bg-ku-card rounded-ku-card max-h-[90%] max-w-[420px] p-ku-lg self-center w-full",
+  proofReviewReasonContent: "gap-ku-md",
+  proofReviewReasonTitle:
+    "text-ku-text-strong font-ku-bold text-ku-title-small",
+  proofReviewReasonActions: "gap-ku-sm mt-ku-lg",
 } as const;
 
 export default styles;
