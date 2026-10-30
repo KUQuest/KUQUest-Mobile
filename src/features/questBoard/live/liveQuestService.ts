@@ -644,8 +644,7 @@ export class LiveQuestService {
         quest.state === "QUEST_CANCELLED") &&
       quest.mode === QuestMode.CANDIDATE &&
       quest.participation === "GROUP" &&
-      teamRole !== null &&
-      teamRole !== "UNKNOWN"
+      teamRole !== null
         ? await optionalResource(
             () => questApi.getTeamRewardAllocation(questId, options),
             null as Awaited<

@@ -57,6 +57,8 @@ export interface QuestWorkMessages {
   settlementAmount: string;
   settlementPaid: string;
   settlementPending: string;
+  settlementLeaderSplitPending: (deadline: string) => string;
+  settlementMemberSplitPending: (deadline: string) => string;
   settlementNone: string;
   settlementUnavailable: string;
   settlementTeamShare: string;
@@ -170,6 +172,10 @@ export const questWorkMessages: Record<SupportedLocale, QuestWorkMessages> = {
     settlementAmount: "Amount credited to Earnings",
     settlementPaid: "Paid to your Earnings Balance",
     settlementPending: "Payment pending. Refresh to check the transfer.",
+    settlementLeaderSplitPending: (deadline) =>
+      `Split the team reward by ${deadline}. If you do not, the Server splits it equally.`,
+    settlementMemberSplitPending: (deadline) =>
+      `Waiting for the Team Leader to split the reward by ${deadline}. If they do not, the Server splits it equally.`,
     settlementNone: "No payment for this Assignment.",
     settlementUnavailable: "Settlement details are not available yet.",
     settlementTeamShare: "Your team reward share",
@@ -290,6 +296,10 @@ export const questWorkMessages: Record<SupportedLocale, QuestWorkMessages> = {
     settlementAmount: "จำนวนเงินที่เข้ายอดรายได้",
     settlementPaid: "โอนเข้ายอดรายได้แล้ว",
     settlementPending: "รอการโอนเงิน รีเฟรชเพื่อตรวจสอบสถานะ",
+    settlementLeaderSplitPending: (deadline) =>
+      `แบ่งค่าตอบแทนทีมภายใน ${deadline} ถ้าไม่แบ่ง ระบบจะหารเท่ากัน`,
+    settlementMemberSplitPending: (deadline) =>
+      `รอหัวหน้าทีมแบ่งค่าตอบแทนภายใน ${deadline} ถ้าไม่แบ่ง ระบบจะหารเท่ากัน`,
     settlementNone: "ไม่มีการชำระเงินสำหรับงานนี้",
     settlementUnavailable: "ยังไม่มีข้อมูลการชำระเงิน",
     settlementTeamShare: "ส่วนแบ่งค่าตอบแทนของคุณ",

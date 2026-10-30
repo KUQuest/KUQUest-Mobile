@@ -22,6 +22,16 @@ export default function TeamLeaderWorkScreen({
   onSubmitAllocation,
   allocationSending = false,
 }: TeamWorkScreenProps & { proofForm: ReactNode }) {
+  const allocationCard = snapshot.teamRewardAllocation ? (
+    <TeamRewardAllocationCard
+      allocation={snapshot.teamRewardAllocation}
+      messages={messages}
+      submitting={allocationSending}
+      onSubmit={onSubmitAllocation ?? (async () => undefined)}
+    />
+  ) : null;
+  // A pending split is the Leader's only remaining duty, so it comes first.
+  const allocationPending = snapshot.teamRewardAllocation?.status === "PENDING";
   return (
     <QuestWorkFrame {...frame}>
       <TeamWorkRoleCard
@@ -30,16 +40,10 @@ export default function TeamLeaderWorkScreen({
         snapshot={snapshot}
         messages={messages}
       />
+      {allocationPending ? allocationCard : null}
       {statusCard}
       {settlementCard}
-      {snapshot.teamRewardAllocation ? (
-        <TeamRewardAllocationCard
-          allocation={snapshot.teamRewardAllocation}
-          messages={messages}
-          submitting={allocationSending}
-          onSubmit={onSubmitAllocation ?? (async () => undefined)}
-        />
-      ) : null}
+      {allocationPending ? null : allocationCard}
       {proofForm}
       {actionsCard}
     </QuestWorkFrame>
