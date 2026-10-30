@@ -394,6 +394,30 @@ describe("TopUpScreen", () => {
     expect(walletApi.getTopUpStatus).not.toHaveBeenCalled();
   });
 
+  it("stays on the amount step when a listed pending top-up is already paid", async () => {
+    (walletApi.listTopUps as jest.Mock).mockResolvedValue([
+      {
+        id: "stale",
+        topUpStatus: "PENDING",
+        qrExpiresAt: "2099-12-31T23:59:59.000Z",
+        createdAt: "2026-09-30T10:00:00.000Z",
+      },
+    ]);
+    (walletApi.getTopUpStatus as jest.Mock).mockResolvedValue({
+      ...mockTopUpRecord,
+      id: "stale",
+      topUpStatus: "PAID",
+    });
+    const view = await renderWithQueryClient(<TopUpScreen />);
+
+    await waitFor(() =>
+      expect(walletApi.getTopUpStatus).toHaveBeenCalledWith("stale")
+    );
+    await act(async () => {});
+    expect(view.getByTestId("top-up-amount-step")).toBeTruthy();
+    expect(view.queryByTestId("top-up-success-view")).toBeNull();
+  });
+
   it("moves to success when a realtime top-up event reports PAID", async () => {
     (walletApi.getTopUpStatus as jest.Mock)
       .mockResolvedValueOnce(mockTopUpRecord)

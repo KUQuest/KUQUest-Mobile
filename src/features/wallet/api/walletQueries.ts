@@ -91,6 +91,9 @@ export function useCreateTopUpMutation() {
       void queryClient.invalidateQueries({
         queryKey: [...walletKeys.all, "transactions"],
       });
+      void queryClient.invalidateQueries({
+        queryKey: [...walletKeys.all, "top-ups"],
+      });
     },
   });
 }
@@ -103,6 +106,9 @@ export function useSimulateTopUpMutation() {
       void queryClient.invalidateQueries({ queryKey: walletKeys.detail() });
       void queryClient.invalidateQueries({
         queryKey: [...walletKeys.all, "transactions"],
+      });
+      void queryClient.invalidateQueries({
+        queryKey: [...walletKeys.all, "top-ups"],
       });
     },
   });
