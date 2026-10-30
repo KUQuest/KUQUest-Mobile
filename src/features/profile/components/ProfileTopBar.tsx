@@ -22,9 +22,12 @@ const styles = {
   title: "text-ku-text-strong font-ku-semibold text-ku-subtitle",
   settingsButton:
     "absolute items-center justify-center min-h-[48px] min-w-[48px]",
+  // Count pill pinned to the bell glyph's top-right corner and growing
+  // rightward, so the bell stays readable; the background-colored ring cuts
+  // it out of the glyph like the bottom-nav unread dot.
   badge:
-    "absolute right-[4px] top-[6px] min-w-[18px] h-[18px] items-center justify-center rounded-ku-pill bg-ku-danger px-[4px]",
-  badgeText: "text-ku-on-primary font-ku-bold text-[11px] leading-[14px]",
+    "absolute left-[26px] top-[5px] h-[20px] min-w-[20px] items-center justify-center rounded-ku-pill border-2 border-ku-background bg-ku-danger px-ku-5",
+  badgeText: "text-ku-on-primary font-ku-bold text-ku-caption leading-[16px]",
 } as const;
 
 export function ProfileTopBar() {
@@ -95,8 +98,8 @@ export function ProfileTopBar() {
               importantForAccessibility="no-hide-descendants"
               testID="notifications-unread-badge"
             >
-              <Text className={styles.badgeText} maxFontSizeMultiplier={1.3}>
-                {unreadCount > 99 ? "99+" : unreadCount}
+              <Text className={styles.badgeText} maxFontSizeMultiplier={1.5}>
+                {unreadCount > 9 ? "9+" : unreadCount}
               </Text>
             </View>
           ) : null}
