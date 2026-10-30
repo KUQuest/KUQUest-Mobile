@@ -10,6 +10,7 @@ import { QueryProvider } from "@/providers/QueryProvider";
 import AuthMiddleware from "@/features/auth/AuthMiddleware";
 import { useRoleWorkspaceStore } from "@/features/workspace/roleWorkspaceStore";
 import { AppThemeProvider } from "@/features/workspace/AppThemeProvider";
+import { DisputeFormHost } from "@/features/questBoard/dispute/DisputeFormHost";
 import { SweetAlertHost } from "@/components/ui/SweetAlert";
 import { NotificationCoordinator } from "@/features/notifications/NotificationBannerHost";
 import { PushNotificationHost } from "@/features/notifications/push/PushNotificationHost";
@@ -42,6 +43,7 @@ export default function RootLayout() {
           </AuthMiddleware>
           <NotificationCoordinator />
           <PushNotificationHost />
+          <DisputeFormHost />
           <SweetAlertHost />
         </QueryProvider>
       </AppThemeProvider>

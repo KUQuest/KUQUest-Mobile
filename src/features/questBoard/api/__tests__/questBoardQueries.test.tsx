@@ -332,7 +332,11 @@ describe("quest board query ownership", () => {
 
     await act(async () => {
       await expect(
-        result.current.mutateAsync({ questId, viewerId })
+        result.current.mutateAsync({
+          questId,
+          viewerId,
+          input: { category: "OTHER", submittedDetail: "Details" },
+        })
       ).rejects.toBeInstanceOf(ApiError);
     });
 
@@ -368,7 +372,10 @@ describe("quest board query ownership", () => {
     });
 
     await act(async () => {
-      await result.current.mutateAsync({ questId, viewerId });
+      await result.current.mutateAsync({
+        questId,
+        viewerId,
+      });
     });
 
     for (const key of workerKeys) {

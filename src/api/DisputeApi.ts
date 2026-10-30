@@ -18,6 +18,11 @@ export const myDisputeCaseResponseSchema = z.object({
   case: disputeCaseSchema.nullable(),
 });
 
+export type DisputeInput = {
+  category: "PROOF_REVIEW" | "QUEST_CONDITION" | "PARTIAL_WORK" | "OTHER";
+  submittedDetail: string;
+};
+
 export class DisputeApi {
   constructor(private readonly client: ApiClient = new ApiClient()) {}
 
@@ -36,11 +41,15 @@ export class DisputeApi {
    * Files the viewer's one Dispute Case on a `QUEST_FAILED` Quest. The Server
    * enforces the 1-day self-file window and the one-case-per-filer rule.
    */
-  async fileDispute(questId: string): Promise<DisputeCase> {
+  async fileDispute(
+    questId: string,
+    input: DisputeInput
+  ): Promise<DisputeCase> {
     return this.client.send(
       "POST",
       `/api/v1/quests/${questId}/disputes`,
-      disputeCaseSchema
+      disputeCaseSchema,
+      { json: input }
     );
   }
 }

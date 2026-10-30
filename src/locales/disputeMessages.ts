@@ -4,6 +4,12 @@ import type { SupportedLocale } from "./locale";
 export interface DisputeMessages {
   rules: readonly string[];
   confirmTitle: string;
+  categoryLabel: string;
+  detailLabel: string;
+  categories: Record<
+    "PROOF_REVIEW" | "QUEST_CONDITION" | "PARTIAL_WORK" | "OTHER",
+    string
+  >;
   confirm: string;
   cancel: string;
   successTitle: string;
@@ -31,6 +37,14 @@ export const disputeMessages: Record<SupportedLocale, DisputeMessages> = {
       "An Admin either dismisses the case or pays a Worker.",
     ],
     confirmTitle: "File a Dispute Case?",
+    categoryLabel: "Dispute category",
+    detailLabel: "Dispute details",
+    categories: {
+      PROOF_REVIEW: "Proof review",
+      QUEST_CONDITION: "Quest conditions",
+      PARTIAL_WORK: "Partial work",
+      OTHER: "Other",
+    },
     confirm: "File",
     cancel: "Cancel",
     successTitle: "Dispute Case filed",
@@ -62,6 +76,14 @@ export const disputeMessages: Record<SupportedLocale, DisputeMessages> = {
       "ผู้ดูแลระบบจะยกคำร้องหรือจ่ายเงินให้ผู้ทำงาน",
     ],
     confirmTitle: "ยื่นคำร้องข้อพิพาทใช่ไหม",
+    categoryLabel: "ประเภทข้อพิพาท",
+    detailLabel: "รายละเอียดข้อพิพาท",
+    categories: {
+      PROOF_REVIEW: "การตรวจผลงาน",
+      QUEST_CONDITION: "เงื่อนไขเควสต์",
+      PARTIAL_WORK: "งานที่ทำไปบางส่วน",
+      OTHER: "อื่น ๆ",
+    },
     confirm: "ยื่นคำร้อง",
     cancel: "ยกเลิก",
     successTitle: "ยื่นคำร้องข้อพิพาทแล้ว",
