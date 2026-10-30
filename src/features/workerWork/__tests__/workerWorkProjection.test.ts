@@ -74,6 +74,82 @@ describe("projectWorkerWork", () => {
     );
   });
 
+  it("waits for Hirer approval after a proof-free completion confirmation", () => {
+    const projection = projectWorkerWork([
+      workerSnapshot({
+        id: "completion-pending",
+        title: "Proof-free work",
+        proofRequired: false,
+        nextAction: "CONFIRM_COMPLETION",
+        completionConfirmations: [
+          {
+            id: "completion-confirmation-1",
+            questId: "completion-pending",
+            workerId: "worker-1",
+            teamId: null,
+            confirmedByUserId: "worker-1",
+            confirmedAt: "2026-10-01T10:00:00Z",
+            reviewStatus: "COMPLETION_CONFIRMATION_PENDING",
+            reviewDeadlineAt: "2026-10-02T10:00:00Z",
+            reviewReason: null,
+            reviewedAt: null,
+            reviewedBy: null,
+          },
+        ],
+      }),
+    ]);
+
+    expect(projection.needsAction).toEqual([]);
+    expect(projection.otherActive[0]).toEqual(
+      expect.objectContaining({
+        status: "completionPending",
+        needsAction: false,
+        action: "open",
+        questState: QuestStatus.QUEST_IN_PROGRESS,
+      })
+    );
+  });
+
+  it("keeps a pending GROUP FCFS confirmation visible after another Worker fails the Quest", () => {
+    const projection = projectWorkerWork([
+      workerSnapshot({
+        id: "failed-group-pending",
+        title: "Partially failed group work",
+        state: QuestStatus.QUEST_FAILED,
+        assignmentState: "ASSIGNMENT_ACTIVE",
+        mode: "FIRST_COME_FIRST_SERVED",
+        participation: "GROUP",
+        proofRequired: false,
+        completionConfirmations: [
+          {
+            id: "completion-confirmation-2",
+            questId: "failed-group-pending",
+            workerId: "worker-1",
+            teamId: null,
+            confirmedByUserId: "worker-1",
+            confirmedAt: "2026-10-01T10:00:00Z",
+            reviewStatus: "COMPLETION_CONFIRMATION_PENDING",
+            reviewDeadlineAt: "2026-10-02T10:00:00Z",
+            reviewReason: null,
+            reviewedAt: null,
+            reviewedBy: null,
+          },
+        ],
+      }),
+    ]);
+
+    expect(projection.activeCount).toBe(0);
+    expect(projection.history).toEqual([
+      expect.objectContaining({
+        questId: "failed-group-pending",
+        questState: QuestStatus.QUEST_FAILED,
+        status: "completionPending",
+        tone: "progress",
+        destination: "workHub",
+      }),
+    ]);
+  });
+
   it("shows the Team Leader's GROUP CANDIDATE Team proof to every Team member", () => {
     const projection = projectWorkerWork([
       workerSnapshot({

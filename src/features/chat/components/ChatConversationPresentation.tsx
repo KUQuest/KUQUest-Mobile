@@ -7,6 +7,7 @@ import {
   LoadingSkeleton,
   SkeletonBlock,
 } from "@/components/ui/LoadingSkeleton";
+import { useUserAvatar } from "@/features/profile/api/profileQueries";
 import { useAppTheme } from "@/features/workspace/AppThemeProvider";
 import { spacing } from "@/theme/spacing";
 import styles from "../chatStyles";
@@ -24,8 +25,6 @@ export function ChatAvatar({
   color,
   name,
   profileId,
-  avatarUrl,
-  avatarFileId,
   onPress,
   small = false,
 }: {
@@ -33,15 +32,14 @@ export function ChatAvatar({
   color: string;
   name: string;
   profileId?: string;
-  avatarUrl?: string;
-  avatarFileId?: string;
   onPress?: () => void;
   small?: boolean;
 }) {
+  const avatar = useUserAvatar(profileId);
   return (
     <Avatar
       accessibilityLabel={onPress ? `View profile of ${name}` : undefined}
-      cacheKey={avatarFileId}
+      cacheKey={avatar.cacheKey}
       className={cn(styles.avatar, small && styles.avatarSmall)}
       imageTestID={`chat-avatar-image-${profileId ?? name}`}
       name={name}
@@ -50,7 +48,7 @@ export function ChatAvatar({
       style={{ backgroundColor: color }}
       testID={`chat-avatar-${profileId ?? name}`}
       textClassName={small ? styles.avatarSmallText : styles.avatarText}
-      uri={avatarUrl}
+      uri={avatar.uri}
     />
   );
 }

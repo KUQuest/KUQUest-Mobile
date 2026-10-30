@@ -355,7 +355,10 @@ describe("authenticated primary navigation", () => {
 
     const avatar = await view.findByTestId("tab-profile-avatar");
     expect(avatar.props.source).toEqual([
-      { uri: "https://cdn.example.com/profile-avatar.png" },
+      {
+        uri: "https://cdn.example.com/profile-avatar.png",
+        cacheKey: "profile-avatar-1",
+      },
     ]);
     expect(mockUseProfileQuery).toHaveBeenCalledWith("en");
   });

@@ -135,6 +135,7 @@ function HubContent({ data }: { data: ProfileEditData }) {
           <View>
             <Avatar
               name={fullName}
+              cacheKey={data.profile.avatar?.fileId}
               uri={data.profile.avatar?.url}
               size={88}
               textClassName="text-ku-title-large"

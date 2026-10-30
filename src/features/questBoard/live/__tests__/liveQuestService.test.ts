@@ -41,6 +41,7 @@ jest.mock("@/api/QuestApi", () => ({
     createCandidateTeam: jest.fn(),
     getUnderfilled: jest.fn(),
     listProofSubmissions: jest.fn(),
+    listCompletionConfirmations: jest.fn(),
     getEditRequest: jest.fn(),
   },
 }));
@@ -49,6 +50,14 @@ jest.mock("@/api/ChatApi", () => ({
   chatApi: {
     createCandidateInquiry: jest.fn(),
     listConversations: jest.fn(),
+    findConversation: jest.fn(function (
+      this: unknown,
+      ...args: Parameters<import("@/api/ChatApi").ChatApi["findConversation"]>
+    ) {
+      return jest
+        .requireActual<typeof import("@/api/ChatApi")>("@/api/ChatApi")
+        .ChatApi.prototype.findConversation.apply(this, args);
+    }),
     listParticipants: jest.fn(),
   },
 }));
@@ -80,6 +89,7 @@ const payload: CreateQuestV2Payload = {
 describe("LiveQuestService", () => {
   beforeEach(() => {
     jest.clearAllMocks();
+    mockedQuestApi.listCompletionConfirmations.mockResolvedValue([] as never);
   });
   it("maps Board Hirer profile ids to ownerStudentId and leaves absent profiles undefined", async () => {
     const cards: QuestV2BoardCard[] = [
@@ -497,6 +507,121 @@ describe("LiveQuestService", () => {
       canReadWorkChat: true,
       canWriteWorkChat: true,
     });
+  });
+
+  it("finds a Work Conversation listed beyond the first page", async () => {
+    mockedQuestApi.getDetail.mockResolvedValue({
+      id: "quest-work-2",
+      title: "Work Quest",
+      description: "Coordinate the work.",
+      condition: { items: [{ id: "condition-1", text: "Complete the work." }] },
+      tag: null,
+      mode: "FIRST_COME_FIRST_SERVED",
+      participation: "SINGLE",
+      state: "QUEST_IN_PROGRESS",
+      questReward: 100,
+      headcount: 1,
+      activeWorkerCount: 1,
+      startTime: "2099-08-26T09:00:00+07:00",
+      dueAt: "2099-08-27T12:00:00+07:00",
+      proofRequired: false,
+      hirerName: "Hirer Alice",
+      locations: [],
+      images: [],
+    } as never);
+    mockedQuestApi.listQuestAssignments.mockResolvedValue([]);
+    mockedQuestApi.listApplications.mockResolvedValue([]);
+    mockedQuestApi.listCandidateTeams.mockResolvedValue([]);
+    mockedQuestApi.getUnderfilled.mockResolvedValue(null as never);
+    mockedQuestApi.listProofSubmissions.mockResolvedValue([]);
+    const workConversation = (id: string, questId: string) => ({
+      id,
+      type: "CONVERSATION_WORK",
+      quest: { id: questId, title: "Work Quest", status: "QUEST_IN_PROGRESS" },
+      latestMessage: null,
+      lastActivityAt: null,
+      archived: false,
+      readOnly: false,
+      unreadCount: 0,
+    });
+    mockedChatApi.listConversations
+      .mockResolvedValueOnce({
+        items: [workConversation("conversation-other", "quest-other")],
+        nextCursor: "cursor-2",
+      } as never)
+      .mockResolvedValueOnce({
+        items: [workConversation("conversation-work-2", "quest-work-2")],
+        nextCursor: null,
+      } as never);
+
+    const snapshot = await liveQuestService.getLiveSnapshot(
+      "quest-work-2",
+      "hirer-1"
+    );
+
+    expect(snapshot.workConversation?.id).toBe("conversation-work-2");
+    expect(mockedChatApi.listConversations).toHaveBeenLastCalledWith(
+      { limit: 20, cursor: "cursor-2" },
+      expect.anything()
+    );
+  });
+
+  it("loads server completion confirmations for proof-free Quests", async () => {
+    const confirmation = {
+      id: "completion-confirmation-1",
+      questId: "quest-free-1",
+      workerId: "worker-1",
+      teamId: null,
+      confirmedByUserId: "worker-1",
+      confirmedAt: "2099-08-27T10:00:00Z",
+      reviewStatus: "COMPLETION_CONFIRMATION_PENDING",
+      reviewDeadlineAt: "2099-08-28T10:00:00Z",
+      reviewReason: null,
+      reviewedAt: null,
+      reviewedBy: null,
+    };
+    mockedQuestApi.getDetail.mockResolvedValue({
+      id: "quest-free-1",
+      title: "Proof-free Quest",
+      description: null,
+      condition: { items: [] },
+      tag: null,
+      mode: "FIRST_COME_FIRST_SERVED",
+      participation: "SINGLE",
+      state: "QUEST_IN_PROGRESS",
+      questReward: 100,
+      headcount: 1,
+      activeWorkerCount: 1,
+      startTime: "2099-08-26T09:00:00+07:00",
+      dueAt: "2099-08-27T12:00:00+07:00",
+      proofRequired: false,
+      locations: [],
+      images: [],
+    } as never);
+    mockedQuestApi.listQuestAssignments.mockResolvedValue([]);
+    mockedQuestApi.listApplications.mockResolvedValue([]);
+    mockedQuestApi.listCandidateTeams.mockResolvedValue([]);
+    mockedQuestApi.getUnderfilled.mockResolvedValue(null as never);
+    mockedQuestApi.listProofSubmissions.mockResolvedValue([]);
+    mockedQuestApi.listCompletionConfirmations.mockResolvedValue([
+      confirmation,
+    ] as never);
+    mockedChatApi.listConversations.mockResolvedValue({
+      items: [],
+      nextCursor: null,
+    } as never);
+
+    const snapshot = await liveQuestService.getLiveSnapshot(
+      "quest-free-1",
+      "hirer-1"
+    );
+
+    expect(mockedQuestApi.listCompletionConfirmations).toHaveBeenCalledWith(
+      "quest-free-1",
+      {}
+    );
+    expect(snapshot.completionConfirmations).toEqual([confirmation]);
+    expect(snapshot.state).toBe("QUEST_IN_PROGRESS");
   });
   it("lets a non-member join by invite before startTime only", async () => {
     mockedQuestApi.getDetail.mockRejectedValue(

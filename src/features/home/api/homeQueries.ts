@@ -128,6 +128,7 @@ async function loadHirerHome(signal: AbortSignal): Promise<HirerHomeData> {
               id,
               displayName: name || "—",
               avatarUri: p.avatar?.url,
+              avatarCacheKey: p.avatar?.fileId,
               faculty: p.department?.faculty?.name,
             });
           } catch {

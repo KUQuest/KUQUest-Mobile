@@ -73,6 +73,8 @@ const styles = {
   confirmHeader: "items-center flex-row justify-between",
   sheetCloseButton:
     "items-center rounded-ku-pill h-[44px] justify-center ml-ku-sm w-[44px] active:bg-ku-surface-muted",
+  completionReviewCloseButton:
+    "items-center rounded-ku-pill h-[48px] justify-center ml-ku-sm w-[48px] active:bg-ku-surface-muted",
   statusCard:
     "items-center bg-ku-surface-success border-ku-border-success rounded-[16px] border mt-ku-lg p-ku-md",
   statusCardBlocked: "bg-ku-surface-muted border-ku-border-subtle",

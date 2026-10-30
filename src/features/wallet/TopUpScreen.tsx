@@ -191,11 +191,31 @@ export default function TopUpScreen() {
         });
         setPaymentVerified(true);
         setStatusMessage(m.paymentSuccess);
+      } else if (
+        latest.topUpStatus === "EXPIRED" ||
+        latest.topUpStatus === "FAILED"
+      ) {
+        // A dead QR cannot be paid; restart from the amount step.
+        activeTopUpIdRef.current = null;
+        setActiveTopUpId(null);
+        setQuote(null);
+        setStatusMessage(null);
+        setStep("amount");
+        setError(
+          latest.topUpStatus === "EXPIRED" ? m.topUpExpired : m.topUpFailed
+        );
       } else {
         setStatusMessage(m.paymentPending);
       }
     },
-    [m.paymentPending, m.paymentSuccess, queryClient, walletQuery]
+    [
+      m.paymentPending,
+      m.paymentSuccess,
+      m.topUpExpired,
+      m.topUpFailed,
+      queryClient,
+      walletQuery,
+    ]
   );
   useEffect(() => {
     const latest = statusQuery.data;

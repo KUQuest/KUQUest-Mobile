@@ -18,6 +18,7 @@ import type {
   QuestV2Assignment,
   QuestV2BoardCard,
   QuestV2CanonicalQuest,
+  QuestV2CompletionConfirmation,
   QuestV2Detail,
   QuestV2EditRequest,
   QuestV2Image,
@@ -555,6 +556,7 @@ export class LiveQuestService {
       teams,
       underfilled,
       proofs,
+      completionConfirmations,
       conversations,
       editRequest,
     ] = await Promise.all([
@@ -578,15 +580,18 @@ export class LiveQuestService {
         () => questApi.listProofSubmissions(questId, options),
         [] as QuestV2ProofSubmission[]
       ),
+      quest.proofRequired
+        ? Promise.resolve([] as QuestV2CompletionConfirmation[])
+        : optionalResource(
+            () => questApi.listCompletionConfirmations(questId, options),
+            [] as QuestV2CompletionConfirmation[]
+          ),
       optionalResource(
-        async () => {
-          const page = await chatApi.listConversations({ limit: 20 }, options);
-          return (
-            page.items.find(
-              (conversation) => conversation.quest.id === questId
-            ) ?? null
-          );
-        },
+        () =>
+          chatApi.findConversation(
+            (conversation) => conversation.quest.id === questId,
+            options
+          ),
         null as ServerChatConversation | null
       ),
       editRequestId
@@ -701,6 +706,7 @@ export class LiveQuestService {
       underfilled,
       editRequest,
       proofs,
+      completionConfirmations,
       workConversation: conversations,
       proofRequired: quest.proofRequired,
       dueAt: quest.dueAt ?? null,

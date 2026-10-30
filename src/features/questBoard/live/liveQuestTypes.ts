@@ -12,6 +12,7 @@ import type {
   QuestV2RewardAllocation,
   QuestV2Underfilled,
   QuestV2EditRequest,
+  QuestV2CompletionConfirmation,
 } from "@/api/questV2Contracts";
 import type { ServerChatConversation } from "@/api/ChatApi";
 import {
@@ -68,6 +69,8 @@ export interface LiveQuestSnapshot {
   underfilled: QuestV2Underfilled | null;
   editRequest: QuestV2EditRequest | null;
   proofs: QuestV2ProofSubmission[];
+  /** Present for proof-free Quests once the server list has been read. */
+  completionConfirmations?: QuestV2CompletionConfirmation[];
   workConversation: ServerChatConversation | null;
   proofRequired: boolean;
   dueAt: string | null;

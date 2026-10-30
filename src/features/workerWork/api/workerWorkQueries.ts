@@ -108,6 +108,15 @@ export function useSubmitProofMutation() {
       description?: string;
     }) => {
       if (plan.kind === "existing") {
+        // The draft may have been uploaded with an older description.
+        if (description !== undefined && description !== plan.description) {
+          await questApi.updateProofDraft(
+            questId,
+            plan.draftId,
+            { description },
+            createQuestIdempotencyKey()
+          );
+        }
         return questApi.submitProofDraft(
           questId,
           plan.draftId,

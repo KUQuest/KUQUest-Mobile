@@ -44,8 +44,19 @@ jest.mock("@/features/questBoard/api/questBoardQueries", () => ({
 jest.mock("../components/QuestReviewModal", () => {
   const native = jest.requireActual("react-native");
   return {
-    QuestReviewModal: ({ questId }: { questId: string | null }) =>
-      questId ? <native.View testID={`rating-review-${questId}`} /> : null,
+    QuestReviewModal: ({
+      questId,
+      revieweeId,
+    }: {
+      questId: string | null;
+      revieweeId?: string | null;
+    }) =>
+      questId ? (
+        <native.View
+          testID={`rating-review-${questId}`}
+          accessibilityLabel={revieweeId ?? "pick-reviewee"}
+        />
+      ) : null,
   };
 });
 
@@ -158,6 +169,53 @@ describe("HirerProofReviewScreen", () => {
     await view.rerender(<HirerProofReviewScreen questId="quest-1" />);
 
     expect(view.getByTestId("rating-review-quest-1")).toBeTruthy();
+  });
+
+  it("offers the Rating Review for every teammate after a Team proof decision", async () => {
+    const teamProof = {
+      ...proof("proof-1", "leader-1"),
+      workerId: null,
+      teamId: "team-1",
+    };
+    const teamSnapshot = (canReviewProof: boolean) => ({
+      ...singleSnapshot(canReviewProof),
+      mode: "CANDIDATE",
+      participation: "GROUP",
+      teams: [
+        {
+          id: "team-1",
+          name: "Team A",
+          leaderId: "leader-1",
+          state: "TEAM_SELECTED",
+          members: [],
+        },
+      ],
+      proofs: [teamProof],
+    });
+    mockSnapshot = teamSnapshot(true);
+    mockMutateAsync.mockResolvedValue({});
+    const view = await renderWithAppTheme(
+      <HirerProofReviewScreen questId="quest-1" />
+    );
+
+    await fireEvent.press(view.getByTestId("proof-review-open-proof-1"));
+    await fireEvent.press(view.getByTestId("proof-review-approve"));
+    await waitFor(() =>
+      expect(view.queryByTestId("proof-review-modal")).toBeNull()
+    );
+
+    mockSnapshot = {
+      ...teamSnapshot(false),
+      state: "QUEST_COMPLETED",
+      capabilities: { canReviewProof: false, canCreateReview: true },
+    };
+    await view.rerender(<HirerProofReviewScreen questId="quest-1" />);
+
+    // No single reviewee: the Hirer picks each teammate in the popup.
+    expect(view.getByTestId("rating-review-quest-1")).toHaveProp(
+      "accessibilityLabel",
+      "pick-reviewee"
+    );
   });
 
   it("keeps the Popup open and reloads when the review fails", async () => {

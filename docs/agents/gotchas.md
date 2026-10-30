@@ -210,3 +210,11 @@ Mistakes agents made in this repo and the rules they produced, so the same failu
 **Root cause**: `lint-staged` runs Prettier over each staged file, and much of the repo predates the formatter.
 
 **Rule**: Run `bun run format` as its own commit, never inside a feature change; when a diff is dominated by reformatting, check the file was already clean before editing it.
+
+### 2026-10-30 — An async `onPress` hangs RNTL `fireEvent.press`
+
+**What happened**: Dispute form tests timed out at 15 s once Confirm became `onPress={async () => { await submit(...) }}`; the mocked mutation never settled the awaited promise.
+
+**Root cause**: The async `fireEvent.press` awaits the handler's returned promise, so a handler waiting on a never-settled mock blocks the test.
+
+**Rule**: Keep `onPress` synchronous and chain async work (`void submit(...).then(...)`); in tests, drive mocked mutation callbacks (`onError` then `onSettled`) the way React Query would.

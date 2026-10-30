@@ -19,6 +19,7 @@ import { myQuestMessages } from "@/locales/myQuestMessages";
 import { useAppTheme } from "@/features/workspace/AppThemeProvider";
 import { spacing } from "@/theme/spacing";
 import {
+  useMyHirerCompletionReviewableIdsQuery,
   useMyHirerProofReviewableIdsQuery,
   useMyHirerQuestsQuery,
 } from "../api/myQuestsQueries";
@@ -26,12 +27,14 @@ import {
   projectMyQuestWorkspace,
   type MyQuestTab,
 } from "../myQuestWorkspaceProjection";
+import { canReviewCompletionForQuest } from "../myQuestService";
 import type { QuestCardAction, QuestSummary } from "../myQuestTypes";
 
 const ACTION_PATHNAMES = {
   edit: "/quest/[id]/edit",
   manage: "/quest/[id]/manage",
   proofReview: "/quest/[id]/proof-review",
+  completionReview: "/quest/[id]/completion-review",
 } as const satisfies Record<
   Exclude<QuestCardAction, "dispute" | "review">,
   string
@@ -54,24 +57,41 @@ export function useMyQuestListController({
   );
   const hirerQuery = useMyHirerQuestsQuery();
   const hirerQuests = hirerQuery.data ?? null;
-  const failedQuestIds = useMemo(
+  const proofQuestIds = useMemo(
     () =>
       (hirerQuests ?? [])
         .filter(
           (quest) =>
-            quest.state === QuestStatus.QUEST_FAILED && quest.proofRequired
+            quest.proofRequired &&
+            (quest.state === QuestStatus.QUEST_IN_PROGRESS ||
+              quest.state === QuestStatus.QUEST_FAILED)
         )
         .map((quest) => quest.id),
     [hirerQuests]
   );
   const proofReviewableIdsQuery = useMyHirerProofReviewableIdsQuery(
-    failedQuestIds,
-    requestedTab === "completed"
+    proofQuestIds,
+    requestedTab !== "draft"
   );
   const proofReviewableQuestIds = useMemo(() => {
     if (proofReviewableIdsQuery.isError) return new Set<string>();
     return new Set(proofReviewableIdsQuery.data ?? []);
   }, [proofReviewableIdsQuery.data, proofReviewableIdsQuery.isError]);
+  const completionQuestIds = useMemo(
+    () =>
+      (hirerQuests ?? [])
+        .filter(canReviewCompletionForQuest)
+        .map((quest) => quest.id),
+    [hirerQuests]
+  );
+  const completionReviewableIdsQuery = useMyHirerCompletionReviewableIdsQuery(
+    completionQuestIds,
+    requestedTab !== "draft"
+  );
+  const completionReviewableQuestIds = useMemo(() => {
+    if (completionReviewableIdsQuery.isError) return new Set<string>();
+    return new Set(completionReviewableIdsQuery.data ?? []);
+  }, [completionReviewableIdsQuery.data, completionReviewableIdsQuery.isError]);
   const tagQuery = useQuestTagsQuery(Boolean(hirerQuests?.length));
   const tagCatalog = useMemo(() => tagQuery.data ?? [], [tagQuery.data]);
   const projection = useMemo(
@@ -82,8 +102,16 @@ export function useMyQuestListController({
         hirerQuests,
         tagCatalog,
         proofReviewableQuestIds,
+        completionReviewableQuestIds,
       }),
-    [hirerQuests, locale, proofReviewableQuestIds, requestedTab, tagCatalog]
+    [
+      hirerQuests,
+      locale,
+      proofReviewableQuestIds,
+      completionReviewableQuestIds,
+      requestedTab,
+      tagCatalog,
+    ]
   );
 
   const {

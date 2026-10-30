@@ -4,6 +4,7 @@ import { QuestProofFileStatus } from "@/features/questBoard/domain/types";
 /** An unsent Proof draft plus which local file (by key) sits at each position. */
 export interface ProofDraftRef {
   id: string;
+  description: string | null;
   files: Pick<
     QuestV2ProofSubmission["files"][number],
     "position" | "uploadStatus" | "fileId"
@@ -15,7 +16,7 @@ export interface ProofDraftRef {
 export type ProofSendPlan<TFile extends { key: string }> =
   | { kind: "create"; files: TFile[] }
   | { kind: "append"; draftId: string; files: TFile[] }
-  | { kind: "existing"; draftId: string }
+  | { kind: "existing"; draftId: string; description: string | null }
   | {
       kind: "retry";
       draftId: string;
@@ -79,7 +80,11 @@ export function planProofSend<TFile extends { key: string }>(
     return replace;
   }
   if (hasReadyFile && failedPositions.length === 0) {
-    return { kind: "existing", draftId: draft.id };
+    return {
+      kind: "existing",
+      draftId: draft.id,
+      description: draft.description,
+    };
   }
   return { kind: "retry", draftId: draft.id, retries };
 }

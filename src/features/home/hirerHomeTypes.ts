@@ -23,6 +23,7 @@ export interface QuestMemberProfile {
   id: string;
   displayName: string;
   avatarUri?: string;
+  avatarCacheKey?: string;
   faculty?: string;
 }
 export interface LiveHirerQuestCardData {

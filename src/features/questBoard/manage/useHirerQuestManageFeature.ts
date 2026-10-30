@@ -36,6 +36,7 @@ import { getLocalizedErrorMessage } from "@/utils/error";
 import { useCandidateSelection } from "@/features/questBoard/useCandidateSelection";
 import {
   isHirerActor,
+  QuestCompletionConfirmationStatus,
   QuestEditRequestStatus,
   QuestMode,
   QuestParticipation,
@@ -183,6 +184,13 @@ export function useHirerQuestManageFeature(questId?: string) {
   const pendingProof = snapshot?.proofs.find(
     (proof) => proof.status === QuestProofStatus.PROOF_PENDING
   );
+  const pendingCompletionConfirmation = isHirerActor(snapshot?.actor)
+    ? snapshot?.completionConfirmations?.find(
+        (confirmation) =>
+          confirmation.reviewStatus ===
+          QuestCompletionConfirmationStatus.COMPLETION_CONFIRMATION_PENDING
+      )
+    : undefined;
   const terminal = snapshot ? isTerminalStatus(snapshot.state) : false;
   // Settlement per the cancellation matrix in quest-lifecycle-contract.md.
   const cancelDescription =
@@ -307,6 +315,13 @@ export function useHirerQuestManageFeature(questId?: string) {
       params: { id: snapshot.quest.id },
     });
   };
+  const reviewCompletion = () => {
+    if (!snapshot || !pendingCompletionConfirmation) return;
+    router.push({
+      pathname: "/quest/[id]/completion-review",
+      params: { id: snapshot.quest.id },
+    });
+  };
   const submitConditionEdit = (items: string[]) => {
     if (!snapshot || conditionEditSubmitting || inFlightRef.current) return;
     setConditionEditSubmitting(true);
@@ -363,6 +378,7 @@ export function useHirerQuestManageFeature(questId?: string) {
     error,
     originalConditionItems,
     pendingProof,
+    pendingCompletionConfirmation,
     terminal,
     cancelDescription,
     cancelPreviewText,
@@ -386,6 +402,7 @@ export function useHirerQuestManageFeature(questId?: string) {
     selectTeam,
     cancel,
     reviewProof,
+    reviewCompletion,
     submitConditionEdit,
   };
 }

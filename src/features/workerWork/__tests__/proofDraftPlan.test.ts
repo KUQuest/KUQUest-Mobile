@@ -2,6 +2,7 @@ import { planProofSend, type ProofDraftRef } from "../proofDraftPlan";
 
 const draft: ProofDraftRef = {
   id: "draft-1",
+  description: null,
   files: [
     { position: 0, fileId: "file-a", uploadStatus: "PROOF_FILE_READY" },
     { position: 1, fileId: null, uploadStatus: "PROOF_FILE_FAILED" },
@@ -36,7 +37,10 @@ describe("planProofSend", () => {
 
   it("creates a replacement for a draft that holds no file", () => {
     expect(
-      planProofSend({ id: "draft-empty", files: [], fileKeys: [] }, [a])
+      planProofSend(
+        { id: "draft-empty", description: null, files: [], fileKeys: [] },
+        [a]
+      )
     ).toEqual({ kind: "create", files: [a] });
   });
 
@@ -58,6 +62,7 @@ describe("planProofSend", () => {
   it("submits existing ready files without local copies", () => {
     const readyDraft: ProofDraftRef = {
       id: "draft-ready",
+      description: null,
       files: [
         { position: 0, fileId: "file-ready", uploadStatus: "PROOF_FILE_READY" },
       ],
@@ -66,12 +71,14 @@ describe("planProofSend", () => {
     expect(planProofSend(readyDraft, [])).toEqual({
       kind: "existing",
       draftId: "draft-ready",
+      description: null,
     });
   });
 
   it("appends new files to ready files from an earlier session", () => {
     const readyDraft: ProofDraftRef = {
       id: "draft-ready",
+      description: null,
       files: [
         { position: 0, fileId: "file-ready", uploadStatus: "PROOF_FILE_READY" },
       ],

@@ -139,6 +139,26 @@ describe("ChatApi", () => {
     });
   });
 
+  it("stops scanning Work Conversations after the page ceiling", async () => {
+    fetchMock.mockImplementation(() =>
+      Promise.resolve({
+        ok: true,
+        status: 200,
+        headers: new Headers({ "content-type": "application/json" }),
+        text: async () =>
+          JSON.stringify({
+            success: true,
+            data: { items: [], nextCursor: "more" },
+          }),
+      })
+    );
+
+    await expect(
+      api.findConversation((conversation) => conversation.id === "missing")
+    ).resolves.toBeNull();
+    expect(fetchMock).toHaveBeenCalledTimes(10);
+  });
+
   it("sends a message to the conversation endpoint", async () => {
     const data = {
       success: true,
