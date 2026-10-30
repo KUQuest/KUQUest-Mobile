@@ -160,7 +160,8 @@ jobs:
           KUQUEST_ANDROID_KEY_PASSWORD: ${{ secrets.ANDROID_KEY_PASSWORD }}
         # Build cache lives in ~/.gradle, which persists on the self-hosted runner;
         # the template's 2 GB heap is small for this 8 GB, 4 vCPU host.
-        run: ./gradlew --no-daemon --build-cache -Dorg.gradle.jvmargs="-Xmx3g -XX:MaxMetaspaceSize=768m" app:assembleRelease
+        # Mobile CI lints every PR, so the release build skips Android lint.
+        run: ./gradlew --no-daemon --build-cache -Dorg.gradle.jvmargs="-Xmx3g -XX:MaxMetaspaceSize=768m" app:assembleRelease -x lintVitalRelease
 
       - name: Package APK and checksum
         id: package
