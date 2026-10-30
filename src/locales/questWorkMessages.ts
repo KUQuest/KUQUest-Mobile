@@ -286,7 +286,7 @@ export const questWorkMessages: Record<SupportedLocale, QuestWorkMessages> = {
     conditionCount: (count) => `${count} ข้อ`,
     workChatHint: "สื่อสารและประสานงานเควสต์นี้กับผู้ว่าจ้าง",
     givenPrice: "ราคาที่ผู้ว่าจ้างเสนอต่อผู้ปฏิบัติงาน",
-    settlementTitle: "การชำระเงินของคุณ",
+    settlementTitle: "การได้รับเงินของคุณ",
     settlementAmount: "จำนวนเงินที่เข้ายอดรายได้",
     settlementPaid: "โอนเข้ายอดรายได้แล้ว",
     settlementPending: "รอการโอนเงิน รีเฟรชเพื่อตรวจสอบสถานะ",

@@ -76,12 +76,17 @@ describe("CancelQuestGuardrailSheet", () => {
     expect(props.onConfirm).toHaveBeenCalledTimes(1);
   });
 
-  it("tier 2 confirm button works without dragging", async () => {
+  it("tier 2 provides an accessible slide action without a confirm button", async () => {
     const view = await render(
       <CancelQuestGuardrailSheet {...props} tier={2} />
     );
     expect(view.getByText(props.slideLabel)).toBeTruthy();
-    await fireEvent.press(view.getByTestId("cancel-guardrail-confirm"));
+    expect(view.queryByTestId("cancel-guardrail-confirm")).toBeNull();
+    await fireEvent(
+      view.getByTestId("cancel-guardrail-slide-thumb"),
+      "accessibilityAction",
+      { nativeEvent: { actionName: "increment" } }
+    );
     expect(props.onConfirm).toHaveBeenCalledTimes(1);
   });
 

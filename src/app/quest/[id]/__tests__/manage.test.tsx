@@ -900,12 +900,20 @@ describe("HirerQuestManageRoute condition edit", () => {
       </>
     );
     await fireEvent.press(await view.findByTestId("hirer-manage-cancel"));
-    await fireEvent.press(await view.findByTestId("cancel-guardrail-confirm"));
+    await fireEvent(
+      await view.findByTestId("cancel-guardrail-slide-thumb"),
+      "accessibilityAction",
+      { nativeEvent: { actionName: "increment" } }
+    );
     await fireEvent.press(
       await view.findByRole("button", { name: alertMessages.en.dismiss })
     );
     await fireEvent.press(await view.findByTestId("hirer-manage-cancel"));
-    await fireEvent.press(await view.findByTestId("cancel-guardrail-confirm"));
+    await fireEvent(
+      await view.findByTestId("cancel-guardrail-slide-thumb"),
+      "accessibilityAction",
+      { nativeEvent: { actionName: "increment" } }
+    );
     await waitFor(() => {
       expect(questApi.cancelQuest).toHaveBeenCalledTimes(2);
     });
