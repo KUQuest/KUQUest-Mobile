@@ -484,14 +484,13 @@ export function useSendChatMessageMutation(socket: UseChatSocketResult) {
         variables.mode
       );
       await queryClient.cancelQueries({ queryKey });
-      const previous = queryClient.getQueryData<DisplayChatMessage[]>(queryKey);
       const optimisticMessage = variables.optimisticMessage;
       if (optimisticMessage) {
         queryClient.setQueryData<DisplayChatMessage[]>(queryKey, (current) =>
           mergeDisplayMessages(current ?? [], [optimisticMessage])
         );
       }
-      return { previous, queryKey };
+      return { queryKey };
     },
     onSuccess: async (sentMessage, variables, context) => {
       const queryKey =
@@ -539,15 +538,15 @@ export function useSendChatMessageMutation(socket: UseChatSocketResult) {
       await queryClient.invalidateQueries({ queryKey });
     },
     onError: (_error, variables, context) => {
+      // Remove only this send's optimistic message. Restoring the onMutate
+      // snapshot would bring back other sends' optimistic messages that have
+      // been confirmed since.
       if (context?.queryKey) {
         queryClient.setQueryData<DisplayChatMessage[]>(
           context.queryKey,
           (current) =>
-            mergeDisplayMessages(
-              context.previous ?? [],
-              (current ?? []).filter(
-                (message) => message.id !== variables.clientMessageId
-              )
+            (current ?? []).filter(
+              (message) => message.id !== variables.clientMessageId
             )
         );
       }

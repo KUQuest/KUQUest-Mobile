@@ -77,16 +77,19 @@ describe("useQuestTopUpFlow", () => {
   ])(
     "restarts from the amount step when verification reports %s",
     async (topUpStatus, message) => {
-      (walletApi.getTopUpStatus as jest.Mock).mockResolvedValue({
-        ...pendingTopUp,
-        topUpStatus,
-      });
+      // Stay PENDING until the Worker verifies; the status query may refetch
+      // on mount and must not reach the terminal status first.
+      (walletApi.getTopUpStatus as jest.Mock).mockResolvedValue(pendingTopUp);
       const { result } = await renderFlow();
 
       await act(async () => result.current.handleTopUpAmountChange("100"));
       await act(async () => result.current.handleTopUpContinue());
       await act(async () => result.current.handleTopUpConfirm());
       await waitFor(() => expect(result.current.topUpStep).toBe("promptPay"));
+      (walletApi.getTopUpStatus as jest.Mock).mockResolvedValue({
+        ...pendingTopUp,
+        topUpStatus,
+      });
 
       await act(async () => result.current.handleVerifyPayment());
 

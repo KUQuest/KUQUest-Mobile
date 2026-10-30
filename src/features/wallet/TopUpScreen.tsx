@@ -91,7 +91,9 @@ export default function TopUpScreen() {
         if (
           !current ||
           activeTopUpIdRef.current ||
-          stepRef.current !== "amount"
+          stepRef.current !== "amount" ||
+          // The cached list can lag behind; resume only a top-up still payable.
+          topUp.topUpStatus !== "PENDING"
         ) {
           return;
         }

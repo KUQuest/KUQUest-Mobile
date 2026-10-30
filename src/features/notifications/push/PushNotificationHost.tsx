@@ -2,10 +2,11 @@ import { useQueryClient } from "@tanstack/react-query";
 import { useRouter } from "expo-router";
 import * as Device from "expo-device";
 import * as Notifications from "expo-notifications";
-import { useEffect } from "react";
+import { useEffect, useSyncExternalStore } from "react";
 import { Platform } from "react-native";
 
-import { useSessionQuery } from "@/features/auth/sessionQueries";
+import { sessionKeys } from "@/features/auth/sessionQueries";
+import type { AuthSession } from "@/features/auth/types";
 import { invalidateQuestReads } from "@/features/questBoard/api/questBoardQueries";
 import { parsePushPayload, routeForPush } from "./pushPayload";
 import { QuestV2PushTypeValue } from "@/api/questV2Contracts";
@@ -16,8 +17,15 @@ import "./pushTask";
 export function PushNotificationHost() {
   const router = useRouter();
   const queryClient = useQueryClient();
-  const sessionQuery = useSessionQuery({ enabled: false });
-  const viewerId = sessionQuery.data?.user.id;
+  // Read the cache directly: clearSessionCache() drops queries without
+  // notifying observers, so a useQuery observer here would keep a stale viewer.
+  const queryCache = queryClient.getQueryCache();
+  const viewerId = useSyncExternalStore(
+    (onChange) => queryCache.subscribe(onChange),
+    () =>
+      queryClient.getQueryData<AuthSession | null>(sessionKeys.detail())?.user
+        .id
+  );
 
   useEffect(() => {
     if (Platform.OS !== "android" || !viewerId || !isPushEnabled()) return;
