@@ -26,6 +26,7 @@ export function LiveEntrySurface({
   locale,
   groupMessages,
   busy = false,
+  hideTeamEntry = false,
   onOpenTeam,
   onOpenCandidateReview,
   onOpenPartialConsent,
@@ -34,6 +35,7 @@ export function LiveEntrySurface({
   groupMessages: GroupQuestMessages;
   locale: "en" | "th";
   busy?: boolean;
+  hideTeamEntry?: boolean;
   onOpenTeam: () => void;
   onOpenCandidateReview: () => void;
   onOpenPartialConsent: () => void;
@@ -57,7 +59,8 @@ export function LiveEntrySurface({
     snapshot.nextAction === QuestNextAction.CONSENT_UNDERFILLED;
   const shouldRender =
     isUnderfilled ||
-    (isGroupCandidate &&
+    (!hideTeamEntry &&
+      isGroupCandidate &&
       !isHirer &&
       (snapshot.team !== null ||
         snapshot.capabilities.canCreateTeam ||
@@ -80,7 +83,9 @@ export function LiveEntrySurface({
         : groupMessages.workerResponseRequired
       : isHirer
         ? groupMessages.candidateReviewTitle
-        : groupMessages.noTeamTitle;
+        : snapshot.team
+          ? groupMessages.roster
+          : groupMessages.noTeamTitle;
   const description = cancelled
     ? underfilledCancellationDescription(
         groupMessages,

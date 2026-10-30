@@ -57,7 +57,6 @@ function SubmitProbe({
 
 const replacementPlan: TestPlan = {
   kind: "create",
-  replaceDraftId: "draft-old",
   files: [
     {
       key: "local-proof",
@@ -73,8 +72,12 @@ describe("useSubmitProofMutation", () => {
     jest.clearAllMocks();
   });
 
-  it("keeps old draft when replacement creation fails", async () => {
-    mockedQuestApi.createProofDraft.mockRejectedValue(new Error("offline"));
+  it("lets the Server replace the old draft without a client delete", async () => {
+    mockedQuestApi.createProofDraft.mockResolvedValue({
+      id: "draft-new",
+      files: [{ uploadStatus: "PROOF_FILE_READY", fileId: "file-1" }],
+    } as never);
+    mockedQuestApi.submitProofDraft.mockResolvedValue({} as never);
     const onError = jest.fn();
     const view = await renderWithQueryClient(
       createElement(SubmitProbe, { plan: replacementPlan, onError })
@@ -84,45 +87,17 @@ describe("useSubmitProofMutation", () => {
       await fireEvent.press(view.getByTestId("submit-proof"));
     });
     await waitFor(() =>
-      expect(onError).toHaveBeenCalledWith(expect.any(Error))
+      expect(mockedQuestApi.submitProofDraft).toHaveBeenCalledWith(
+        "quest-1",
+        "draft-new",
+        "idempotency-key"
+      )
     );
 
+    expect(onError).not.toHaveBeenCalled();
     expect(mockedQuestApi.deleteProofDraft).not.toHaveBeenCalled();
   });
 
-  it("cleans up replacement when old draft deletion fails", async () => {
-    mockedQuestApi.createProofDraft.mockResolvedValue({
-      id: "draft-new",
-      files: [],
-    } as never);
-    mockedQuestApi.deleteProofDraft
-      .mockRejectedValueOnce(new Error("offline"))
-      .mockResolvedValueOnce({} as never);
-    const onError = jest.fn();
-    const view = await renderWithQueryClient(
-      createElement(SubmitProbe, { plan: replacementPlan, onError })
-    );
-
-    await act(async () => {
-      await fireEvent.press(view.getByTestId("submit-proof"));
-    });
-    await waitFor(() =>
-      expect(onError).toHaveBeenCalledWith(expect.any(Error))
-    );
-
-    expect(mockedQuestApi.deleteProofDraft).toHaveBeenNthCalledWith(
-      1,
-      "quest-1",
-      "draft-old",
-      "idempotency-key"
-    );
-    expect(mockedQuestApi.deleteProofDraft).toHaveBeenNthCalledWith(
-      2,
-      "quest-1",
-      "draft-new",
-      "idempotency-key"
-    );
-  });
   it("invalidates the participation detail after submitting proof", async () => {
     const queryClient = new QueryClient();
     const key = workerHomeKeys.participationDetail("quest-1");

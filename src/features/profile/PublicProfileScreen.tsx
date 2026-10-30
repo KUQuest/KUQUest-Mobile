@@ -10,7 +10,7 @@ import {
   UserRound,
 } from "lucide-react-native";
 
-import { Image, Pressable, ScrollView, Text, View } from "@/tw";
+import { Pressable, ScrollView, Text, View } from "@/tw";
 import { Chip } from "@/components/ui/Chip";
 import { ScreenLayout } from "../../components/layout/ScreenLayout";
 import { useAppTheme } from "@/features/workspace/AppThemeProvider";
@@ -209,22 +209,6 @@ export default function PublicProfileScreen() {
       >
         <ChevronLeft color={colors.primaryDeep} size={24} strokeWidth={2.5} />
       </Pressable>
-      <View className="flex-1 items-center justify-center px-ku-sm">
-        <Image
-          accessibilityLabel="KUQuest"
-          contentFit="contain"
-          source={require("../../../topbar-logo.svg")}
-          style={{ height: 24, width: 70 }}
-        />
-        <Text
-          numberOfLines={1}
-          className="mt-ku-2 font-ku-semibold text-ku-caption text-ku-text-strong"
-          testID="public-profile-header-name"
-        >
-          {displayName || messages.title}
-        </Text>
-      </View>
-      <View className="w-[48px]" />
     </View>
   );
 

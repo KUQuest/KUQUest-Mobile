@@ -67,33 +67,15 @@ async function uploadProofDraft(
       createQuestIdempotencyKey()
     );
   }
-  // Create first: API has no atomic replacement; failed create must not delete old draft.
+  // The Server replaces the submitter's unsent draft on create.
   if (plan.kind === "create") {
-    const replacementDraft = await questApi
+    return questApi
       .createProofDraft(
         questId,
         { assets: plan.files.map(toUploadAsset), description },
         createQuestIdempotencyKey()
       )
       .catch(asRejectedUpload(plan.files.length));
-    if (!plan.replaceDraftId) return replacementDraft;
-    try {
-      await questApi.deleteProofDraft(
-        questId,
-        plan.replaceDraftId,
-        createQuestIdempotencyKey()
-      );
-    } catch (error) {
-      await questApi
-        .deleteProofDraft(
-          questId,
-          replacementDraft.id,
-          createQuestIdempotencyKey()
-        )
-        .catch(() => undefined);
-      throw error;
-    }
-    return replacementDraft;
   }
   let draft: QuestV2ProofSubmission | null = null;
   for (const { position, file } of plan.retries) {

@@ -690,6 +690,7 @@ export function QuestDetailBody({
           locale={locale}
           groupMessages={liveEntry.groupMessages}
           busy={liveEntry.busy}
+          hideTeamEntry={Boolean(status?.title)}
           onOpenTeam={liveEntry.onOpenTeam}
           onOpenCandidateReview={liveEntry.onOpenCandidateReview}
           onOpenPartialConsent={liveEntry.onOpenPartialConsent}

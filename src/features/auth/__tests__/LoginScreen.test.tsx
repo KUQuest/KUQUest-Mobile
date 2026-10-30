@@ -14,7 +14,11 @@ jest.mock("expo-constants", () => ({
 }));
 
 let mockLocale: "en" | "th" = "th";
-let mockSearchParams: { sessionExpired?: string } = {};
+let mockSearchParams: {
+  sessionExpired?: string;
+  memberBanned?: string;
+  memberBannedUntil?: string;
+} = {};
 
 const mockExpoConstants = jest.requireMock("expo-constants").default;
 
@@ -115,6 +119,40 @@ describe("LoginScreen", () => {
     await waitFor(() => {
       expect(onNavigate).toHaveBeenCalledWith({ type: "ONBOARDING", step: 1 });
     });
+  });
+
+  test("shows a permanent Member Ban from sign-in without a retry action", async () => {
+    const authAdapter = createAdapter();
+    authAdapter.authenticate.mockRejectedValue(
+      new AuthError("MEMBER_BANNED", undefined, {
+        memberBan: { permanent: true },
+      })
+    );
+    await renderWithQueryClient(<LoginScreen authAdapter={authAdapter} />);
+
+    await fireEvent.press(screen.getByTestId("signin-button"));
+
+    await waitFor(() => {
+      expect(screen.getByTestId("error-message").props.children).toBe(
+        authMessages.th.memberBannedPermanent
+      );
+    });
+    expect(screen.queryByTestId("retry-button")).toBeNull();
+  });
+
+  test("shows the end of a temporary Member Ban from the route", async () => {
+    mockSearchParams = {
+      memberBanned: "temporary",
+      memberBannedUntil: "2026-11-06T00:00:00.000Z",
+    };
+    await renderWithQueryClient(<LoginScreen authAdapter={createAdapter()} />);
+
+    await waitFor(() => {
+      expect(screen.getByTestId("error-message").props.children).toContain(
+        "2026"
+      );
+    });
+    mockSearchParams = {};
   });
 
   test("shows a retry action for an authentication failure", async () => {

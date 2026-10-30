@@ -14,7 +14,7 @@ import {
   conductReportApi,
   type ConductReportInput,
 } from "@/api/ConductReportApi";
-import { disputeApi } from "@/api/DisputeApi";
+import { disputeApi, type DisputeInput } from "@/api/DisputeApi";
 import type {
   QuestV2CreateEditRequestPayload,
   QuestV2ProofReviewPayload,
@@ -879,8 +879,14 @@ export function useFileDisputeMutation() {
   const queryClient = useQueryClient();
   return useMutation({
     mutationKey: questBoardKeys.disputeFiling(),
-    mutationFn: ({ questId }: { questId: string; viewerId: string }) =>
-      disputeApi.fileDispute(questId),
+    mutationFn: ({
+      questId,
+      input,
+    }: {
+      questId: string;
+      viewerId: string;
+      input: DisputeInput;
+    }) => disputeApi.fileDispute(questId, input),
     onSuccess: async (filedCase, variables) => {
       queryClient.setQueryData(
         questBoardKeys.myDisputeCase(variables.questId, variables.viewerId),
@@ -892,14 +898,21 @@ export function useFileDisputeMutation() {
         variables.viewerId
       );
     },
-    onError: async (error, variables) => {
+    onError: async (error, { questId, viewerId }) => {
       if (error instanceof ApiError && error.status === 409) {
-        await queryClient.invalidateQueries({
-          queryKey: questBoardKeys.myDisputeCase(
-            variables.questId,
-            variables.viewerId
-          ),
-        });
+        // The Work Hub reads the Dispute window from the snapshot and keeps
+        // the case lookup disabled, so a plain invalidation would not refetch
+        // it. Fetch the case directly and reload the snapshot's window.
+        await Promise.all([
+          queryClient
+            .fetchQuery({
+              queryKey: questBoardKeys.myDisputeCase(questId, viewerId),
+              queryFn: ({ signal }) =>
+                disputeApi.getMyDisputeCase(questId, signal),
+            })
+            .catch(() => undefined),
+          invalidateQuestReads(queryClient, questId, viewerId),
+        ]);
       }
     },
   });

@@ -204,8 +204,8 @@ describe("MyQuestListScreen", () => {
     );
     expect(await screen.findByTestId("quest-review-modal")).toBeTruthy();
     expect(
-      screen.getByTestId("my-quest-list-secondary-failed-reviewable-1")
-    ).toBeTruthy();
+      screen.queryByTestId("my-quest-list-secondary-failed-reviewable-1")
+    ).toBeNull();
   });
 
   it("hides proof review when failed Quest proof list is not reviewable", async () => {
@@ -232,8 +232,8 @@ describe("MyQuestListScreen", () => {
       screen.getByTestId("my-quest-list-action-failed-not-reviewable-1")
     ).toBeTruthy();
     expect(
-      screen.getByTestId("my-quest-list-secondary-failed-not-reviewable-1")
-    ).toBeTruthy();
+      screen.queryByTestId("my-quest-list-secondary-failed-not-reviewable-1")
+    ).toBeNull();
   });
 
   it("confirms cancellation and reports successful cancellation", async () => {

@@ -20,15 +20,17 @@ import { getLocalizedErrorMessage } from "@/utils/error";
 
 interface QuestReviewFeatureProps {
   questId?: string;
+  revieweeId?: string | null;
   onSubmitted?: () => void;
 }
 
-type ReviewTarget = { id: string; label: string };
+type ReviewTarget = { id: string; label: string; reviewed: boolean };
 
 export const HIRER_REVIEW_TARGET_ID = "hirer";
 
 export function useQuestReviewFeature({
   questId,
+  revieweeId,
   onSubmitted,
 }: QuestReviewFeatureProps) {
   const { locale } = useLocale();
@@ -53,9 +55,17 @@ export function useQuestReviewFeature({
   const [rating, setRating] = useState(0);
   const [comment, setComment] = useState("");
   const [submitError, setSubmitError] = useState<string | null>(null);
+  const [savedNotice, setSavedNotice] = useState<string | null>(null);
 
   const actor = snapshotQuery.data?.actor;
-  const targetOptions = useMemo<ReviewTarget[]>(() => {
+  const authored = useMemo(
+    () =>
+      (reviewsQuery.data ?? []).filter(
+        (review) => review.reviewerId === viewerId
+      ),
+    [reviewsQuery.data, viewerId]
+  );
+  const allTargetOptions = useMemo<ReviewTarget[]>(() => {
     if (actor === QuestActor.WORKER) {
       const quest = snapshotQuery.data?.quest;
       const hirerName =
@@ -64,6 +74,7 @@ export function useQuestReviewFeature({
         {
           id: HIRER_REVIEW_TARGET_ID,
           label: hirerName || messages.hirerLabel,
+          reviewed: authored.length > 0,
         },
       ];
     }
@@ -93,15 +104,22 @@ export function useQuestReviewFeature({
         assignment.member?.displayName ??
         participantNames.get(assignment.workerId) ??
         messages.workerFallback(index + 1),
+      reviewed: authored.some(
+        (review) => review.revieweeId === assignment.workerId
+      ),
     }));
-  }, [actor, assignmentsQuery.data, messages, snapshotQuery.data]);
+  }, [actor, assignmentsQuery.data, authored, messages, snapshotQuery.data]);
+  // Opened for a specific Worker: lock to them. Unknown id falls back to the picker.
+  const lockedTargets = revieweeId
+    ? allTargetOptions.filter((target) => target.id === revieweeId)
+    : [];
+  const targetOptions =
+    lockedTargets.length > 0 ? lockedTargets : allTargetOptions;
   const selectedTarget =
     targetOptions.find((target) => target.id === selectedId) ??
+    targetOptions.find((target) => !target.reviewed) ??
     targetOptions[0] ??
     null;
-  const authored = (reviewsQuery.data ?? []).filter(
-    (review) => review.reviewerId === viewerId
-  );
   const existingReview = selectedTarget
     ? actor === QuestActor.WORKER
       ? authored[0]
@@ -138,10 +156,14 @@ export function useQuestReviewFeature({
     void reviewsQuery.refetch();
   };
   const canReview = snapshotQuery.data?.capabilities.canCreateReview === true;
+  const isDirty =
+    rating !== (existingReview?.rating ?? 0) ||
+    comment.trim() !== (existingReview?.comment ?? "").trim();
 
   const handleSubmit = async () => {
     if (!questId || !viewerId || !selectedTarget || loadError) return;
     setSubmitError(null);
+    setSavedNotice(null);
     const trimmedComment = comment.trim();
     if (rating < 1 || rating > 5) {
       setSubmitError(messages.invalidRating);
@@ -179,6 +201,15 @@ export function useQuestReviewFeature({
         });
       }
       delete reviewKeysRef.current[selectedTarget.id];
+      // GROUP Hirer: move straight to the next Worker still waiting for a review.
+      const nextTarget = targetOptions.find(
+        (target) => !target.reviewed && target.id !== selectedTarget.id
+      );
+      if (nextTarget) {
+        setSelectedId(nextTarget.id);
+        setSavedNotice(messages.savedNext(selectedTarget.label));
+        return;
+      }
       onSubmitted?.();
     } catch (caught) {
       if (caught instanceof ApiError && caught.status < 500) {
@@ -199,15 +230,18 @@ export function useQuestReviewFeature({
     createReviewMutation,
     updateReviewMutation,
     handleSubmit,
+    isDirty,
     loading,
     loadError: loadErrorMessage,
     mode: existingReview ? "edit" : "create",
     messages,
     rating,
     retryLoad,
+    savedNotice,
     selectedTarget,
     setComment,
     setRating,
+    setSavedNotice,
     setSelectedId,
     setSubmitError,
     submitError,

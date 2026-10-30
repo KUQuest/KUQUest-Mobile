@@ -287,6 +287,64 @@ describe("AuthMiddleware", () => {
     expect(mockReplace).toHaveBeenCalledTimes(1);
     expect(queryClient.getQueryData(["private", "wallet"])).toBeUndefined();
   });
+  test("a Member Ban signs out and shows the ban on the Login route", async () => {
+    mockSegments = ["(tabs)"];
+    mockGetSession.mockResolvedValue({ user: { id: "student-1" } });
+    mockSignOut.mockResolvedValue(undefined);
+    const queryClient = new QueryClient({
+      defaultOptions: { queries: { retry: false } },
+    });
+    await renderWithAppTheme(
+      <QueryClientProvider client={queryClient}>
+        <AuthMiddleware>
+          <SessionStatus />
+        </AuthMiddleware>
+      </QueryClientProvider>
+    );
+    await waitFor(() =>
+      expect(screen.getByTestId("session-user").props.children).toBe(
+        "student-1"
+      )
+    );
+    await act(async () => {
+      await Promise.resolve();
+    });
+
+    const client = new ApiClient({
+      baseUrl: "https://api.example.test",
+      fetchImpl: jest.fn().mockResolvedValue(
+        new Response(
+          JSON.stringify({
+            success: false,
+            error: {
+              code: "MEMBER_BANNED",
+              message: "This Member is banned.",
+              memberBan: {
+                permanent: false,
+                bannedUntil: "2026-11-06T00:00:00.000Z",
+              },
+            },
+          }),
+          { status: 403 }
+        )
+      ),
+    });
+    await act(async () => {
+      await client.get("/api/v1/profile", z.unknown()).catch(() => undefined);
+    });
+
+    await waitFor(() =>
+      expect(mockReplace).toHaveBeenCalledWith({
+        pathname: "/",
+        params: {
+          memberBanned: "temporary",
+          memberBannedUntil: "2026-11-06T00:00:00.000Z",
+        },
+      })
+    );
+    expect(mockSignOut).toHaveBeenCalledTimes(1);
+  });
+
   test("closes live sockets immediately when a request returns 401", async () => {
     const originalApiUrl = process.env.EXPO_PUBLIC_API_URL;
     const restoreWebSocket = installMockWebSocket();

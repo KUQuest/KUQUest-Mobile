@@ -344,6 +344,32 @@ describe("notification transitions", () => {
     ).toEqual([]);
   });
 
+  it("tells a Worker their Proof was not approved while the Quest stays in progress", () => {
+    const base = makeWorkerAssignment(
+      "UNDERFILLED_COMPLETED",
+      "QUEST_IN_PROGRESS"
+    );
+    const notApproved = { ...base, state: "ASSIGNMENT_INCOMPLETE" as const };
+    expect(
+      detectWorkerQuestTransitions(new Map([["quest-1", "FULL_OR_ASSIGNED"]]), [
+        notApproved,
+      ])
+    ).toEqual([
+      {
+        questId: "quest-1",
+        kind: "PROOF_NOT_APPROVED",
+        cancellationReason: null,
+        href: "/quest/[id]",
+      },
+    ]);
+    expect(
+      detectWorkerQuestTransitions(
+        new Map([["quest-1", "PROOF_NOT_APPROVED"]]),
+        [notApproved]
+      )
+    ).toEqual([]);
+  });
+
   it("also tells a Worker the Server left ASSIGNMENT_ACTIVE on the failed Quest", () => {
     const stillActive = makeWorkerAssignment(
       "UNDERFILLED_COMPLETED",

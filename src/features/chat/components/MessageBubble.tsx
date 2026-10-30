@@ -16,6 +16,10 @@ import {
   type RenderAttachment,
 } from "../domain/conversationModule";
 import { attachmentLinkCache } from "../api/attachmentLinkCache";
+import {
+  getChatParticipantProfile,
+  type ChatParticipantProfile,
+} from "../api/chatProfile";
 import { formatTimeInBangkok } from "@/domain/datetime";
 
 import styles from "../chatStyles";
@@ -321,6 +325,19 @@ export function MessageBubble({
   const isSystem = message.kind === "SYSTEM";
   const mine = message.sender === "me" && !isSystem;
   const senderId = message.senderId;
+  const [senderProfile, setSenderProfile] =
+    useState<ChatParticipantProfile | null>(null);
+  useEffect(() => {
+    if (mine || isSystem || !senderId) return;
+    let active = true;
+    void getChatParticipantProfile(senderId).then((profile) => {
+      if (active) setSenderProfile(profile);
+    });
+    return () => {
+      active = false;
+    };
+  }, [senderId, mine, isSystem]);
+  const profile = senderProfile?.id === senderId ? senderProfile : null;
   const senderName = message.senderName ?? conversation.participantName;
   const onAvatarPress =
     senderId && onProfilePress ? () => onProfilePress(senderId) : undefined;
@@ -360,6 +377,8 @@ export function MessageBubble({
           className={styles.messageAvatar}
           imageTestID={`chat-avatar-image-${senderId ?? `${senderName}-${message.id}`}`}
           name={senderName}
+          uri={profile?.avatarUrl}
+          cacheKey={profile?.avatarFileId}
           onPress={onAvatarPress}
           size={32}
           style={{ backgroundColor: conversation.avatarColor }}
