@@ -1213,7 +1213,9 @@ describe("QuestDetailScreen smoke", () => {
         await hook.result.current.actions.join();
       });
       expect(refetchDetail).toHaveBeenCalledTimes(2);
-      expect(hook.result.current.snapshot.data).toEqual(fullSnapshot);
+      await waitFor(() =>
+        expect(hook.result.current.snapshot.data).toEqual(fullSnapshot)
+      );
       expect(closeConfirmation).toHaveBeenCalledTimes(1);
       expect(showError).toHaveBeenCalledWith(
         expect.objectContaining({

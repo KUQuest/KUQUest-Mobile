@@ -22,7 +22,6 @@ export interface SettingsMessages {
   systemLanguage: string;
   about: string;
   version: string;
-  aboutDescription: string;
   switchingAccount: string;
   logout: string;
   back: string;
@@ -52,8 +51,7 @@ export const settingsMessages: Record<SupportedLocale, SettingsMessages> = {
     cancel: "Cancel",
     systemLanguage: "English",
     about: "About KUQuest",
-    version: "Version 1.0.0",
-    aboutDescription: "A trusted Quest board for the KU community",
+    version: "Version",
     switchingAccount: "Switching account...",
     logout: "Log out",
     back: "Go back",
@@ -80,8 +78,7 @@ export const settingsMessages: Record<SupportedLocale, SettingsMessages> = {
     cancel: "ยกเลิก",
     systemLanguage: "ไทย",
     about: "เกี่ยวกับ KUQuest",
-    version: "เวอร์ชัน 1.0.0",
-    aboutDescription: "กระดานเควสต์ที่ไว้วางใจได้สำหรับชุมชน KU",
+    version: "เวอร์ชัน",
     switchingAccount: "กำลังเปลี่ยนบัญชี...",
     logout: "ออกจากระบบ",
     back: "ย้อนกลับ",

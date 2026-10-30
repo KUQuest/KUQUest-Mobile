@@ -157,31 +157,20 @@ export default function LoginScreen({
       <ScrollView contentContainerClassName={styles.scrollContent}>
         <View className={styles.content}>
           <View className={styles.hero}>
+            <View className={styles.heroOrbLarge} pointerEvents="none" />
+            <View className={styles.heroOrbSmall} pointerEvents="none" />
             <View className={styles.heroMark}>
-              <GraduationCap color={colors.primary} size={28} strokeWidth={2} />
+              <GraduationCap color={colors.primary} size={32} strokeWidth={2} />
             </View>
             <Text className={styles.title} accessibilityRole="header">
               KUQuest
             </Text>
-            <Text className={styles.subtitle}>{messages.subtitle}</Text>
+            {messages.subtitle ? (
+              <Text className={styles.subtitle}>{messages.subtitle}</Text>
+            ) : null}
           </View>
 
           <View className={styles.formSection}>
-            <View
-              className={styles.noticeCard}
-              accessibilityRole="text"
-              accessibilityLabel={`${messages.noticeTextPrefix} ${messages.noticeEmailDomain} ${messages.noticeTextSuffix}`}
-            >
-              <GraduationCap color={colors.primary} size={24} strokeWidth={2} />
-              <Text className={styles.noticeText}>
-                {messages.noticeTextPrefix}{" "}
-                <Text className={styles.noticeTextBold}>
-                  {messages.noticeEmailDomain}
-                </Text>{" "}
-                {messages.noticeTextSuffix}
-              </Text>
-            </View>
-
             {shownError && (
               <View
                 className={styles.errorCard}
@@ -229,6 +218,17 @@ export default function LoginScreen({
                 />
               </Host>
             </View>
+
+            <Text
+              className={styles.noticeText}
+              accessibilityLabel={`${messages.noticeTextPrefix} ${messages.noticeEmailDomain} ${messages.noticeTextSuffix}`}
+            >
+              {messages.noticeTextPrefix}{" "}
+              <Text className={styles.noticeTextBold}>
+                {messages.noticeEmailDomain}
+              </Text>{" "}
+              {messages.noticeTextSuffix}
+            </Text>
 
             {isStagingTestAuthAvailable() && (
               <View className={styles.stagingTestSection}>

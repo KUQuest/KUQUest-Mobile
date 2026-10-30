@@ -2,17 +2,20 @@ const styles = {
   safeArea: "flex-1 bg-ku-background",
   scrollContent: "flex-grow items-center px-ku-lg py-ku-md",
   content: "flex-1 w-full max-w-[420px]",
-  hero: "bg-ku-primary rounded-ku-sheet px-ku-lg pt-ku-xl pb-ku-lg",
+  hero: "flex-1 min-h-[280px] overflow-hidden justify-end bg-ku-primary rounded-ku-sheet px-ku-lg pb-ku-xl",
+  heroOrbLarge:
+    "absolute -right-[72px] -top-[72px] h-[240px] w-[240px] rounded-ku-pill bg-ku-primary-dark",
+  heroOrbSmall:
+    "absolute right-ku-lg top-[168px] h-[72px] w-[72px] rounded-ku-pill bg-ku-primary-deep",
   heroMark:
-    "bg-ku-on-primary rounded-ku-pill h-[56px] w-[56px] items-center justify-center",
+    "bg-ku-on-primary rounded-ku-pill h-[64px] w-[64px] items-center justify-center",
   title:
     "font-ku-bold text-ku-display text-ku-on-primary -tracking-[0.5px] mt-ku-lg",
   subtitle:
     "font-ku-semibold text-ku-label text-ku-on-primary tracking-[2px] uppercase mt-ku-xs",
-  formSection: "w-full gap-ku-md mt-auto pt-ku-xl",
-  noticeCard:
-    "bg-ku-primary-subtle border-ku-primary-border border rounded-ku-card p-ku-md flex-row items-center gap-ku-12",
-  noticeText: "flex-1 font-ku-regular text-ku-body-small text-ku-text",
+  formSection: "w-full gap-ku-md pt-ku-lg",
+  noticeText:
+    "font-ku-regular text-ku-body-small text-ku-text-secondary text-center",
   noticeTextBold: "font-ku-bold text-ku-text-strong",
   errorCard:
     "bg-ku-surface-danger border-ku-border-danger border rounded-ku-card p-ku-md flex-row items-start gap-ku-12",
@@ -36,8 +39,9 @@ const styles = {
   stagingTestAvatarText: "font-ku-bold text-ku-label text-ku-primary-dark",
   stagingTestButtonText:
     "flex-1 font-ku-medium text-ku-body-small text-ku-text-strong",
-  footerSection: "gap-ku-sm mt-ku-xl pt-ku-md border-t border-ku-divider",
-  footerLinks: "flex-row flex-wrap gap-x-ku-md gap-y-ku-xs",
+  footerSection:
+    "gap-ku-xs mt-ku-lg pt-ku-md border-t border-ku-divider items-center",
+  footerLinks: "flex-row flex-wrap justify-center gap-x-ku-md gap-y-ku-xs",
   footerLinkText: "font-ku-medium text-ku-meta text-ku-text-muted",
   copyrightText: "font-ku-regular text-ku-label text-ku-text-muted",
 } as const;

@@ -18,6 +18,13 @@ jest.mock("expo-router", () => ({
   }),
 }));
 
+jest.mock("expo-constants", () => ({
+  __esModule: true,
+  default: {
+    expoConfig: { version: "1.2.3", android: { versionCode: 45 } },
+  },
+}));
+
 jest.mock("../../auth/AuthService", () => ({
   authService: { signOut: jest.fn().mockResolvedValue(undefined) },
 }));
@@ -57,7 +64,7 @@ describe("Settings screen", () => {
     expect(view.getByText("Account")).toBeTruthy();
     expect(view.getByText("Preferences")).toBeTruthy();
     expect(view.queryByText("Support")).toBeNull();
-    expect(view.getByText("Version 1.0.0")).toBeTruthy();
+    expect(view.getByText("Version 1.2.3 (45)")).toBeTruthy();
     expect(view.getByText("Edit Profile")).toBeTruthy();
     expect(view.queryByTestId("settings-switch-account")).toBeNull();
     expect(view.queryByTestId("settings-notifications")).toBeNull();
