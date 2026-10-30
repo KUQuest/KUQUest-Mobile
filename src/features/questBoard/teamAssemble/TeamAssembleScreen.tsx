@@ -1,6 +1,5 @@
 import { useState } from "react";
 import { useRouter } from "expo-router";
-import { KeyboardAvoidingView, Platform } from "react-native";
 import { useSafeAreaInsets } from "react-native-safe-area-context";
 
 import { ApiError } from "@/api/ApiClient";
@@ -10,7 +9,7 @@ import { TopBar } from "@/components/ui/TopBar";
 import { useJoinCandidateTeamMutation } from "@/features/questBoard/api/questBoardQueries";
 import { useLocale } from "@/features/preferences/localeStore";
 import { groupQuestMessages } from "@/locales/groupQuestMessages";
-import { View } from "@/tw";
+import { KeyboardAvoidingView, View } from "@/tw";
 import type { QuestDetailScreenProps } from "../detail/questDetailRoute";
 import { useQuestDetailFeature } from "../detail/useQuestDetailFeature";
 import { TeamAssembleEmptyState } from "./components/TeamAssembleEmptyState";
@@ -90,10 +89,7 @@ export default function TeamAssembleScreen({
         title={messages.teamTitle}
         variant="detail"
       />
-      <KeyboardAvoidingView
-        behavior={Platform.OS === "ios" ? "padding" : undefined}
-        style={{ flex: 1 }}
-      >
+      <KeyboardAvoidingView behavior="padding" style={{ flex: 1 }}>
         <View className={styles.screenBody}>
           {view.state === "ready" && view.team ? (
             <TeamAssembleView

@@ -1,5 +1,5 @@
 import type { ReactNode } from "react";
-import { Modal, Platform } from "react-native";
+import { Modal } from "react-native";
 import { Star, X } from "lucide-react-native";
 
 import { Button } from "@/components/ui/Button";
@@ -92,10 +92,7 @@ function QuestReviewSheet({
       className={styles.proofSheetBackdrop}
       onPress={onClose}
     >
-      <KeyboardAvoidingView
-        behavior={Platform.OS === "ios" ? "padding" : "height"}
-        className="flex-1 justify-end"
-      >
+      <KeyboardAvoidingView behavior="padding" className="flex-1 justify-end">
         <Pressable
           accessibilityRole="none"
           accessible={false}

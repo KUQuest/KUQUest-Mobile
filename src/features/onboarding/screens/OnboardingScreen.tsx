@@ -1,4 +1,3 @@
-import { Platform } from "react-native";
 import { CircleAlert } from "lucide-react-native";
 
 import { CustomDatePickerModal } from "@/components/ui/CustomDatePickerModal";
@@ -53,10 +52,7 @@ export default function OnboardingScreen() {
       edges={["top", "left", "right", "bottom"]}
       className={styles.safeArea}
     >
-      <KeyboardAvoidingView
-        className="flex-1"
-        behavior={Platform.OS === "ios" ? "padding" : undefined}
-      >
+      <KeyboardAvoidingView className="flex-1" behavior="padding">
         <OnboardingForm {...content.formProps} />
         <OnboardingActionBar {...content.actionBarProps} />
       </KeyboardAvoidingView>

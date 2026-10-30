@@ -1,7 +1,6 @@
 import { getLocalizedErrorMessage } from "@/utils/error";
 import React, { useCallback, useEffect, useRef, useState } from "react";
 import { useQueryClient } from "@tanstack/react-query";
-import { Platform } from "react-native";
 import { KeyboardAvoidingView, ScrollView, View } from "@/tw";
 import { useRouter } from "expo-router";
 import { useSafeAreaInsets } from "react-native-safe-area-context";
@@ -272,10 +271,7 @@ export default function TopUpScreen() {
 
   return (
     <ScreenLayout className="bg-ku-background" edges={["top", "left", "right"]}>
-      <KeyboardAvoidingView
-        behavior={Platform.OS === "ios" ? "padding" : undefined}
-        className="flex-1"
-      >
+      <KeyboardAvoidingView behavior="padding" className="flex-1">
         <TopUpHeader
           locale={locale}
           onBack={handleBack}
