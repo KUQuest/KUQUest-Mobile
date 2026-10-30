@@ -21,6 +21,9 @@ import {
   useMyDisputeCaseQuery,
 } from "../../api/questBoardQueries";
 import { disputeMessages } from "@/locales/disputeMessages";
+import { teamSplitMessages } from "@/locales/teamSplitMessages";
+import { DisputeOutcome } from "../../dispute/DisputeOutcome";
+import { TeamSplitCard } from "../../dispute/TeamSplitCard";
 import { ownCompletionConfirmation } from "../../domain/completionConfirmationOwnership";
 import type { LiveQuestSnapshot } from "../../live/liveQuestService";
 import { FailedQuestNotice } from "../../shared/FailedQuestNotice";
@@ -106,11 +109,17 @@ export default function QuestWorkActionsCard({
     isFailedWorker && serverDispute === undefined && disputeQuery.isPending;
   const disputeStatusError =
     isFailedWorker && serverDispute === undefined && disputeQuery.isError;
-  const filedDispute =
+  // A Candidate Team has one case, filed by the Team Leader; every Team
+  // member reads it as `teamCase`.
+  const ownDispute =
     serverDispute?.myCase ?? (isFailedWorker ? disputeQuery.data?.case : null);
+  const filedDispute = ownDispute ?? serverDispute?.teamCase ?? null;
+  const isTeamMemberViewer = serverDispute?.viewerRole === "TEAM_MEMBER";
+  const teamSplit = serverDispute?.teamSplit ?? null;
   // Only the Team Leader files for a Candidate Team.
   const canFileDispute =
     snapshot.teamRole !== QuestTeamRole.MEMBER &&
+    !isTeamMemberViewer &&
     (serverDispute?.canFile ??
       (isFailedWorker &&
         disputeQuery.isSuccess &&
@@ -234,6 +243,13 @@ export default function QuestWorkActionsCard({
                   ? `${disputeCopy.filedCase(filedDispute.displayId)} · ${filedDisputeStatus}`
                   : disputeCopy.filedCase(filedDispute.displayId)}
               </Text>
+              {ownDispute ? (
+                <DisputeOutcome
+                  questId={snapshot.quest.id}
+                  viewerId={viewerId}
+                  status={ownDispute.status}
+                />
+              ) : null}
             </View>
           ) : canFileDispute && onFileDispute ? (
             <Pressable
@@ -256,8 +272,20 @@ export default function QuestWorkActionsCard({
                 {messages.fileDispute}
               </Text>
             </Pressable>
+          ) : isTeamMemberViewer ? (
+            <Text className={styles.bodyText} testID="team-case-leader-only">
+              {teamSplitMessages[locale].teamCaseLeaderOnly}
+            </Text>
           ) : null}
         </View>
+      ) : null}
+
+      {isFailedWorker && teamSplit ? (
+        <TeamSplitCard
+          questId={snapshot.quest.id}
+          viewerId={viewerId}
+          split={teamSplit}
+        />
       ) : null}
 
       <View className={styles.section}>

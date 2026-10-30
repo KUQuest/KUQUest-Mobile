@@ -618,6 +618,38 @@ describe("QuestWorkScreen", () => {
       },
       shows: ["Dispute filed", "Case DC-000123 · Waiting for Admin review"],
     },
+    {
+      name: "a Team member reading the Team Leader's case and split",
+      dispute: {
+        canFile: false,
+        windowEndsAt: "2099-01-02T18:00:00+07:00",
+        viewerRole: "TEAM_MEMBER" as const,
+        myCase: null,
+        teamCase: {
+          id: "dispute-2",
+          displayId: "DC-000200",
+          status: "DISPUTE_CASE_RESOLVED",
+          createdAt: "2099-01-01T19:00:00+07:00",
+        },
+        teamSplit: {
+          disputeCaseId: "dispute-2",
+          status: "AWAITING_SPLIT" as const,
+          splitSource: null,
+          approvedAmountSatang: 50000,
+          deadlineAt: "2099-01-03T18:00:00+07:00",
+          confirmedAt: null,
+          paidAt: null,
+          paymentPending: false,
+          viewerIsLeader: false,
+          canSubmitSplit: false,
+          members: [],
+        },
+      },
+      shows: [
+        "Case DC-000200 · Admin resolved the case",
+        "Waiting for the Team Leader to split.",
+      ],
+    },
   ])(
     "hides File Dispute for $name from the failed-Quest snapshot",
     async ({ dispute, shows }) => {
