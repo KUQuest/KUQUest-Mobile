@@ -275,6 +275,10 @@ export interface CachedChatAttachmentLink {
   expiresAtTimestamp: number;
 }
 
+// ponytail: scanning stops after 10 pages (200 Work Conversations); a Server-side
+// questId filter on listWorkConversations is the upgrade path.
+const MAX_CONVERSATION_LIST_PAGES = 10;
+
 export class ChatApi {
   private readonly attachmentLinkCache = new Map<
     string,
@@ -344,6 +348,25 @@ export class ChatApi {
     );
   }
 
+  /** Pages through Work Conversations until one matches or the list ends. */
+  async findConversation(
+    predicate: (conversation: ServerChatConversation) => boolean,
+    options?: RequestOptions
+  ): Promise<ServerChatConversation | null> {
+    let cursor: string | undefined;
+    for (let page = 0; page < MAX_CONVERSATION_LIST_PAGES; page += 1) {
+      const result = await this.listConversations(
+        cursor ? { limit: 20, cursor } : { limit: 20 },
+        options
+      );
+      const found = result.items.find(predicate);
+      if (found) return found;
+      if (!result.nextCursor) return null;
+      cursor = result.nextCursor;
+    }
+    return null;
+  }
+
   async getMessages(
     conversationId: string,
     params: { limit?: number; before?: string; after?: string } = {},
@@ -368,17 +391,14 @@ export class ChatApi {
     options?: RequestOptions
   ): Promise<ChatConversationSnapshot> {
     const [conversationResult, messageResult] = await Promise.allSettled([
-      this.listConversations({ limit: 20 }, options),
+      this.findConversation((item) => item.id === conversationId, options),
       this.getMessages(conversationId, { limit: 50 }, options),
     ]);
     if (conversationResult.status === "rejected") {
       throw conversationResult.reason;
     }
 
-    const conversation =
-      conversationResult.value.items.find(
-        (item) => item.id === conversationId
-      ) ?? null;
+    const conversation = conversationResult.value;
     if (!conversation) {
       return { conversation: null, messages: null };
     }

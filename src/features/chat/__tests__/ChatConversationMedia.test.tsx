@@ -61,6 +61,16 @@ jest.mock("@/features/preferences/localeStore", () => ({
 
 jest.mock("@/features/auth/AuthService", () => ({
   authService: {
+    getStudentApi: () =>
+      Promise.resolve({
+        getPublicProfile: () =>
+          Promise.resolve({
+            avatar: {
+              fileId: "avatar-1",
+              url: "https://example.test/sora.png",
+            },
+          }),
+      }),
     getSession: () =>
       Promise.resolve({
         user: { id: "viewer-1" },
@@ -134,13 +144,13 @@ it("renders the participant avatar and opens the participant public profile", as
       color="#059669"
       name="Sora"
       profileId="worker-1"
-      avatarUrl="https://example.test/sora.png"
-      avatarFileId="avatar-1"
       onPress={onPress}
     />
   );
 
-  expect(view.getByTestId("chat-avatar-image-worker-1")).toBeTruthy();
+  await waitFor(() =>
+    expect(view.getByTestId("chat-avatar-image-worker-1")).toBeTruthy()
+  );
   await fireEvent.press(
     view.getByRole("button", { name: "View profile of Sora" })
   );

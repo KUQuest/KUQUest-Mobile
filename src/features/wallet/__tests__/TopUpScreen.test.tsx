@@ -429,6 +429,34 @@ describe("TopUpScreen", () => {
     });
   });
 
+  it.each([
+    ["EXPIRED", "คิวอาร์โค้ดนี้หมดอายุแล้ว กรุณาระบุจำนวนเงินเพื่อสร้างใหม่"],
+    ["FAILED", "การชำระเงินไม่สำเร็จ กรุณาระบุจำนวนเงินเพื่อลองอีกครั้ง"],
+  ])(
+    "returns to the amount step when Check Status reports %s",
+    async (topUpStatus, message) => {
+      (walletApi.getTopUpStatus as jest.Mock)
+        .mockResolvedValueOnce(mockTopUpRecord)
+        .mockResolvedValue({ ...mockTopUpRecord, topUpStatus });
+      const view = await renderWithQueryClient(<TopUpScreen />);
+
+      await fireEvent.press(view.getByTestId("top-up-continue-btn"));
+      await waitFor(() => expect(view.getByTestId("top-up-confirmation-step")));
+      await fireEvent.press(view.getByTestId("top-up-confirm-btn"));
+      await waitFor(() =>
+        expect(view.getByTestId("top-up-check-status-btn")).toBeEnabled()
+      );
+      await fireEvent.press(view.getByTestId("top-up-check-status-btn"));
+
+      await waitFor(() => {
+        expect(view.getByTestId("top-up-amount-step")).toBeTruthy();
+        expect(view.getByText(message)).toBeTruthy();
+      });
+      expect(view.queryByTestId("top-up-promptpay-step")).toBeNull();
+      expect(view.queryByText("กำลังรอการยืนยันการชำระเงิน…")).toBeNull();
+    }
+  );
+
   it("does not repeat requests after a terminal status without a new event", async () => {
     jest.useFakeTimers();
     (walletApi.getTopUpStatus as jest.Mock).mockResolvedValue({

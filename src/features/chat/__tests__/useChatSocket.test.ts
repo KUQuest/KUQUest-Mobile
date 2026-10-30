@@ -1,5 +1,6 @@
 import { act, renderHook } from "@testing-library/react-native";
 
+import { ApiError } from "@/api/ApiClient";
 import { authClient } from "@/features/auth/authClient";
 import { useChatSocket } from "../api/useChatSocket";
 import { MockWebSocket } from "@/testing/mockWebSocket";
@@ -347,6 +348,49 @@ describe("useChatSocket", () => {
     await expect(rejected).rejects.toThrow("Try again later.");
     await unmount();
   });
+  it.each([
+    ["CONVERSATION_READ_ONLY", 409],
+    ["INQUIRY_CLOSED", 409],
+    ["INQUIRY_NOT_AVAILABLE", 404],
+    ["RATE_LIMITED", 429],
+  ])(
+    "rejects a pending %s send as the REST error and alerts only once",
+    async (code, status) => {
+      const onEvent = jest.fn();
+      const { result, unmount } = await renderHook(() =>
+        useChatSocket({
+          conversationId: "conversation-1",
+          conversationType: "CANDIDATE_INQUIRY",
+          enabled: true,
+          onEvent,
+        })
+      );
+      const socket = MockWebSocket.instances[0];
+      if (!socket) throw new Error("Expected a WebSocket connection");
+      await act(async () => {
+        socket.open();
+      });
+
+      const rejected = result.current.sendMessage({
+        clientMessageId: "client-message-3",
+        text: "Hello",
+      });
+      socket.receive(
+        JSON.stringify({
+          type: "MESSAGE_REJECTED",
+          clientMessageId: "client-message-3",
+          error: { code, message: "Rejected." },
+        })
+      );
+
+      const error = await rejected.catch((reason: unknown) => reason);
+      expect(error).toBeInstanceOf(ApiError);
+      expect(error).toMatchObject({ code, status });
+      expect(onEvent).not.toHaveBeenCalled();
+      await unmount();
+    }
+  );
+
   it("delivers MESSAGE_REJECTED with null clientMessageId to onEvent", async () => {
     const onEvent = jest.fn();
     const { unmount } = await renderHook(() =>

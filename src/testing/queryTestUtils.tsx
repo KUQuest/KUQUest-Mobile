@@ -8,14 +8,30 @@ import React from "react";
 
 import { AppThemeProvider } from "@/features/workspace/AppThemeProvider";
 
+function createTestQueryClient() {
+  return new QueryClient({
+    defaultOptions: {
+      mutations: { retry: false },
+      queries: { retry: false },
+    },
+  });
+}
+
 /**
- * Renders a component tree inside the app theme provider; `rerender` keeps it.
+ * Renders a component tree inside the app theme provider and a fresh
+ * QueryClient (shared reads such as avatars use queries); `rerender` keeps it.
  */
 export function renderWithAppTheme(
   ui: React.ReactElement,
   options?: Omit<RenderOptions, "wrapper">
 ): Promise<RenderResult> {
-  return render(ui, { ...options, wrapper: AppThemeProvider });
+  const queryClient = createTestQueryClient();
+  const Wrapper = ({ children }: { children: React.ReactNode }) => (
+    <AppThemeProvider>
+      <QueryClientProvider client={queryClient}>{children}</QueryClientProvider>
+    </AppThemeProvider>
+  );
+  return render(ui, { ...options, wrapper: Wrapper });
 }
 
 /**
@@ -26,12 +42,7 @@ export function renderWithQueryClient(
   ui: React.ReactElement,
   options?: Omit<RenderOptions, "wrapper">
 ): Promise<RenderResult> {
-  const queryClient = new QueryClient({
-    defaultOptions: {
-      mutations: { retry: false },
-      queries: { retry: false },
-    },
-  });
+  const queryClient = createTestQueryClient();
 
   return render(
     <AppThemeProvider>

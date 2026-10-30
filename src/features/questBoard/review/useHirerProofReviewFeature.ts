@@ -21,7 +21,11 @@ export function useHirerProofReviewFeature(questId?: string) {
   const reviewProofMutation = useReviewProofMutation();
   const snapshot = snapshotQuery.data;
   const [selectedProofId, setSelectedProofId] = useState<string | null>(null);
-  const [decidedWorkerId, setDecidedWorkerId] = useState<string | null>(null);
+  // Set once a decision lands; `revieweeId` is null for a Team proof so the
+  // Hirer picks each teammate (quest-mode-matrix-contract.md, Quadrant 4).
+  const [decided, setDecided] = useState<{ revieweeId: string | null } | null>(
+    null
+  );
 
   const rows = useMemo(
     () => (snapshot ? projectProofReviewRows(snapshot) : []),
@@ -63,7 +67,9 @@ export function useHirerProofReviewFeature(questId?: string) {
         viewerId: viewerId ?? undefined,
         idempotencyKey: createQuestIdempotencyKey(),
       });
-      setDecidedWorkerId(selectedProof.workerId);
+      setDecided({
+        revieweeId: selectedProof.teamId ? null : selectedProof.workerId,
+      });
       return true;
     } catch (caught) {
       // Another device may have decided first; show the Server's current state.
@@ -78,15 +84,15 @@ export function useHirerProofReviewFeature(questId?: string) {
     // A decision can end the Quest; once it is Terminal, offer the Rating
     // Review (rating-review-contract.md). GROUP Quests wait for every decision.
     ratingReviewQuestId:
-      decidedWorkerId &&
+      decided &&
       !proofForReview &&
       isTerminalStatus(snapshot?.state) &&
       snapshot?.capabilities.canCreateReview
         ? (questId ?? null)
         : null,
     // The Rating Review opens for the Worker whose proof was just decided.
-    ratingReviewWorkerId: decidedWorkerId,
-    closeRatingReview: () => setDecidedWorkerId(null),
+    ratingReviewWorkerId: decided?.revieweeId ?? null,
+    closeRatingReview: () => setDecided(null),
     openProof: setSelectedProofId,
     pendingCount,
     proofFileLinksQuery,

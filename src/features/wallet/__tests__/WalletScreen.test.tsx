@@ -387,6 +387,24 @@ describe("WalletScreen", () => {
 
     await waitFor(() => expect(walletApi.getWallet).toHaveBeenCalledTimes(2));
   });
+  it("shows the retry error card instead of an empty history when history fails", async () => {
+    (walletApi.getTransactionHistory as jest.Mock).mockRejectedValue(
+      new Error("Ledger unavailable")
+    );
+
+    const view = await renderWithQueryClient(<WalletScreen />);
+
+    await waitFor(() => {
+      expect(view.getByTestId("hirer-wallet-error")).toBeTruthy();
+    });
+    expect(view.queryByTestId("hirer-wallet-empty")).toBeNull();
+
+    await fireEvent.press(view.getByRole("button", { name: "ลองอีกครั้ง" }));
+
+    await waitFor(() =>
+      expect(walletApi.getTransactionHistory).toHaveBeenCalledTimes(2)
+    );
+  });
   it("does not refetch on mount or within 30s, then refetches after 30s", async () => {
     const view = await renderWithQueryClient(<WalletScreen />);
     await waitFor(() => expect(walletApi.getWallet).toHaveBeenCalledTimes(1));

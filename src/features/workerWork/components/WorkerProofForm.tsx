@@ -269,6 +269,7 @@ export function WorkerProofForm({
       failedDraft ??
         (serverDraft && {
           id: serverDraft.id,
+          description: serverDraft.description,
           files: serverDraft.files,
           fileKeys: [],
         }),
@@ -310,6 +311,7 @@ export function WorkerProofForm({
                 : [];
         setFailedDraft({
           id: error.draft.id,
+          description: error.draft.description,
           files: error.draft.files,
           fileKeys,
         });

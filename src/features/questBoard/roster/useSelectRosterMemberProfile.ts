@@ -8,6 +8,7 @@ import { usePublicProfileQuery } from "@/features/profile/api/profileQueries";
 export interface SelectRosterMemberProfile {
   displayName: string;
   avatarUri?: string;
+  avatarCacheKey?: string;
   ratingAverage: number | null;
   faculty?: string;
   department?: string;
@@ -28,6 +29,7 @@ export function useSelectRosterMemberProfile(
   return {
     displayName: name || "KU Student",
     avatarUri: data.avatar?.url,
+    avatarCacheKey: data.avatar?.fileId,
     ratingAverage: data.reputation.rating.average,
     faculty: data.department?.faculty.name
       ? localizeFacultyName(data.department.faculty.name, locale)
