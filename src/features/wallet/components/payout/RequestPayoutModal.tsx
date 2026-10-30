@@ -1,8 +1,9 @@
 import React, { useRef, useState } from "react";
-import { Modal, StyleSheet } from "react-native";
+import { Modal, Platform, StyleSheet } from "react-native";
 import type { ViewStyle } from "react-native";
 import {
   ActivityIndicator,
+  KeyboardAvoidingView,
   Pressable,
   ScrollView,
   Text,
@@ -26,7 +27,16 @@ import {
   usePayoutDestinationQuery,
   useQuotePayoutMutation,
 } from "../../api/walletQueries";
+import { BankLogo } from "./BankLogo";
 import payoutStyles from "./payoutStyles";
+import { getThaiBankLabel } from "./thaiBanks";
+
+/** Keeps digits and at most one decimal point with two fraction digits. */
+function sanitizeAmountInput(value: string) {
+  const cleaned = value.replace(/,/g, ".").replace(/[^0-9.]/g, "");
+  const [whole = "", ...rest] = cleaned.split(".");
+  return rest.length > 0 ? `${whole}.${rest.join("").slice(0, 2)}` : whole;
+}
 
 interface RequestPayoutModalProps {
   visible: boolean;
@@ -213,12 +223,13 @@ export function RequestPayoutModal({
     return (
       <View className={payoutStyles.card} testID="payout-request-destination">
         <View className={payoutStyles.row}>
+          <BankLogo code={destination.bankCode} size={36} />
           <View className="flex-1">
             <Text className={payoutStyles.rowLabel}>
               {m.payoutDestinationLabel}
             </Text>
             <Text className={payoutStyles.cardTitle}>
-              {`${destination.bankCode ?? ""} ${destination.maskedAccount ?? ""}`.trim()}
+              {`${destination.bankCode ? getThaiBankLabel(destination.bankCode, locale) : ""} ${destination.maskedAccount ?? ""}`.trim()}
             </Text>
             <Text className={payoutStyles.note}>
               {destination.accountHolderName}
@@ -279,9 +290,11 @@ export function RequestPayoutModal({
           <TextInput
             accessibilityLabel={m.payoutAmountLabel}
             editable={earningsSatang > 0 && !busy}
+            inputMode="decimal"
             keyboardType="decimal-pad"
+            maxLength={12}
             onChangeText={(value) => {
-              setInputAmount(value.replace(/[^0-9.]/g, ""));
+              setInputAmount(sanitizeAmountInput(value));
               setErrorMsg(null);
             }}
             placeholder="0.00"
@@ -458,41 +471,46 @@ export function RequestPayoutModal({
           style={StyleSheet.absoluteFill}
           testID="payout-request-backdrop"
         />
-        <View
-          accessibilityViewIsModal
-          className={payoutStyles.modalCard}
-          style={modalCardShadow}
-          testID="payout-request-modal"
+        <KeyboardAvoidingView
+          behavior={Platform.OS === "ios" ? "padding" : "height"}
+          className="w-full"
         >
-          <View className={payoutStyles.header}>
-            <Banknote color={colors.workerDeep} size={20} strokeWidth={2.2} />
-            <Text
-              accessibilityRole="header"
-              className={payoutStyles.headerTitle}
-            >
-              {m.requestPayoutTitle}
-            </Text>
-            <TouchableOpacity
-              accessibilityLabel={m.closeButton}
-              accessibilityRole="button"
-              accessibilityState={{ disabled: busy }}
-              className={payoutStyles.closeBtn}
-              disabled={busy}
-              onPress={handleClose}
-              testID="payout-request-close-btn"
-            >
-              <X color={colors.textSecondary} size={20} strokeWidth={2} />
-            </TouchableOpacity>
-          </View>
-          <ScrollView
-            contentContainerClassName={payoutStyles.scrollContent}
-            keyboardShouldPersistTaps="handled"
-            showsVerticalScrollIndicator={false}
+          <View
+            accessibilityViewIsModal
+            className={payoutStyles.modalCard}
+            style={modalCardShadow}
+            testID="payout-request-modal"
           >
-            <Text className={payoutStyles.desc}>{m.requestPayoutDesc}</Text>
-            {quote ? renderQuoteStep(quote) : renderAmountStep()}
-          </ScrollView>
-        </View>
+            <View className={payoutStyles.header}>
+              <Banknote color={colors.workerDeep} size={20} strokeWidth={2.2} />
+              <Text
+                accessibilityRole="header"
+                className={payoutStyles.headerTitle}
+              >
+                {m.requestPayoutTitle}
+              </Text>
+              <TouchableOpacity
+                accessibilityLabel={m.closeButton}
+                accessibilityRole="button"
+                accessibilityState={{ disabled: busy }}
+                className={payoutStyles.closeBtn}
+                disabled={busy}
+                onPress={handleClose}
+                testID="payout-request-close-btn"
+              >
+                <X color={colors.textSecondary} size={20} strokeWidth={2} />
+              </TouchableOpacity>
+            </View>
+            <ScrollView
+              contentContainerClassName={payoutStyles.scrollContent}
+              keyboardShouldPersistTaps="handled"
+              showsVerticalScrollIndicator={false}
+            >
+              <Text className={payoutStyles.desc}>{m.requestPayoutDesc}</Text>
+              {quote ? renderQuoteStep(quote) : renderAmountStep()}
+            </ScrollView>
+          </View>
+        </KeyboardAvoidingView>
       </View>
     </Modal>
   );
