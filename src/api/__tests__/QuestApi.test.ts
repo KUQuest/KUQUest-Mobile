@@ -1229,6 +1229,8 @@ describe("QuestApi", () => {
           position: 0,
           uploadStatus: "PROOF_FILE_READY",
           failureCode: null,
+          url: "https://files.example.test/proof.png?token=temporary",
+          urlExpiresAt: "2030-01-01T00:15:00.000Z",
         },
         {
           fileId: null,
@@ -1237,6 +1239,8 @@ describe("QuestApi", () => {
           position: 1,
           uploadStatus: "PROOF_FILE_FAILED",
           failureCode: "UPLOAD_FAILED",
+          url: null,
+          urlExpiresAt: null,
         },
       ],
     };

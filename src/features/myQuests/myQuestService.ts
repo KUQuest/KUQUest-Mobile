@@ -95,6 +95,14 @@ export function getLiveHirerItems(
         status,
         statusTone: liveQuestStatusTone(statusValue),
         primaryAction: isDraft ? "edit" : terminal ? "review" : "manage",
+        ...(tab === "completed" &&
+        (quest.state === QuestStatus.QUEST_COMPLETED ||
+          (quest.state === QuestStatus.QUEST_FAILED &&
+            quest.mode === QuestMode.FIRST_COME_FIRST_SERVED &&
+            quest.participation === QuestParticipation.GROUP)) &&
+        quest.proofRequired
+          ? { secondaryAction: "proofHistory" as const }
+          : {}),
         ...((quest.state === QuestStatus.QUEST_IN_PROGRESS ||
           quest.state === QuestStatus.QUEST_FAILED) &&
         proofReviewableQuestIds?.has(quest.id) === true

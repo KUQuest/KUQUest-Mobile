@@ -6,8 +6,10 @@ import { secureStorage } from "@/infrastructure/storage/keyValueStorage";
 import { useLocaleStore } from "@/features/preferences/localeStore";
 import {
   hasHandledTransition,
+  localizedMemberPushCopy,
   localizedPushCopy,
   markTransitionHandled,
+  parseMemberPushPayload,
   parsePushPayload,
   PUSH_CHANNEL_ID,
 } from "./pushPayload";
@@ -31,6 +33,8 @@ function readTaskData(data: unknown): unknown {
  * sessions are skipped: the in-app notice coordinator already covers them.
  */
 export async function presentIncomingPush(raw: unknown): Promise<void> {
+  const memberPayload = parseMemberPushPayload(raw);
+  if (memberPayload) return presentMemberPush(memberPayload);
   const payload = parsePushPayload(raw);
   if (!payload || AppState.currentState === "active") return;
   if (await hasHandledTransition(secureStorage, payload.transitionId)) return;
@@ -42,6 +46,28 @@ export async function presentIncomingPush(raw: unknown): Promise<void> {
     trigger: { channelId: PUSH_CHANNEL_ID },
   });
   await markTransitionHandled(secureStorage, payload.transitionId);
+}
+
+/**
+ * Penalty Events cannot be muted and may reach a banned, signed-out Member:
+ * the copy comes from the payload alone and no API call is made. The
+ * `eventKey` is recorded before the alert is shown.
+ */
+async function presentMemberPush(
+  payload: NonNullable<ReturnType<typeof parseMemberPushPayload>>
+): Promise<void> {
+  if (AppState.currentState === "active") return;
+  if (await hasHandledTransition(secureStorage, payload.eventKey)) return;
+  await markTransitionHandled(secureStorage, payload.eventKey);
+  await useLocaleStore.getState().hydrateLocale();
+  const copy = localizedMemberPushCopy(
+    payload,
+    useLocaleStore.getState().locale
+  );
+  await Notifications.scheduleNotificationAsync({
+    content: { title: copy.title, body: copy.body, data: payload },
+    trigger: { channelId: PUSH_CHANNEL_ID },
+  });
 }
 
 // Must run at module scope: the OS starts the JS bundle headless for the task.

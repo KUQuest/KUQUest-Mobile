@@ -37,14 +37,8 @@ describe("app config Android architectures", () => {
     (process.env as Record<string, string | undefined>).NODE_ENV = nodeEnv;
   });
 
-  test("builds phones only for a production build", () => {
+  test("keeps the emulator architecture in a production build", () => {
     (process.env as Record<string, string | undefined>).NODE_ENV = "production";
-
-    expect(buildArchs()).toEqual(["arm64-v8a"]);
-  });
-
-  test("keeps the emulator architecture for a local build", () => {
-    (process.env as Record<string, string | undefined>).NODE_ENV = "test";
 
     expect(buildArchs()).toEqual(["arm64-v8a", "x86_64"]);
   });

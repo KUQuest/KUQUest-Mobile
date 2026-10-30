@@ -1,4 +1,5 @@
 import React from "react";
+import { Linking } from "react-native";
 import { fireEvent, waitFor } from "@testing-library/react-native";
 import { renderWithAppTheme } from "@/testing/queryTestUtils";
 
@@ -13,12 +14,21 @@ const mockMutateAsync = jest.fn();
 const mockRefetch = jest.fn();
 let mockSnapshot: unknown;
 let mockProofFileLinksQuery: {
-  data: { fileId: string; url: string }[];
+  data: { fileId: string; url: string; urlExpiresAt: string }[];
   isPending: boolean;
   isError: boolean;
   isSuccess: boolean;
   refetch: jest.Mock;
 };
+
+jest.mock("expo-file-system", () => ({
+  File: Object.assign(jest.fn(), { downloadFileAsync: jest.fn() }),
+  Paths: { cache: "cache" },
+}));
+jest.mock("expo-sharing", () => ({
+  isAvailableAsync: jest.fn(),
+  shareAsync: jest.fn(),
+}));
 
 jest.mock("expo-router", () => ({
   useRouter: () => ({
@@ -75,6 +85,8 @@ function proof(id: string, workerId: string) {
         sizeBytes: 100,
         position: 0,
         uploadStatus: "PROOF_FILE_READY",
+        url: "https://files.example.test/proof.png?token=temporary",
+        urlExpiresAt: "2099-10-30T00:00:00Z",
         failureCode: null,
       },
     ],
@@ -113,6 +125,7 @@ describe("HirerProofReviewScreen", () => {
         {
           fileId: "proof-file-1",
           url: "https://files.example.test/proof.png?token=temporary",
+          urlExpiresAt: "2099-10-30T00:00:00Z",
         },
       ],
       isPending: false,
@@ -243,6 +256,84 @@ describe("HirerProofReviewScreen", () => {
       messages.proofReviewStatus("PROOF_PENDING")
     );
     expect(queryByTestId("proof-review-open-proof-1")).toBeNull();
+  });
+
+  it("lets the Hirer open a FULL-visible approved file in Quest history", async () => {
+    const openURL = jest.spyOn(Linking, "openURL").mockResolvedValue(true);
+    mockSnapshot = {
+      ...singleSnapshot(false),
+      proofs: [
+        {
+          ...proof("proof-history-1", "worker-1"),
+          status: "PROOF_APPROVED",
+          files: [
+            {
+              fileId: "proof-file-history-1",
+              contentType: "application/pdf",
+              sizeBytes: 1024,
+              position: 0,
+              uploadStatus: "PROOF_FILE_READY",
+              failureCode: null,
+              url: "https://files.example.test/approved-proof.pdf",
+              urlExpiresAt: "2030-01-01T00:15:00.000Z",
+            },
+          ],
+        },
+      ],
+    };
+    const view = await renderWithAppTheme(
+      <HirerProofReviewScreen questId="quest-1" />
+    );
+
+    expect(
+      view.getByText(
+        messages.proofReviewFileLabel(1, "application/pdf", "1 KB")
+      )
+    ).toBeTruthy();
+    await fireEvent.press(
+      view.getByTestId("proof-submission-open-file-proof-history-1-0")
+    );
+    expect(openURL).toHaveBeenCalledWith(
+      "https://files.example.test/approved-proof.pdf"
+    );
+    expect(view.queryByTestId("proof-review-open-proof-history-1")).toBeNull();
+    openURL.mockRestore();
+  });
+
+  it("does not render file rows from a SUMMARY Proof view", async () => {
+    mockSnapshot = {
+      ...singleSnapshot(false),
+      proofs: [
+        {
+          ...proof("summary-proof-1", "worker-1"),
+          visibility: "SUMMARY",
+          files: [
+            {
+              fileId: "private-file-1",
+              contentType: "application/pdf",
+              sizeBytes: 1024,
+              position: 0,
+              uploadStatus: "PROOF_FILE_READY",
+              failureCode: null,
+              url: "https://files.example.test/private-proof.pdf",
+              urlExpiresAt: "2030-01-01T00:15:00.000Z",
+            },
+          ],
+        },
+      ],
+    };
+    const view = await renderWithAppTheme(
+      <HirerProofReviewScreen questId="quest-1" />
+    );
+
+    expect(
+      view.queryByTestId("proof-submission-files-summary-proof-1")
+    ).toBeNull();
+    expect(
+      view.queryByText(
+        messages.proofReviewFileLabel(1, "application/pdf", "1 KB")
+      )
+    ).toBeNull();
   });
 
   it("lists each GROUP + FCFS Worker and reviews the chosen submission", async () => {

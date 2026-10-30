@@ -1,4 +1,5 @@
 import { z } from "zod";
+import { teamSplitSchema } from "./DisputeApi";
 
 export const questV2IdSchema = z.string().min(1);
 
@@ -119,17 +120,25 @@ export const questV2PublicImageSchema = z.object({
 export type QuestV2PublicImage = z.infer<typeof questV2PublicImageSchema>;
 
 export const questV2ImageSchema = questV2OwnerImageSchema;
+const questV2DisputeCaseRefSchema = z.object({
+  id: questV2IdSchema,
+  displayId: z.string(),
+  status: z.string(),
+  createdAt: z.string(),
+});
+/**
+ * `viewerRole`, `teamCase`, and `teamSplit` arrive with the Candidate Team
+ * Dispute release (PR 825); they stay optional until every server sends them.
+ */
 export const questV2DisputeWindowSchema = z.object({
   canFile: z.boolean(),
   windowEndsAt: z.string().nullable(),
-  myCase: z
-    .object({
-      id: questV2IdSchema,
-      displayId: z.string(),
-      status: z.string(),
-      createdAt: z.string(),
-    })
-    .nullable(),
+  viewerRole: z
+    .enum(["HIRER", "TEAM_LEADER", "TEAM_MEMBER", "WORKER"])
+    .optional(),
+  myCase: questV2DisputeCaseRefSchema.nullable(),
+  teamCase: questV2DisputeCaseRefSchema.nullable().optional(),
+  teamSplit: teamSplitSchema.nullable().optional(),
 });
 export type QuestV2DisputeWindow = z.infer<typeof questV2DisputeWindowSchema>;
 export const questV2MoneyHoldSchema = z.object({
@@ -745,6 +754,7 @@ export const questV2ProofFileSchema = z.object({
   uploadStatus: questV2ProofFileStatusSchema,
   failureCode: z.string().nullable(),
   url: z.string().url().nullable().optional(),
+  urlExpiresAt: z.string().nullable().optional(),
 });
 export const questV2ProofFileLinkSchema = z.object({
   fileId: questV2IdSchema,

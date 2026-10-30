@@ -26,6 +26,9 @@ export interface DisputeMessages {
   windowEndsIn: (hours: number, minutes: number) => string;
   moneyHeldUntil: (date: string) => string;
   moneyReleased: string;
+  outcomeYouWon: (amount: string) => string;
+  outcomeOtherWorkerPaid: (amount: string) => string;
+  outcomeDismissed: string;
 }
 
 export const disputeMessages: Record<SupportedLocale, DisputeMessages> = {
@@ -67,6 +70,11 @@ export const disputeMessages: Record<SupportedLocale, DisputeMessages> = {
       `You can file a Dispute Case for ${hours > 0 ? `${hours}h ` : ""}${minutes}m more.`,
     moneyHeldUntil: (date) => `Money is held until ${date}.`,
     moneyReleased: "The money hold has been released.",
+    outcomeYouWon: (amount) =>
+      `You won the case. ${amount} was added to your Earnings.`,
+    outcomeOtherWorkerPaid: (amount) =>
+      `Admin paid ${amount} to another Worker on this Quest.`,
+    outcomeDismissed: "You did not win the case. No money was moved.",
   },
   th: {
     rules: [
@@ -106,5 +114,10 @@ export const disputeMessages: Record<SupportedLocale, DisputeMessages> = {
       `ยื่นคำร้องข้อพิพาทได้อีก ${hours > 0 ? `${hours} ชม. ` : ""}${minutes} นาที`,
     moneyHeldUntil: (date) => `เงินถูกพักไว้จนถึง ${date}`,
     moneyReleased: "ปล่อยเงินที่พักไว้แล้ว",
+    outcomeYouWon: (amount) =>
+      `คุณชนะคำร้อง ได้รับ ${amount} เข้ายอดรายได้แล้ว`,
+    outcomeOtherWorkerPaid: (amount) =>
+      `แอดมินจ่าย ${amount} ให้ผู้ทำงานคนอื่นในเควสต์นี้`,
+    outcomeDismissed: "คุณไม่ชนะคำร้อง ไม่มีการโอนเงิน",
   },
 };

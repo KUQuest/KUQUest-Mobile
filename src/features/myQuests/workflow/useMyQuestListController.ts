@@ -34,6 +34,7 @@ const ACTION_PATHNAMES = {
   edit: "/quest/[id]/edit",
   manage: "/quest/[id]/manage",
   proofReview: "/quest/[id]/proof-review",
+  proofHistory: "/quest/[id]/proof-review",
   completionReview: "/quest/[id]/completion-review",
 } as const satisfies Record<
   Exclude<QuestCardAction, "dispute" | "review">,

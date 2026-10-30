@@ -3,40 +3,22 @@ import { renderWithAppTheme } from "@/testing/queryTestUtils";
 import type { QuestV2ProofSubmission } from "@/api/questV2Contracts";
 import { DEFAULT_LOCALE } from "@/locales/locale";
 import { questBoardMessages } from "@/locales/questBoardMessages";
-import { File } from "expo-file-system";
-import * as Sharing from "expo-sharing";
 import { showErrorAlert } from "@/components/ui/SweetAlert";
 import { ProofReviewPanel } from "../components/ProofReviewPanel";
-
-jest.mock("expo-file-system", () => {
-  class MockFile {
-    uri: string;
-    static downloadFileAsync = jest.fn();
-
-    constructor(_directory: string, name: string) {
-      this.uri = `file://cache/${name}`;
-    }
-  }
-
-  return { File: MockFile, Paths: { cache: "cache" } };
-});
-const mockDownloadFileAsync = jest.mocked(File.downloadFileAsync);
-const mockShareAsync = jest.mocked(Sharing.shareAsync);
-const mockIsAvailableAsync = jest.mocked(Sharing.isAvailableAsync);
 const mockShowErrorAlert = jest.mocked(showErrorAlert);
-
-jest.mock("expo-sharing", () => ({
-  isAvailableAsync: jest.fn(),
-  shareAsync: jest.fn(),
-}));
+const mockDownloadAndShareProofFile = jest.fn();
+const mockGetProofFileLinkForUse = jest.fn();
+const mockOpenProofFile = jest.fn();
 jest.mock("@/components/ui/SweetAlert", () => ({
   showErrorAlert: jest.fn(),
 }));
-jest.mock("@/features/auth/sessionQueries", () => ({
-  useSessionQuery: () => ({ data: { user: { id: "hirer-1" } } }),
-}));
-jest.mock("@/features/questBoard/api/questBoardQueries", () => ({
-  useProofFileLinksQuery: () => ({ refetch: jest.fn() }),
+jest.mock("../../shared/proofFileService", () => ({
+  ...jest.requireActual("../../shared/proofFileService"),
+  downloadAndShareProofFile: (...args: unknown[]) =>
+    mockDownloadAndShareProofFile(...args),
+  getProofFileLinkForUse: (...args: unknown[]) =>
+    mockGetProofFileLinkForUse(...args),
+  openProofFile: (...args: unknown[]) => mockOpenProofFile(...args),
 }));
 
 const proof: QuestV2ProofSubmission = {
@@ -60,18 +42,19 @@ const proof: QuestV2ProofSubmission = {
       position: 0,
       uploadStatus: "PROOF_FILE_READY",
       url: "https://example.com/proof.png",
+      urlExpiresAt: "2099-10-30T00:00:00Z",
       failureCode: null,
     },
   ],
 };
 
-async function renderPanel() {
+async function renderPanel(panelProof = proof) {
   return renderWithAppTheme(
     <ProofReviewPanel
       dueAt="2026-09-15T12:00:00Z"
       onDone={jest.fn()}
       onReview={jest.fn()}
-      proof={proof}
+      proof={panelProof}
     />
   );
 }
@@ -79,35 +62,36 @@ async function renderPanel() {
 describe("ProofReviewPanel downloads", () => {
   beforeEach(() => {
     jest.clearAllMocks();
-    mockIsAvailableAsync.mockResolvedValue(true);
-    mockDownloadFileAsync.mockResolvedValue(
-      new File("cache", "proof-image-file.png")
-    );
+    mockDownloadAndShareProofFile.mockResolvedValue(undefined);
+    mockGetProofFileLinkForUse.mockResolvedValue({
+      url: "https://example.com/proof.pdf?token=fresh",
+      urlExpiresAt: "2099-10-31T00:00:00Z",
+    });
+    mockOpenProofFile.mockResolvedValue({
+      url: "https://example.com/proof.pdf?token=fresh",
+      urlExpiresAt: "2099-10-31T00:00:00Z",
+    });
   });
 
-  it("shares each downloaded proof file from its cached local URI", async () => {
+  it("delegates authorized proof file downloads to the shared service", async () => {
     const view = await renderPanel();
 
     await fireEvent.press(view.getByTestId("proof-review-download-0"));
 
     await waitFor(() =>
-      expect(mockShareAsync).toHaveBeenCalledWith(
-        "file://cache/proof-image-file.png",
-        { mimeType: "image/png", UTI: "public.png" }
+      expect(mockDownloadAndShareProofFile).toHaveBeenCalledWith(
+        {
+          questId: "quest-1",
+          proofSubmissionId: "proof-1",
+          file: proof.files[0],
+        },
+        proof.files[0]
       )
-    );
-    expect(mockDownloadFileAsync).toHaveBeenCalledWith(
-      "https://example.com/proof.png",
-      expect.objectContaining({ uri: "file://cache/proof-image-file.png" }),
-      { idempotent: true }
-    );
-    expect(mockDownloadFileAsync.mock.invocationCallOrder[0]).toBeLessThan(
-      mockShareAsync.mock.invocationCallOrder[0]
     );
   });
 
   it("shows localized error alert when downloading fails", async () => {
-    mockDownloadFileAsync.mockRejectedValue(new Error("network error"));
+    mockDownloadAndShareProofFile.mockRejectedValue(new Error("network error"));
     const view = await renderPanel();
 
     await fireEvent.press(view.getByTestId("proof-review-download-0"));
@@ -118,6 +102,89 @@ describe("ProofReviewPanel downloads", () => {
         questBoardMessages[DEFAULT_LOCALE].proofReviewDownloadError
       )
     );
-    expect(mockShareAsync).not.toHaveBeenCalled();
+    expect(mockDownloadAndShareProofFile).toHaveBeenCalledTimes(1);
+  });
+
+  it("delegates non-image evidence opening to the shared file service", async () => {
+    const pdfProof: QuestV2ProofSubmission = {
+      ...proof,
+      files: [
+        {
+          ...proof.files[0],
+          contentType: "application/pdf",
+          urlExpiresAt: null,
+        },
+      ],
+    };
+    const view = await renderPanel(pdfProof);
+
+    await fireEvent.press(
+      view.getByRole("button", {
+        name: new RegExp(questBoardMessages[DEFAULT_LOCALE].proofReviewPreview),
+      })
+    );
+
+    await waitFor(() =>
+      expect(mockOpenProofFile).toHaveBeenCalledWith(
+        {
+          questId: "quest-1",
+          proofSubmissionId: "proof-1",
+          file: pdfProof.files[0],
+        },
+        pdfProof.files[0]
+      )
+    );
+    expect(view.getByTestId("proof-review-preview-0")).toBeTruthy();
+  });
+
+  it("refreshes an expiry-less image link before opening its viewer", async () => {
+    const imageProof: QuestV2ProofSubmission = {
+      ...proof,
+      files: [{ ...proof.files[0], urlExpiresAt: null }],
+    };
+    const view = await renderPanel(imageProof);
+
+    await fireEvent.press(view.getByTestId("proof-review-refresh-file-0"));
+
+    await waitFor(() => {
+      expect(mockGetProofFileLinkForUse).toHaveBeenCalledWith(
+        {
+          questId: "quest-1",
+          proofSubmissionId: "proof-1",
+          file: imageProof.files[0],
+        },
+        imageProof.files[0]
+      );
+      expect(view.getByTestId("image-viewer-image")).toBeTruthy();
+    });
+  });
+
+  it("announces busy and disables an image control while resolving it", async () => {
+    let resolveLink!: (link: { url: string; urlExpiresAt: string }) => void;
+    mockGetProofFileLinkForUse.mockImplementationOnce(
+      () => new Promise((resolve) => (resolveLink = resolve))
+    );
+    const view = await renderPanel();
+    const imageControl = view.getByTestId("proof-review-preview-0");
+
+    await fireEvent.press(imageControl);
+    expect(
+      view.getByTestId("proof-review-preview-0").props.accessibilityState
+    ).toEqual({
+      busy: true,
+      disabled: true,
+    });
+    await fireEvent.press(view.getByTestId("proof-review-preview-0"));
+    expect(mockGetProofFileLinkForUse).toHaveBeenCalledTimes(1);
+    resolveLink({
+      url: "https://example.com/proof.png?token=fresh",
+      urlExpiresAt: "2099-10-31T00:00:00Z",
+    });
+
+    await waitFor(() =>
+      expect(
+        view.getByTestId("proof-review-preview-0").props.accessibilityState
+      ).toEqual({ busy: false, disabled: false })
+    );
   });
 });

@@ -1,80 +1,33 @@
 import { useMemo, useRef, useState } from "react";
-import { Linking } from "react-native";
 import type { ComponentRef } from "react";
 import { FileText, ImageIcon } from "lucide-react-native";
-import { File, Paths } from "expo-file-system";
-import * as Sharing from "expo-sharing";
 
 import { Button } from "@/components/ui/Button";
 import { ImageViewerModal } from "@/components/ui/ImageViewerModal";
 import { TextArea } from "@/components/ui/TextArea";
 import { useLocale } from "@/features/preferences/localeStore";
-import { useSessionQuery } from "@/features/auth/sessionQueries";
-import { useProofFileLinksQuery } from "@/features/questBoard/api/questBoardQueries";
 import { questBoardMessages } from "@/locales/questBoardMessages";
 import { useAppTheme } from "@/features/workspace/AppThemeProvider";
+import { QuestProofFileStatus } from "@/features/questBoard/domain/types";
 import { showErrorAlert } from "@/components/ui/SweetAlert";
 import { Image, Pressable, ScrollView, Text, View } from "@/tw";
 
 import type { QuestV2ProofReviewPayload } from "@/api/QuestApi";
-import type {
-  QuestV2ProofFileLink,
-  QuestV2ProofSubmission,
-} from "@/api/questV2Contracts";
+import type { QuestV2ProofSubmission } from "@/api/questV2Contracts";
 import styles from "../../styles/questDetailStyles";
 import { formatTimestamp } from "@/domain/datetime";
 import { getLocalizedErrorMessage } from "@/utils/error";
+import { formatProofFileSize } from "../../shared/proofFileUtils";
+import {
+  downloadAndShareProofFile,
+  getProofFileLinkForUse,
+  isUsableProofFileLink,
+  openProofFile,
+  ProofFileAccessError,
+  type UsableProofFileLink,
+} from "../../shared/proofFileService";
 
 const MAX_REVIEW_REASON_LENGTH = 1000;
-
-function fileMimeType(contentType: string | null): string {
-  return contentType?.split(";")[0]?.trim() || "application/octet-stream";
-}
-
-function fileUti(mimeType: string): string {
-  return (
-    {
-      "application/pdf": "com.adobe.pdf",
-      "image/gif": "com.compuserve.gif",
-      "image/jpeg": "public.jpeg",
-      "image/png": "public.png",
-      "image/heic": "public.heic",
-      "video/mp4": "public.mpeg-4",
-      "video/quicktime": "com.apple.quicktime-movie",
-    }[mimeType] ?? "public.data"
-  );
-}
-
-function downloadName(
-  fileId: string | null,
-  position: number,
-  mimeType: string
-) {
-  const rawExtension = mimeType.split("/")[1]?.replace("jpeg", "jpg");
-  const extension =
-    rawExtension && /^[a-z0-9.+-]+$/i.test(rawExtension) ? rawExtension : "bin";
-  const safeFileId = fileId?.replace(/[^a-z0-9_-]/gi, "_") ?? `${position + 1}`;
-  return `proof-${safeFileId}.${extension}`;
-}
-
-function isExpiredLinkError(error: unknown): boolean {
-  if (!error || typeof error !== "object") return false;
-  const value = error as {
-    status?: unknown;
-    statusCode?: unknown;
-    message?: unknown;
-  };
-  if (
-    value.status === 403 ||
-    value.status === 404 ||
-    value.statusCode === 403 ||
-    value.statusCode === 404
-  )
-    return true;
-  return (
-    typeof value.message === "string" && /\b(?:403|404)\b/.test(value.message)
-  );
-}
 
 export interface ProofReviewPanelProps {
   proof: QuestV2ProofSubmission;
@@ -84,14 +37,6 @@ export interface ProofReviewPanelProps {
   onReview: (
     payload: QuestV2ProofReviewPayload
   ) => Promise<boolean | void> | boolean | void;
-}
-
-function formatFileSize(sizeBytes: number | null): string {
-  if (sizeBytes === null) return "";
-  if (sizeBytes < 1024 * 1024) {
-    return `${Math.max(1, Math.round(sizeBytes / 1024))} KB`;
-  }
-  return `${(sizeBytes / (1024 * 1024)).toFixed(1)} MB`;
 }
 
 function fileKind(contentType: string | null): "image" | "video" | "file" {
@@ -120,12 +65,16 @@ export function ProofReviewPanel({
     fileName: string;
     url: string;
   } | null>(null);
+  const [resolvedFileLinks, setResolvedFileLinks] = useState<
+    Record<string, UsableProofFileLink>
+  >({});
   const [downloadingFileIds, setDownloadingFileIds] = useState<Set<string>>(
     () => new Set()
   );
-  const viewerId = useSessionQuery().data?.user.id ?? null;
+  const [resolvingFileIds, setResolvingFileIds] = useState<Set<string>>(
+    () => new Set()
+  );
   const scrollViewRef = useRef<ComponentRef<typeof ScrollView>>(null);
-  const fileLinksQuery = useProofFileLinksQuery(proof.questId, viewerId, proof);
   const submittedAt = useMemo(
     () => formatTimestamp(proof.submittedAt, locale, "—"),
     [locale, proof.submittedAt]
@@ -170,11 +119,76 @@ export function ProofReviewPanel({
     });
   };
 
-  const openPreview = async (url: string) => {
+  const resolveFileLink = async (
+    file: QuestV2ProofSubmission["files"][number]
+  ) => {
+    if (!file.fileId) throw new ProofFileAccessError("unavailable");
+    setResolvingFileIds((current) => new Set(current).add(file.fileId!));
     try {
-      await Linking.openURL(url);
-    } catch {
-      setError(messages.proofReviewPreviewError);
+      const link = await getProofFileLinkForUse(
+        { questId: proof.questId, proofSubmissionId: proof.id, file },
+        resolvedFileLinks[file.fileId] ?? file
+      );
+      setResolvedFileLinks((current) => ({
+        ...current,
+        [file.fileId!]: link,
+      }));
+      return link;
+    } finally {
+      setResolvingFileIds((current) => {
+        const next = new Set(current);
+        next.delete(file.fileId!);
+        return next;
+      });
+    }
+  };
+
+  const openPreview = async (file: QuestV2ProofSubmission["files"][number]) => {
+    const fileId = file.fileId;
+    if (!fileId) {
+      setError(messages.proofReviewPreviewUnavailable);
+      return;
+    }
+    setResolvingFileIds((current) => new Set(current).add(fileId));
+    try {
+      const link = await openProofFile(
+        { questId: proof.questId, proofSubmissionId: proof.id, file },
+        resolvedFileLinks[fileId] ?? file
+      );
+      setResolvedFileLinks((current) => ({
+        ...current,
+        [fileId]: link,
+      }));
+    } catch (caught) {
+      setError(
+        caught instanceof ProofFileAccessError &&
+          caught.reason === "unavailable"
+          ? messages.proofReviewPreviewUnavailable
+          : messages.proofReviewPreviewError
+      );
+    } finally {
+      setResolvingFileIds((current) => {
+        const next = new Set(current);
+        next.delete(fileId);
+        return next;
+      });
+    }
+  };
+
+  const openImage = async (
+    file: QuestV2ProofSubmission["files"][number],
+    fileName: string
+  ) => {
+    try {
+      const link = await resolveFileLink(file);
+      setViewingImage({ fileName, url: link.url });
+    } catch (caught) {
+      setError(
+        caught instanceof ProofFileAccessError &&
+          caught.reason === "unavailable"
+          ? messages.proofReviewPreviewUnavailable
+          : messages.proofReviewPreviewError
+      );
     }
   };
 
@@ -182,47 +196,21 @@ export function ProofReviewPanel({
     file: QuestV2ProofSubmission["files"][number]
   ) => {
     const fileId = file.fileId;
-    const url = file.url;
-    if (!fileId || !url || downloadingFileIds.has(fileId)) return;
+    if (!fileId || downloadingFileIds.has(fileId)) return;
     setDownloadingFileIds((current) => new Set(current).add(fileId));
-    const mimeType = fileMimeType(file.contentType);
-    const destination = new File(
-      Paths.cache,
-      downloadName(fileId, file.position, mimeType)
-    );
     try {
-      if (!(await Sharing.isAvailableAsync())) {
-        showErrorAlert(
-          messages.proofReviewDownloadErrorTitle,
-          messages.proofReviewSharingUnavailable
-        );
-        return;
-      }
-      let downloaded;
-      try {
-        downloaded = await File.downloadFileAsync(url, destination, {
-          idempotent: true,
-        });
-      } catch (caught) {
-        if (!isExpiredLinkError(caught)) throw caught;
-        const refreshed = await fileLinksQuery.refetch();
-        const freshUrl = refreshed.data?.find(
-          (link: QuestV2ProofFileLink) => link.fileId === fileId
-        )?.url;
-        if (!freshUrl) throw caught;
-        downloaded = await File.downloadFileAsync(freshUrl, destination, {
-          idempotent: true,
-        });
-      }
-      await Sharing.shareAsync(downloaded.uri, {
-        mimeType,
-        UTI: fileUti(mimeType),
-      });
-    } catch {
-      showErrorAlert(
-        messages.proofReviewDownloadErrorTitle,
-        messages.proofReviewDownloadError
+      await downloadAndShareProofFile(
+        { questId: proof.questId, proofSubmissionId: proof.id, file },
+        resolvedFileLinks[fileId] ?? file
       );
+    } catch (caught) {
+      const message =
+        caught instanceof ProofFileAccessError
+          ? caught.reason === "sharing-unavailable"
+            ? messages.proofReviewSharingUnavailable
+            : messages.proofReviewPreviewUnavailable
+          : messages.proofReviewDownloadError;
+      showErrorAlert(messages.proofReviewDownloadErrorTitle, message);
     } finally {
       setDownloadingFileIds((current) => {
         const next = new Set(current);
@@ -277,14 +265,22 @@ export function ProofReviewPanel({
             <View className="mt-ku-sm gap-ku-10">
               {proof.files.map((file) => {
                 const kind = fileKind(file.contentType);
-                const size = formatFileSize(file.sizeBytes);
-                const fileUrl = file.url ?? undefined;
+                const size = formatProofFileSize(file.sizeBytes);
+                const fileLink = resolvedFileLinks[file.fileId ?? ""] ?? file;
+                const fileUrl = isUsableProofFileLink(fileLink)
+                  ? fileLink.url
+                  : undefined;
                 const fileLabel = messages.proofReviewFileLabel(
                   file.position + 1,
                   file.contentType,
                   size
                 );
-                const isDownloading = downloadingFileIds.has(file.fileId ?? "");
+                const fileId = file.fileId ?? "";
+                const isDownloading = downloadingFileIds.has(fileId);
+                const isResolving = resolvingFileIds.has(fileId);
+                const ready =
+                  file.uploadStatus === QuestProofFileStatus.PROOF_FILE_READY &&
+                  file.fileId !== null;
                 return (
                   <View
                     className="rounded-[14px] border border-ku-border-subtle bg-ku-surface-muted p-ku-10"
@@ -295,9 +291,12 @@ export function ProofReviewPanel({
                       <Pressable
                         accessibilityLabel={`${messages.proofReviewPreview}: ${fileLabel}`}
                         accessibilityRole="button"
-                        onPress={() =>
-                          setViewingImage({ fileName: fileLabel, url: fileUrl })
-                        }
+                        accessibilityState={{
+                          busy: isResolving,
+                          disabled: isResolving,
+                        }}
+                        disabled={isResolving}
+                        onPress={() => void openImage(file, fileLabel)}
                         testID={`proof-review-preview-${file.position}`}
                       >
                         <Image
@@ -319,24 +318,30 @@ export function ProofReviewPanel({
                         <Text className="font-ku-semibold text-ku-body-small text-ku-text-strong">
                           {fileLabel}
                         </Text>
-                        <Text className="mt-ku-2 font-ku-regular text-ku-label text-ku-text-muted">
+                        <Text className="mt-ku-2 font-ku-regular text-ku-label text-ku-text-secondary">
                           {messages.proofReviewFileStatus(file.uploadStatus)}
                         </Text>
                       </View>
                       <View className="flex-row items-center gap-ku-xs">
-                        {fileUrl && kind !== "image" ? (
+                        {ready && kind !== "image" ? (
                           <Pressable
                             accessibilityLabel={`${messages.proofReviewPreview}: ${fileLabel}`}
                             accessibilityRole="button"
-                            className="rounded-ku-pill border border-ku-primary px-ku-10 py-ku-7"
-                            onPress={() => void openPreview(fileUrl)}
+                            accessibilityState={{
+                              busy: isResolving,
+                              disabled: isResolving,
+                            }}
+                            className="min-h-[48px] items-center justify-center rounded-ku-control border border-ku-primary px-ku-10"
+                            disabled={isResolving}
+                            onPress={() => void openPreview(file)}
+                            testID={`proof-review-preview-${file.position}`}
                           >
                             <Text className="font-ku-semibold text-ku-label text-ku-primary">
                               {messages.proofReviewPreview}
                             </Text>
                           </Pressable>
                         ) : null}
-                        {fileUrl ? (
+                        {ready ? (
                           <Pressable
                             accessibilityLabel={`${messages.proofReviewDownload}: ${fileLabel}`}
                             accessibilityRole="button"
@@ -356,10 +361,30 @@ export function ProofReviewPanel({
                             </Text>
                           </Pressable>
                         ) : null}
+                        {ready && kind === "image" && !fileUrl ? (
+                          <Pressable
+                            accessibilityLabel={`${messages.proofReviewFileRefresh}: ${fileLabel}`}
+                            accessibilityRole="button"
+                            accessibilityState={{
+                              busy: isResolving,
+                              disabled: isResolving,
+                            }}
+                            className="min-h-[48px] items-center justify-center rounded-ku-pill border border-ku-primary px-ku-10"
+                            disabled={isResolving}
+                            onPress={() => void openImage(file, fileLabel)}
+                            testID={`proof-review-refresh-file-${file.position}`}
+                          >
+                            <Text className="font-ku-semibold text-ku-label text-ku-primary">
+                              {isResolving
+                                ? messages.loading
+                                : messages.proofReviewFileRefresh}
+                            </Text>
+                          </Pressable>
+                        ) : null}
                       </View>
                     </View>
                     {!fileUrl ? (
-                      <Text className="mt-ku-sm font-ku-regular text-ku-label text-ku-text-muted">
+                      <Text className="mt-ku-sm font-ku-regular text-ku-label text-ku-text-secondary">
                         {messages.proofReviewPreviewUnavailable}
                       </Text>
                     ) : null}

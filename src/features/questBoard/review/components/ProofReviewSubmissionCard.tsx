@@ -9,6 +9,7 @@ import { cn } from "@/tw/cn";
 
 import { QuestProofStatus } from "../../domain/types";
 import { ProofReviewNotes } from "../../shared/ProofReviewNotes";
+import { ProofSubmissionFiles } from "../../shared/ProofSubmissionFiles";
 import type { ProofReviewRow } from "../proofReviewRows";
 
 export interface ProofReviewSubmissionCardProps {
@@ -94,6 +95,7 @@ export function ProofReviewSubmissionCard({
         proof={proof}
         testIDPrefix={`proof-review-${row.key}`}
       />
+      {proof ? <ProofSubmissionFiles proof={proof} /> : null}
       {reviewable ? (
         <Button
           accessibilityLabel={messages.proofReviewOpenLabel(name)}

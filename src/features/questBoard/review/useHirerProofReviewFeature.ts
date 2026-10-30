@@ -47,13 +47,16 @@ export function useHirerProofReviewFeature(questId?: string) {
     selectedProof && proofFileLinksQuery.isSuccess
       ? {
           ...selectedProof,
-          files: selectedProof.files.map((file) => ({
-            ...file,
-            url:
-              proofFileLinksQuery.data.find(
-                (fileLink) => fileLink.fileId === file.fileId
-              )?.url ?? null,
-          })),
+          files: selectedProof.files.map((file) => {
+            const fileLink = proofFileLinksQuery.data.find(
+              (candidate) => candidate.fileId === file.fileId
+            );
+            return {
+              ...file,
+              url: fileLink?.url ?? null,
+              urlExpiresAt: fileLink?.urlExpiresAt ?? null,
+            };
+          }),
         }
       : undefined;
 
