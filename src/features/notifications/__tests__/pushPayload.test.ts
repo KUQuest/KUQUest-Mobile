@@ -188,8 +188,11 @@ describe("member penalty push", () => {
       eventKey: "k",
       result: "PERMANENT_BAN",
     });
-    expect(temporary && localizedMemberPushCopy(temporary, "en").body).toMatch(
-      /cannot sign in until/
+    expect(temporary && localizedMemberPushCopy(temporary, "en").title).toMatch(
+      /^Account banned until /
+    );
+    expect(temporary && localizedMemberPushCopy(temporary, "en").body).toBe(
+      "While the ban lasts, you cannot sign in and your Wallet is frozen."
     );
     expect(permanent && localizedMemberPushCopy(permanent, "en").title).toBe(
       "Your account is permanently banned"

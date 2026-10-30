@@ -399,6 +399,57 @@ describe("HirerQuestManageRoute condition edit", () => {
     expect(mockPush).not.toHaveBeenCalled();
   });
 
+  it("never invites the Hirer to file inside the open Dispute window", async () => {
+    (liveQuestService.getLiveSnapshot as jest.Mock).mockResolvedValue(
+      createSnapshot({
+        state: "QUEST_FAILED",
+        quest: {
+          ...createSnapshot().quest,
+          state: "QUEST_FAILED",
+          dispute: {
+            canFile: true,
+            windowEndsAt: "2099-01-02T18:00:00+07:00",
+            myCase: null,
+          },
+          moneyHold: {
+            status: "HELD",
+            releasesAt: "2099-01-08T18:00:00+07:00",
+            heldSatang: 10000,
+          },
+        },
+      })
+    );
+    const view = await render(<HirerQuestManageRoute />);
+    await view.findByTestId("failed-quest-hold");
+    expect(view.queryByTestId("failed-quest-window")).toBeNull();
+    expect(view.queryByTestId("failed-quest-closed")).toBeNull();
+  });
+
+  it("does not count a Worker who left in the Worker total", async () => {
+    const assignment = (
+      workerId: string,
+      state: "ASSIGNMENT_ACTIVE" | "ASSIGNMENT_CANCELLED"
+    ) => ({
+      id: `assignment-${workerId}`,
+      questId: "quest-1",
+      workerId,
+      state,
+      questState: QuestStatus.QUEST_ASSIGNED,
+      startedAt: null,
+    });
+    (liveQuestService.getLiveSnapshot as jest.Mock).mockResolvedValue(
+      createSnapshot({
+        assignments: [
+          assignment("worker-1", "ASSIGNMENT_CANCELLED"),
+          assignment("worker-2", "ASSIGNMENT_ACTIVE"),
+        ],
+      })
+    );
+    const view = await render(<HirerQuestManageRoute />);
+    expect(await view.findByText("1/1")).toBeTruthy();
+    expect(view.queryByText("2/1")).toBeNull();
+  });
+
   it("offers Report Worker only for a Worker the Server lists as reportable", async () => {
     (liveQuestService.getLiveSnapshot as jest.Mock).mockResolvedValue(
       createSnapshot({

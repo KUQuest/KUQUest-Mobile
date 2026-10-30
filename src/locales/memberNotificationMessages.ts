@@ -20,6 +20,7 @@ type MemberNotificationMessages = {
   all: string;
   loading: string;
   error: string;
+  errorDescription: string;
   retry: string;
   empty: string;
   emptyUnread: string;
@@ -43,6 +44,7 @@ export const memberNotificationMessages: Record<
     all: "All",
     loading: "Loading notifications",
     error: "Unable to load notifications.",
+    errorDescription: "Check your connection and try again.",
     retry: "Try again",
     empty: "No notifications yet.",
     emptyUnread: "You have read every notification.",
@@ -69,11 +71,13 @@ export const memberNotificationMessages: Record<
         title:
           result === "PERMANENT_BAN"
             ? "Your account is permanently banned"
-            : "Your account is banned",
+            : until
+              ? `Account banned until ${until}`
+              : "Your account is banned",
         body:
-          result === "PERMANENT_BAN" || !until
+          result === "PERMANENT_BAN"
             ? "You cannot sign in. Your Wallet is frozen."
-            : `You cannot sign in until ${until}. Your Wallet is frozen.`,
+            : "While the ban lasts, you cannot sign in and your Wallet is frozen.",
       }),
       PENALTY_BAN_ENDED: () => ({
         title: "Ban ended",
@@ -94,6 +98,7 @@ export const memberNotificationMessages: Record<
     all: "ทั้งหมด",
     loading: "กำลังโหลดการแจ้งเตือน",
     error: "ไม่สามารถโหลดการแจ้งเตือนได้",
+    errorDescription: "ตรวจสอบการเชื่อมต่อแล้วลองอีกครั้ง",
     retry: "ลองอีกครั้ง",
     empty: "ยังไม่มีการแจ้งเตือน",
     emptyUnread: "คุณอ่านการแจ้งเตือนครบแล้ว",
@@ -120,11 +125,13 @@ export const memberNotificationMessages: Record<
         title:
           result === "PERMANENT_BAN"
             ? "บัญชีของคุณถูกแบนถาวร"
-            : "บัญชีของคุณถูกแบน",
+            : until
+              ? `บัญชีถูกแบนถึง ${until}`
+              : "บัญชีของคุณถูกแบน",
         body:
-          result === "PERMANENT_BAN" || !until
+          result === "PERMANENT_BAN"
             ? "คุณเข้าสู่ระบบไม่ได้ และกระเป๋าเงินถูกระงับ"
-            : `คุณเข้าสู่ระบบไม่ได้จนถึง ${until} และกระเป๋าเงินถูกระงับ`,
+            : "ระหว่างถูกแบน คุณเข้าสู่ระบบไม่ได้ และกระเป๋าเงินถูกระงับ",
       }),
       PENALTY_BAN_ENDED: () => ({
         title: "การแบนสิ้นสุดแล้ว",

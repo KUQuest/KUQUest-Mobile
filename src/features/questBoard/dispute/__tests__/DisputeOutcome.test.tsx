@@ -86,4 +86,17 @@ describe("DisputeOutcome", () => {
     );
     expect(screen.queryByTestId("dispute-outcome")).toBeNull();
   });
+
+  it("leaves a won team case to the team split card", async () => {
+    mockCaseQuery.mockReturnValue(resolvedCase("worker-1"));
+    await renderWithQueryClient(
+      <DisputeOutcome
+        questId="q-1"
+        viewerId="worker-1"
+        status="DISPUTE_CASE_RESOLVED"
+        teamCase
+      />
+    );
+    expect(screen.queryByTestId("dispute-outcome")).toBeNull();
+  });
 });
