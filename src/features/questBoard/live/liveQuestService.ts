@@ -640,7 +640,8 @@ export class LiveQuestService {
       viewerId
     );
     const teamRewardAllocation =
-      quest.state === "QUEST_COMPLETED" &&
+      (quest.state === "QUEST_COMPLETED" ||
+        quest.state === "QUEST_CANCELLED") &&
       quest.mode === QuestMode.CANDIDATE &&
       quest.participation === "GROUP" &&
       teamRole !== null &&

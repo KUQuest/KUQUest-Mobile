@@ -734,12 +734,7 @@ export default function HirerQuestManageScreen({
         visible={guardrailTier !== null}
         tier={guardrailTier ?? 2}
         title={myQuestMessages[locale].cancelConfirmTitle}
-        description={[
-          guardrailTier === 3
-            ? myQuestMessages[locale].cancelInProgressDescription
-            : myQuestMessages[locale].cancelAssignedDescription,
-          cancelPreviewText,
-        ]
+        description={[cancelDescription, cancelPreviewText]
           .filter(Boolean)
           .join("\n\n")}
         confirmLabel={myQuestMessages[locale].cancelGuardrailConfirm}

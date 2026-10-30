@@ -193,15 +193,22 @@ export function useHirerQuestManageFeature(questId?: string) {
     : undefined;
   const terminal = snapshot ? isTerminalStatus(snapshot.state) : false;
   // Settlement per the cancellation matrix in quest-lifecycle-contract.md.
+  const candidateTeamQuest =
+    snapshot?.mode === QuestMode.CANDIDATE &&
+    snapshot.participation === QuestParticipation.GROUP;
   const cancelDescription =
     snapshot?.state === QuestStatus.QUEST_DRAFT
       ? cancelMessages.cancelDraftDescription
       : snapshot?.state === QuestStatus.QUEST_OPEN
         ? cancelMessages.cancelOpenDescription
         : snapshot?.state === QuestStatus.QUEST_ASSIGNED
-          ? cancelMessages.cancelAssignedDescription
+          ? candidateTeamQuest
+            ? cancelMessages.cancelAssignedTeamDescription
+            : cancelMessages.cancelAssignedDescription
           : snapshot?.state === QuestStatus.QUEST_IN_PROGRESS
-            ? cancelMessages.cancelInProgressDescription
+            ? candidateTeamQuest
+              ? cancelMessages.cancelInProgressTeamDescription
+              : cancelMessages.cancelInProgressDescription
             : undefined;
   const canReviewCandidateProposals =
     isHirerActor(snapshot?.actor) &&
@@ -254,13 +261,19 @@ export function useHirerQuestManageFeature(questId?: string) {
           throw caught;
         });
       if (!outcome) return;
+      // A paid Candidate Team cancellation settles after the Team Leader splits it.
+      const teamSplitPending = candidateTeamQuest && outcome.paidSatang > 0;
       const settlement = [
         outcome.paidSatang > 0 &&
-          cancelMessages.cancelPaidWorkers(
+          (teamSplitPending
+            ? cancelMessages.cancelTeamSplitPending
+            : cancelMessages.cancelPaidWorkers)(
             formatSatang(outcome.paidSatang, locale)
           ),
         outcome.refundedSatang > 0 &&
-          cancelMessages.cancelRefunded(
+          (teamSplitPending
+            ? cancelMessages.cancelTeamRefundPending
+            : cancelMessages.cancelRefunded)(
             formatSatang(outcome.refundedSatang, locale)
           ),
       ].filter(Boolean);

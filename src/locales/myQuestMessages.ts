@@ -34,8 +34,12 @@ export interface MyQuestMessages {
   cancelOpenDescription: string;
   cancelAssignedDescription: string;
   cancelInProgressDescription: string;
+  cancelAssignedTeamDescription: string;
+  cancelInProgressTeamDescription: string;
   cancelSuccessTitle: string;
   cancelRefunded: (amount: string) => string;
+  cancelTeamSplitPending: (amount: string) => string;
+  cancelTeamRefundPending: (amount: string) => string;
   cancelPaidWorkers: (amount: string) => string;
   cancelPreviewLine: (paid: string, refunded: string) => string;
   cancelPreviewStale: string;
@@ -100,8 +104,15 @@ export const myQuestMessages: Record<SupportedLocale, MyQuestMessages> = {
       "ผู้ทำงานจะได้รับ 20% ของเงินรางวัลรวม ส่วนอีก 80% และค่าธรรมเนียมแพลตฟอร์มจะคืนให้คุณ",
     cancelInProgressDescription:
       "ผู้ทำงานจะได้รับค่าตอบแทนเต็มจำนวนและระบบจะเก็บค่าธรรมเนียมแพลตฟอร์ม คุณจะไม่ได้รับเงินคืน",
+    cancelAssignedTeamDescription:
+      "หัวหน้าทีมจะแบ่ง 20% ของเงินรางวัลรวมให้สมาชิกภายใน 24 ชั่วโมง ถ้าไม่แบ่งทันเวลาระบบจะหารเท่ากัน ส่วนอีก 80% และค่าธรรมเนียมแพลตฟอร์มจะคืนให้คุณเมื่อแบ่งเสร็จ",
+    cancelInProgressTeamDescription:
+      "หัวหน้าทีมจะแบ่งค่าตอบแทนเต็มจำนวนให้สมาชิกภายใน 24 ชั่วโมง ถ้าไม่แบ่งทันเวลาระบบจะหารเท่ากัน ระบบจะเก็บค่าธรรมเนียมแพลตฟอร์ม และคุณจะไม่ได้รับเงินคืน",
     cancelSuccessTitle: "ยกเลิกเควสต์แล้ว",
     cancelRefunded: (amount) => `คืนเงิน ${amount} ให้คุณแล้ว`,
+    cancelTeamSplitPending: (amount) => `หัวหน้าทีมจะแบ่ง ${amount} ให้สมาชิก`,
+    cancelTeamRefundPending: (amount) =>
+      `${amount} จะคืนให้คุณเมื่อหัวหน้าทีมแบ่งเงินเสร็จ`,
     cancelPaidWorkers: (amount) => `จ่ายให้ผู้ทำงาน ${amount}`,
     cancelPreviewLine: (paid, refunded) =>
       `ตอนนี้: จ่ายผู้ทำงาน ${paid} · คืนให้คุณ ${refunded}`,
@@ -161,8 +172,16 @@ export const myQuestMessages: Record<SupportedLocale, MyQuestMessages> = {
       "Active Workers receive 20% of the Reward pool. The other 80% and the Platform Fee are refunded to you.",
     cancelInProgressDescription:
       "Workers receive their full Reward and the Platform Fee is charged. You receive no refund.",
+    cancelAssignedTeamDescription:
+      "The Team Leader splits 20% of the total Reward within 24 hours, or the Server splits it equally. The other 80% and the Platform Fee return to you after the split.",
+    cancelInProgressTeamDescription:
+      "The Team Leader splits the full Reward within 24 hours, or the Server splits it equally. The Platform Fee is charged and you receive no refund.",
     cancelSuccessTitle: "Quest cancelled",
     cancelRefunded: (amount) => `${amount} refunded to you.`,
+    cancelTeamSplitPending: (amount) =>
+      `The Team Leader splits ${amount} among the Team.`,
+    cancelTeamRefundPending: (amount) =>
+      `${amount} returns to you after the Team split.`,
     cancelPaidWorkers: (amount) => `${amount} paid to Workers.`,
     cancelPreviewLine: (paid, refunded) =>
       `Right now: ${paid} to Workers · ${refunded} back to you`,
