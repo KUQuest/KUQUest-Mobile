@@ -18,6 +18,7 @@ export const notificationMessages: Record<
     underfilledDecisionPending: () => string;
     questFullOrAssigned: () => string;
     questFailed: () => string;
+    proofNotApproved: () => string;
     questCompletedNotApproved: () => string;
     underfilledCancelled: (
       reason: QuestV2UnderfilledCancellationReason | null
@@ -42,6 +43,8 @@ export const notificationMessages: Record<
     questFullOrAssigned: () => "A quest you joined is now assigned.",
     questFailed: () =>
       "A quest you joined failed. You have 1 day to file a Dispute Case.",
+    proofNotApproved: () =>
+      "The Hirer did not approve your Proof. Your work on this Quest has ended.",
     questCompletedNotApproved: () =>
       "Your Proof was not approved, so this Quest paid you nothing. You can file a Dispute Case for a limited time.",
     underfilledCancelled: (reason) =>
@@ -88,6 +91,8 @@ export const notificationMessages: Record<
     questFullOrAssigned: () => "เควสต์ที่คุณเข้าร่วมได้รับมอบหมายแล้ว",
     questFailed: () =>
       "เควสต์ที่คุณเข้าร่วมล้มเหลว คุณยื่นคำร้องข้อพิพาทได้ภายใน 1 วัน",
+    proofNotApproved: () =>
+      "ผู้ว่าจ้างไม่อนุมัติหลักฐานของคุณ งานของคุณในเควสต์นี้สิ้นสุดแล้ว",
     questCompletedNotApproved: () =>
       "หลักฐานของคุณไม่ได้รับการอนุมัติ เควสต์นี้จึงไม่มีการจ่ายเงินให้คุณ คุณยื่นคำร้องข้อพิพาทได้ภายในเวลาที่กำหนด",
     underfilledCancelled: (reason) =>
