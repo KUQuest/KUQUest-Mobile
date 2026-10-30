@@ -1,4 +1,4 @@
-import { screen, waitFor } from "@testing-library/react-native";
+import { act, fireEvent, screen, waitFor } from "@testing-library/react-native";
 
 import { profileMessages } from "@/locales/profileMessages";
 import { renderWithQueryClient } from "@/testing/queryTestUtils";
@@ -6,6 +6,13 @@ import { renderWithQueryClient } from "@/testing/queryTestUtils";
 import { ProfilePenaltyStatus } from "../components/ProfilePenaltyStatus";
 
 const mockGetPenaltyStatus = jest.fn();
+let mockRegainFocus: () => void = () => undefined;
+
+jest.mock("expo-router", () => ({
+  useFocusEffect: (effect: () => void) => {
+    mockRegainFocus = effect;
+  },
+}));
 
 jest.mock("../../auth/AuthService", () => ({
   authService: {
@@ -32,8 +39,26 @@ const cleanStatus = {
   },
   redFlagExpiresAt: null,
 };
+const redFlagged = {
+  ...cleanStatus,
+  redFlagExpiresAt: "2026-11-06T00:00:00.000Z",
+};
+const FRESHNESS_WINDOW_MS = 30_000;
+
+async function regainFocusAfter(elapsedMs: number) {
+  const now = Date.now();
+  jest.spyOn(Date, "now").mockReturnValue(now + elapsedMs);
+  await act(async () => {
+    mockRegainFocus();
+  });
+}
 
 describe("ProfilePenaltyStatus", () => {
+  afterEach(() => {
+    jest.restoreAllMocks();
+    mockGetPenaltyStatus.mockReset();
+  });
+
   it("stays hidden for a Member with no penalty", async () => {
     mockGetPenaltyStatus.mockResolvedValue(cleanStatus);
     await renderWithQueryClient(<ProfilePenaltyStatus />);
@@ -88,11 +113,66 @@ describe("ProfilePenaltyStatus", () => {
     expect(screen.queryByText(messages.penaltyMisconductLadder)).toBeNull();
   });
 
-  it("stays hidden when the status cannot load", async () => {
-    mockGetPenaltyStatus.mockRejectedValue(new Error("not deployed"));
+  it("offers a retry that recovers when the status cannot load", async () => {
+    mockGetPenaltyStatus.mockRejectedValueOnce(new Error("offline"));
     await renderWithQueryClient(<ProfilePenaltyStatus />);
 
-    await waitFor(() => expect(mockGetPenaltyStatus).toHaveBeenCalled());
+    const unavailable = await screen.findByText(
+      messages.penaltyStatusUnavailable
+    );
+    expect(unavailable).toBeTruthy();
     expect(screen.queryByTestId("profile-penalty-status")).toBeNull();
+
+    mockGetPenaltyStatus.mockResolvedValue(redFlagged);
+    fireEvent.press(screen.getByRole("button", { name: messages.retry }));
+
+    expect(await screen.findByText(/^Red Flag until/)).toBeTruthy();
+    expect(screen.queryByText(messages.penaltyStatusUnavailable)).toBeNull();
+  });
+
+  it("recovers from a failed load when the Profile regains focus", async () => {
+    mockGetPenaltyStatus.mockRejectedValueOnce(new Error("offline"));
+    await renderWithQueryClient(<ProfilePenaltyStatus />);
+    await screen.findByText(messages.penaltyStatusUnavailable);
+
+    mockGetPenaltyStatus.mockResolvedValue(redFlagged);
+    await regainFocusAfter(0);
+
+    expect(await screen.findByText(/^Red Flag until/)).toBeTruthy();
+  });
+
+  it("shows a Red Flag issued after the last load when the Profile regains focus", async () => {
+    mockGetPenaltyStatus.mockResolvedValueOnce(cleanStatus);
+    await renderWithQueryClient(<ProfilePenaltyStatus />);
+    await waitFor(() => expect(mockGetPenaltyStatus).toHaveBeenCalledTimes(1));
+
+    mockGetPenaltyStatus.mockResolvedValue(redFlagged);
+    await regainFocusAfter(FRESHNESS_WINDOW_MS + 1);
+
+    expect(await screen.findByText(/^Red Flag until/)).toBeTruthy();
+  });
+
+  it("does not reload a status still inside the freshness window", async () => {
+    mockGetPenaltyStatus.mockResolvedValue(redFlagged);
+    await renderWithQueryClient(<ProfilePenaltyStatus />);
+    await screen.findByText(/^Red Flag until/);
+
+    // Margin: real time already passed since the load finished.
+    await regainFocusAfter(FRESHNESS_WINDOW_MS - 5_000);
+
+    expect(mockGetPenaltyStatus).toHaveBeenCalledTimes(1);
+  });
+
+  it("keeps a known Red Flag visible when a later refresh fails", async () => {
+    mockGetPenaltyStatus.mockResolvedValueOnce(redFlagged);
+    await renderWithQueryClient(<ProfilePenaltyStatus />);
+    await screen.findByText(/^Red Flag until/);
+
+    mockGetPenaltyStatus.mockRejectedValue(new Error("offline"));
+    await regainFocusAfter(FRESHNESS_WINDOW_MS + 1);
+
+    await waitFor(() => expect(mockGetPenaltyStatus).toHaveBeenCalledTimes(2));
+    expect(screen.getByText(/^Red Flag until/)).toBeTruthy();
+    expect(screen.queryByText(messages.penaltyStatusUnavailable)).toBeNull();
   });
 });

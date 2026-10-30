@@ -46,6 +46,15 @@ export function usePenaltyStatusQuery() {
   });
 }
 
+export function invalidatePenaltyStatus(
+  queryClient: QueryClient
+): Promise<void> {
+  return queryClient.invalidateQueries(
+    { queryKey: profileKeys.penaltyStatus() },
+    { cancelRefetch: false }
+  );
+}
+
 async function fetchPublicProfile(userId: string, signal?: AbortSignal) {
   const api = await authService.getStudentApi();
   return api.getPublicProfile(userId, { signal });

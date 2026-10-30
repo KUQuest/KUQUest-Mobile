@@ -1,4 +1,7 @@
+import { useQueryClient } from "@tanstack/react-query";
+import { useFocusEffect } from "expo-router";
 import { Ban, Flag } from "lucide-react-native";
+import { useCallback } from "react";
 
 import { cn } from "@/tw/cn";
 import { Text, View } from "@/tw";
@@ -8,8 +11,13 @@ import { useLocale } from "@/features/preferences/localeStore";
 import { profileMessages } from "@/locales/profileMessages";
 import type { PenaltyResult } from "@/locales/profileMessages";
 
-import { usePenaltyStatusQuery } from "../api/profileQueries";
+import {
+  invalidatePenaltyStatus,
+  profileKeys,
+  usePenaltyStatusQuery,
+} from "../api/profileQueries";
 import styles from "../styles/profileComponentStyles";
+import { SectionNotice } from "./ProfileSection";
 
 function PenaltyLadder({
   label,
@@ -59,8 +67,30 @@ export function ProfilePenaltyStatus() {
   const { locale } = useLocale();
   const messages = profileMessages[locale];
   const { colors } = useAppTheme();
-  const { data } = usePenaltyStatusQuery();
-  if (!data) return null;
+  const queryClient = useQueryClient();
+  const { data, isError, refetch } = usePenaltyStatusQuery();
+
+  // The Profile tab stays mounted, so a penalty issued later needs a focus reload.
+  useFocusEffect(
+    useCallback(() => {
+      const updatedAt =
+        queryClient.getQueryState(profileKeys.penaltyStatus())?.dataUpdatedAt ??
+        0;
+      if (Date.now() - updatedAt > 30_000) {
+        void invalidatePenaltyStatus(queryClient);
+      }
+    }, [queryClient])
+  );
+
+  if (!data) {
+    return isError ? (
+      <SectionNotice
+        errorText={messages.penaltyStatusUnavailable}
+        retryLabel={messages.retry}
+        onRetry={() => void refetch()}
+      />
+    ) : null;
+  }
 
   const { misconduct, review, redFlagExpiresAt } = data;
   if (

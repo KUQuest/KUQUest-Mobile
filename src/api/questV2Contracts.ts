@@ -389,6 +389,7 @@ export const QuestV2JoinErrorCode = {
   QUEST_FULL: "QUEST_FULL",
   QUEST_NOT_OPEN: "QUEST_NOT_OPEN",
   ALREADY_JOINED: "ALREADY_JOINED",
+  MEMBER_RED_FLAGGED: "MEMBER_RED_FLAGGED",
 } as const;
 
 /** Compact underfilled summary on each `GET /api/v2/assignments/mine` item; null when the Quest has no underfilled process. */
