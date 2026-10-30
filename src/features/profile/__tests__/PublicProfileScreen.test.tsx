@@ -126,6 +126,8 @@ describe("PublicProfileScreen", () => {
     expect(view.getByText("Engineering")).toBeTruthy();
     expect(view.getByText("Software Engineering")).toBeTruthy();
     expect(view.getByText("Student")).toBeTruthy();
+    expect(view.queryByTestId("public-profile-header-name")).toBeNull();
+    expect(view.queryByLabelText("KUQuest")).toBeNull();
     expect(
       view.getAllByText("Software Engineering student building mobile apps")
         .length
