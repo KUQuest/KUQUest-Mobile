@@ -186,7 +186,6 @@ export function useQuestTopUpFlow({
     setVerificationError(null);
     try {
       const topUp = await simulateTopUpPayment(activeTopUp.id);
-      if (!topUp) return;
       await settleTopUp(topUp);
     } catch (err: unknown) {
       setVerificationError(

@@ -226,27 +226,9 @@ describe("checkTopUpPayment", () => {
   });
 });
 
-const devFlag = globalThis as typeof globalThis & { __DEV__?: boolean };
-const initialDevFlag = devFlag.__DEV__;
-
 describe("simulateTopUpPayment", () => {
-  afterEach(() => {
-    if (initialDevFlag === undefined) delete devFlag.__DEV__;
-    else devFlag.__DEV__ = initialDevFlag;
-  });
-
-  it("returns null and calls nothing outside development", async () => {
-    devFlag.__DEV__ = false;
-
-    const result = await simulateTopUpPayment("topup-1");
-
-    expect(result).toBeNull();
-    expect(walletApi.simulateTopUp).not.toHaveBeenCalled();
-  });
-
-  it("simulates the payment in development", async () => {
+  it("simulates the payment in every build", async () => {
     (walletApi.simulateTopUp as jest.Mock).mockResolvedValueOnce(topUpData);
-    devFlag.__DEV__ = true;
 
     const result = await simulateTopUpPayment("topup-1");
 
