@@ -9,7 +9,7 @@ import { useSessionQuery } from "@/features/auth/sessionQueries";
 import { invalidateQuestReads } from "@/features/questBoard/api/questBoardQueries";
 import { parsePushPayload, routeForPush } from "./pushPayload";
 import { QuestV2PushTypeValue } from "@/api/questV2Contracts";
-import { createPushRegistrationManager } from "./pushNative";
+import { createPushRegistrationManager, isPushEnabled } from "./pushNative";
 import "./pushTask";
 
 /** Registers the Android push device while signed in and routes notification taps. */
@@ -20,7 +20,7 @@ export function PushNotificationHost() {
   const viewerId = sessionQuery.data?.user.id;
 
   useEffect(() => {
-    if (Platform.OS !== "android" || !viewerId) return;
+    if (Platform.OS !== "android" || !viewerId || !isPushEnabled()) return;
     const manager = createPushRegistrationManager(Device.isDevice);
     void manager.start().catch(() => undefined);
     return () => manager.stop();

@@ -37,7 +37,8 @@ export type WorkerQuestNoticeKind =
   | "FULL_OR_ASSIGNED"
   | "CANCELLED"
   | "FAILED"
-  | "INCOMPLETE";
+  | "INCOMPLETE"
+  | "PROOF_NOT_APPROVED";
 
 export interface WorkerQuestNoticeTransition {
   questId: string;
@@ -71,6 +72,14 @@ export function getWorkerAssignmentNoticeKind(
     assignment.state === QuestAssignmentStatus.ASSIGNMENT_INCOMPLETE
   ) {
     return "INCOMPLETE";
+  }
+  // GROUP + FCFS: the Hirer did not approve this Worker's Proof, but other
+  // Workers keep the Quest in progress, so no terminal notice covers it yet.
+  if (
+    assignment.questState === QuestStatus.QUEST_IN_PROGRESS &&
+    assignment.state === QuestAssignmentStatus.ASSIGNMENT_INCOMPLETE
+  ) {
+    return "PROOF_NOT_APPROVED";
   }
   if (assignment.state !== QuestAssignmentStatus.ASSIGNMENT_ACTIVE) return null;
   if (
@@ -106,6 +115,7 @@ const WORKER_NOTICE_HREF: Record<
   CANCELLED: "/quest/[id]",
   FAILED: "/quest/[id]/work",
   INCOMPLETE: "/quest/[id]/work",
+  PROOF_NOT_APPROVED: "/quest/[id]",
 };
 
 export function detectWorkerQuestTransitions(
