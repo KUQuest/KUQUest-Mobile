@@ -2,6 +2,7 @@ import { resetServerClock, syncServerClock } from "@/api/serverClock";
 import { Fragment, useState } from "react";
 import { act, fireEvent, waitFor } from "@testing-library/react-native";
 
+import { DisputeFormHost } from "../../dispute/DisputeFormHost";
 import { SweetAlertHost } from "@/components/ui/SweetAlert";
 import QuestWorkScreen from "../QuestWorkScreen";
 import {
@@ -349,6 +350,7 @@ describe("QuestWorkScreen", () => {
     const view = await renderWithQueryClient(
       <Fragment>
         <QuestWorkScreen questId="quest-work-1" viewerId="worker-1" />
+        <DisputeFormHost />
         <SweetAlertHost />
       </Fragment>
     );
@@ -445,6 +447,7 @@ describe("QuestWorkScreen", () => {
     const view = await renderWithQueryClient(
       <Fragment>
         <QuestWorkScreen questId="quest-work-1" viewerId="worker-1" />
+        <DisputeFormHost />
         <SweetAlertHost />
       </Fragment>
     );
@@ -476,6 +479,11 @@ describe("QuestWorkScreen", () => {
       })
     );
     await fireEvent.press(view.getByRole("button", { name: "File Dispute" }));
+    await fireEvent.press(view.getByRole("radio", { name: "Other" }));
+    await fireEvent.changeText(
+      view.getByLabelText("Dispute details"),
+      "Details"
+    );
     await fireEvent.press(view.getByRole("button", { name: "File" }));
     await act(async () => {
       mockIsMutating.mockReturnValue(1);

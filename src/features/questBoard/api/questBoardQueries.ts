@@ -14,7 +14,7 @@ import {
   conductReportApi,
   type ConductReportInput,
 } from "@/api/ConductReportApi";
-import { disputeApi } from "@/api/DisputeApi";
+import { disputeApi, type DisputeInput } from "@/api/DisputeApi";
 import type {
   QuestV2CreateEditRequestPayload,
   QuestV2ProofReviewPayload,
@@ -879,8 +879,14 @@ export function useFileDisputeMutation() {
   const queryClient = useQueryClient();
   return useMutation({
     mutationKey: questBoardKeys.disputeFiling(),
-    mutationFn: ({ questId }: { questId: string; viewerId: string }) =>
-      disputeApi.fileDispute(questId),
+    mutationFn: ({
+      questId,
+      input,
+    }: {
+      questId: string;
+      viewerId: string;
+      input: DisputeInput;
+    }) => disputeApi.fileDispute(questId, input),
     onSuccess: async (filedCase, variables) => {
       queryClient.setQueryData(
         questBoardKeys.myDisputeCase(variables.questId, variables.viewerId),

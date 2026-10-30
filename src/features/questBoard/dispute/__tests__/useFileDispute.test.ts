@@ -5,6 +5,7 @@ import { act, fireEvent } from "@testing-library/react-native";
 import { ApiError } from "@/api/ApiClient";
 import { SweetAlertHost } from "@/components/ui/SweetAlert";
 import { disputeMessages } from "@/locales/disputeMessages";
+import { DisputeFormHost } from "../DisputeFormHost";
 import { useFileDispute } from "../useFileDispute";
 import { renderWithQueryClient } from "@/testing/queryTestUtils";
 
@@ -51,6 +52,7 @@ function renderDisputeAction() {
       Fragment,
       null,
       createElement(DisputeAction),
+      createElement(DisputeFormHost),
       createElement(SweetAlertHost)
     )
   );
@@ -66,20 +68,31 @@ describe("useFileDispute", () => {
 
     await fireEvent.press(dialog.getByRole("button", { name: "File dispute" }));
     expect(dialog.getByText(messages.confirmTitle)).toBeTruthy();
+    expect(dialog.getByText(`• ${messages.rules[0]}`)).toBeTruthy();
     expect(
-      dialog.getByText(messages.rules.map((rule) => `• ${rule}`).join("\n"))
-    ).toBeTruthy();
+      dialog.getByRole("button", { name: messages.confirm }).props
+        .accessibilityState.disabled
+    ).toBe(true);
     await fireEvent.press(
       dialog.getByRole("button", { name: messages.cancel })
     );
     expect(mockMutate).not.toHaveBeenCalled();
 
     await fireEvent.press(dialog.getByRole("button", { name: "File dispute" }));
+    await fireEvent.press(dialog.getByRole("radio", { name: "Other" }));
+    await fireEvent.changeText(
+      dialog.getByLabelText("Dispute details"),
+      " Details "
+    );
     await fireEvent.press(
       dialog.getByRole("button", { name: messages.confirm })
     );
     expect(mockMutate).toHaveBeenCalledWith(
-      { questId: "quest-1", viewerId: "viewer-1" },
+      {
+        questId: "quest-1",
+        viewerId: "viewer-1",
+        input: { category: "OTHER", submittedDetail: "Details" },
+      },
       expect.anything()
     );
 
@@ -97,6 +110,11 @@ describe("useFileDispute", () => {
     const dialog = await renderDisputeAction();
 
     await fireEvent.press(dialog.getByRole("button", { name: "File dispute" }));
+    await fireEvent.press(dialog.getByRole("radio", { name: "Other" }));
+    await fireEvent.changeText(
+      dialog.getByLabelText("Dispute details"),
+      " Details "
+    );
     await fireEvent.press(
       dialog.getByRole("button", { name: messages.confirm })
     );
@@ -120,6 +138,11 @@ describe("useFileDispute", () => {
   it("submits only once when confirmation fires twice while pending", async () => {
     const dialog = await renderDisputeAction();
     await fireEvent.press(dialog.getByRole("button", { name: "File dispute" }));
+    await fireEvent.press(dialog.getByRole("radio", { name: "Other" }));
+    await fireEvent.changeText(
+      dialog.getByLabelText("Dispute details"),
+      "Details"
+    );
     const confirmButton = dialog.getByRole("button", {
       name: messages.confirm,
     });
