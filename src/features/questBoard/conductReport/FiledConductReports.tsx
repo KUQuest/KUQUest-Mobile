@@ -1,7 +1,7 @@
 import type { ConductReportMessages } from "@/locales/conductReportMessages";
 import { Text, View } from "@/tw";
 
-import type { FiledConductReport } from "./useHirerConductReport";
+import type { FiledConductReport } from "./useConductReport";
 
 /** The viewer's own Conduct Reports on this Quest and their Admin status. */
 export function FiledConductReports({
@@ -31,7 +31,7 @@ export function FiledConductReports({
           testID={`conduct-report-filed-${report.id}`}
         >
           <Text className="font-ku-semibold text-ku-body text-ku-text-strong">
-            {messages.filedItem(report.displayId, report.workerName)}
+            {messages.filedItem(report.displayId, report.memberName)}
           </Text>
           <Text className="text-ku-body-small text-ku-text-secondary">
             {messages.status[report.status]}

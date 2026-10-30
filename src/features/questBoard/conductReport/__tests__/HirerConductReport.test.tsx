@@ -13,7 +13,7 @@ import {
 
 import { ConductReportSheet } from "../ConductReportSheet";
 import { FiledConductReports } from "../FiledConductReports";
-import { useHirerConductReport } from "../useHirerConductReport";
+import { ConductReportRole, useConductReport } from "../useConductReport";
 
 const messages = conductReportMessages.en;
 const mockMutateAsync = jest.fn();
@@ -48,7 +48,8 @@ const ASSIGNMENTS = [
 ];
 
 function Harness({ questState }: { questState?: string }) {
-  const report = useHirerConductReport({
+  const report = useConductReport({
+    role: ConductReportRole.HIRER,
     questId: "quest-1",
     viewerId: "hirer-1",
     assignments: ASSIGNMENTS,
@@ -58,7 +59,7 @@ function Harness({ questState }: { questState?: string }) {
     <>
       {report.canReport ? (
         <Button onPress={report.openReport} testID="open-report">
-          {messages.reportWorker}
+          {messages.copy.HIRER.entry}
         </Button>
       ) : null}
       <FiledConductReports
@@ -212,5 +213,86 @@ describe("Hirer Conduct Report", () => {
     expect(
       screen.getByText(messages.status.CONDUCT_REPORT_PENDING)
     ).toBeTruthy();
+  });
+});
+
+function WorkerHarness() {
+  const report = useConductReport({
+    role: ConductReportRole.WORKER,
+    questId: "quest-1",
+    viewerId: "worker-1",
+    assignments: ASSIGNMENTS,
+    hirerName: "Napat",
+  });
+  return (
+    <>
+      {report.canReport ? (
+        <Button onPress={report.openReport} testID="open-report">
+          {report.copy.entry}
+        </Button>
+      ) : null}
+      <ConductReportSheet {...report} />
+      <SweetAlertHost />
+    </>
+  );
+}
+
+describe("Worker Conduct Report", () => {
+  beforeEach(() => {
+    jest.clearAllMocks();
+    mockView = undefined;
+  });
+
+  it("lists the Hirer and teammates the Server returns, not hirer-only reasons", async () => {
+    mockView = {
+      windowEndsAt: "2099-10-09T05:00:00.000Z",
+      reportable: [
+        { memberId: "hirer-9", reason: "CONDUCT_OUT_OF_SCOPE" },
+        { memberId: "worker-2", reason: "CONDUCT_NO_SHOW" },
+        { memberId: "worker-3", reason: "CONDUCT_ABANDONED" },
+      ],
+      items: [],
+    };
+    const screen = await renderWithQueryClient(<WorkerHarness />);
+
+    await fireEvent.press(screen.getByTestId("open-report"));
+    expect(screen.getByText("Napat")).toBeTruthy();
+    expect(screen.getByText("Malee")).toBeTruthy();
+    expect(
+      screen.getByText(messages.reasons.CONDUCT_OUT_OF_SCOPE)
+    ).toBeTruthy();
+    expect(screen.getByText(messages.reasons.CONDUCT_NO_SHOW)).toBeTruthy();
+    expect(screen.queryByTestId("conduct-report-worker-worker-3")).toBeNull();
+  });
+
+  it("files the selected target with its own reason", async () => {
+    mockView = {
+      windowEndsAt: null,
+      reportable: [
+        { memberId: "hirer-9", reason: "CONDUCT_OUT_OF_SCOPE" },
+        { memberId: "worker-2", reason: "CONDUCT_NO_SHOW" },
+      ],
+      items: [],
+    };
+    mockMutateAsync.mockResolvedValue(pendingReport);
+    const screen = await renderWithQueryClient(<WorkerHarness />);
+
+    await fireEvent.press(screen.getByTestId("open-report"));
+    await fireEvent.press(screen.getByTestId("conduct-report-worker-worker-2"));
+    await fireEvent.press(screen.getByTestId("conduct-report-submit"));
+
+    expect(mockMutateAsync).toHaveBeenCalledWith({
+      questId: "quest-1",
+      viewerId: "worker-1",
+      input: { reportedMemberId: "worker-2", reason: "CONDUCT_NO_SHOW" },
+      idempotencyKey: expect.any(String),
+    });
+  });
+
+  it("offers no report action when nothing is reportable", async () => {
+    mockView = { windowEndsAt: null, reportable: [], items: [] };
+    const screen = await renderWithQueryClient(<WorkerHarness />);
+
+    expect(screen.queryByTestId("open-report")).toBeNull();
   });
 });
