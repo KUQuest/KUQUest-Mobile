@@ -114,7 +114,10 @@ export function QuestBoardListHeader({
           </Text>
           {activeFilterCount > 0 ? (
             <View className={styles.filterCount}>
-              <Text className={styles.filterCountText}>
+              <Text
+                className={styles.filterCountText}
+                maxFontSizeMultiplier={1.5}
+              >
                 {activeFilterCount}
               </Text>
             </View>
