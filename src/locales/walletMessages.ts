@@ -176,8 +176,10 @@ export interface WalletMessages {
   destinationGivenNameLabel: string;
   destinationSurnameLabel: string;
   destinationHolderNameLabel: string;
-  destinationBankCodeLabel: string;
-  destinationBankCodeHint: string;
+  destinationBankPlaceholder: string;
+  destinationBankSearch: string;
+  destinationBankNoResults: string;
+  clearSearch: string;
   destinationAccountNumberLabel: string;
   destinationFieldRequired: string;
   destinationSave: string;
@@ -412,8 +414,10 @@ export const walletMessages: Record<SupportedLocale, WalletMessages> = {
     destinationGivenNameLabel: "Given name",
     destinationSurnameLabel: "Surname",
     destinationHolderNameLabel: "Account holder name",
-    destinationBankCodeLabel: "Bank code",
-    destinationBankCodeHint: "For example KBANK or SCB",
+    destinationBankPlaceholder: "Choose your bank",
+    destinationBankSearch: "Search banks",
+    destinationBankNoResults: "No matching bank",
+    clearSearch: "Clear search",
     destinationAccountNumberLabel: "Account number",
     destinationFieldRequired: "This field is required",
     destinationSave: "Save account",
@@ -664,8 +668,10 @@ export const walletMessages: Record<SupportedLocale, WalletMessages> = {
     destinationGivenNameLabel: "ชื่อ",
     destinationSurnameLabel: "นามสกุล",
     destinationHolderNameLabel: "ชื่อบัญชี",
-    destinationBankCodeLabel: "รหัสธนาคาร",
-    destinationBankCodeHint: "เช่น KBANK หรือ SCB",
+    destinationBankPlaceholder: "เลือกธนาคาร",
+    destinationBankSearch: "ค้นหาธนาคาร",
+    destinationBankNoResults: "ไม่พบธนาคารที่ค้นหา",
+    clearSearch: "ล้างคำค้นหา",
     destinationAccountNumberLabel: "เลขบัญชี",
     destinationFieldRequired: "จำเป็นต้องกรอกช่องนี้",
     destinationSave: "บันทึกบัญชี",
