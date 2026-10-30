@@ -98,6 +98,36 @@ describe("useSubmitProofMutation", () => {
     expect(mockedQuestApi.deleteProofDraft).not.toHaveBeenCalled();
   });
 
+  it("saves an edited description before re-sending an existing draft", async () => {
+    mockedQuestApi.updateProofDraft.mockResolvedValue({} as never);
+    mockedQuestApi.submitProofDraft.mockResolvedValue({} as never);
+    const onError = jest.fn();
+    const view = await renderWithQueryClient(
+      createElement(SubmitProbe, {
+        plan: { kind: "existing", draftId: "draft-1", description: "Old" },
+        onError,
+      })
+    );
+
+    await act(async () => {
+      await fireEvent.press(view.getByTestId("submit-proof"));
+    });
+    await waitFor(() =>
+      expect(mockedQuestApi.submitProofDraft).toHaveBeenCalled()
+    );
+
+    expect(onError).not.toHaveBeenCalled();
+    expect(mockedQuestApi.updateProofDraft).toHaveBeenCalledWith(
+      "quest-1",
+      "draft-1",
+      { description: "Proof description" },
+      "idempotency-key"
+    );
+    expect(
+      mockedQuestApi.updateProofDraft.mock.invocationCallOrder[0]
+    ).toBeLessThan(mockedQuestApi.submitProofDraft.mock.invocationCallOrder[0]);
+  });
+
   it("invalidates the participation detail after submitting proof", async () => {
     const queryClient = new QueryClient();
     const key = workerHomeKeys.participationDetail("quest-1");
@@ -112,7 +142,7 @@ describe("useSubmitProofMutation", () => {
       await result.current.mutateAsync({
         questId: "quest-1",
         viewerId: "worker-1",
-        plan: { kind: "existing", draftId: "draft-1" },
+        plan: { kind: "existing", draftId: "draft-1", description: null },
       });
     });
     expect(queryClient.getQueryState(key)?.isInvalidated).toBe(true);

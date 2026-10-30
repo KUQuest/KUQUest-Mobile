@@ -1,5 +1,5 @@
 import React from "react";
-import { act, renderHook } from "@testing-library/react-native";
+import { act, renderHook, waitFor } from "@testing-library/react-native";
 import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
 
 import { questApi } from "@/api/QuestApi";
@@ -14,6 +14,7 @@ import {
   usePublishEditQuestMutation,
   usePublishImageUploadMutation,
   usePublishQuestMutation,
+  useQuestPublishCheckQuery,
   useUploadQuestImagesMutation,
 } from "../api/createQuestQueries";
 
@@ -22,6 +23,7 @@ jest.mock("@/api/QuestApi", () => ({
     createQuest: jest.fn(),
     deleteQuestImage: jest.fn(),
     editQuest: jest.fn(),
+    getPublishCheck: jest.fn(),
     publishQuest: jest.fn(),
     uploadQuestImages: jest.fn(),
   },
@@ -51,6 +53,37 @@ function createWrapper(queryClient: QueryClient) {
 
 describe("Create Quest cache invalidation", () => {
   beforeEach(() => jest.clearAllMocks());
+
+  it("refreshes the publish amount after a draft edit", async () => {
+    const queryClient = createQueryClient();
+    const wrapper = createWrapper(queryClient);
+    jest
+      .mocked(questApi.getPublishCheck)
+      .mockResolvedValueOnce({ escrowRequirementSatang: 8000 } as never)
+      .mockResolvedValueOnce({ escrowRequirementSatang: 2000 } as never);
+    jest.mocked(questApi.editQuest).mockResolvedValue({} as never);
+    const check = await renderHook(() => useQuestPublishCheckQuery("quest-1"), {
+      wrapper,
+    });
+    await waitFor(() =>
+      expect(check.result.current.data?.escrowRequirementSatang).toBe(8000)
+    );
+    const edit = await renderHook(() => usePublishEditQuestMutation(), {
+      wrapper,
+    });
+    await act(async () => {
+      await edit.result.current.mutateAsync({
+        questId: "quest-1",
+        version: 1,
+        payload: { questFundingTotal: 20 },
+        idempotencyKey: "edit-key",
+      });
+    });
+    await waitFor(() =>
+      expect(check.result.current.data?.escrowRequirementSatang).toBe(2000)
+    );
+    queryClient.clear();
+  });
 
   it("publish invalidates Quest Board and Wallet reads", async () => {
     const queryClient = createQueryClient();
@@ -100,8 +133,12 @@ describe("Create Quest cache invalidation", () => {
     const queryClient = createQueryClient();
     const boardKey = questBoardKeys.board();
     const editSourceKey = createQuestKeys.editSource("quest-1");
+    const publishCheckKey = createQuestKeys.publishCheck("quest-1");
     queryClient.setQueryData(boardKey, []);
     queryClient.setQueryData(editSourceKey, { id: "quest-1" });
+    queryClient.setQueryData(publishCheckKey, {
+      escrowRequirementSatang: 8000,
+    });
     jest
       .mocked(questApi.createQuest)
       .mockResolvedValue({ id: "quest-1" } as never);
@@ -116,7 +153,13 @@ describe("Create Quest cache invalidation", () => {
       });
     });
     expect(queryClient.getQueryState(boardKey)?.isInvalidated).toBe(true);
+    expect(queryClient.getQueryState(publishCheckKey)?.isInvalidated).toBe(
+      true
+    );
     await queryClient.resetQueries({ queryKey: boardKey });
+    queryClient.setQueryData(publishCheckKey, {
+      escrowRequirementSatang: 8000,
+    });
 
     const edit = await renderHook(() => useEditQuestMutation(), {
       wrapper: createWrapper(queryClient),
@@ -130,6 +173,9 @@ describe("Create Quest cache invalidation", () => {
       });
     });
     expect(queryClient.getQueryState(boardKey)?.isInvalidated).toBe(true);
+    expect(queryClient.getQueryState(publishCheckKey)?.isInvalidated).toBe(
+      true
+    );
     queryClient.clear();
   });
   it("image mutations invalidate Quest Board reads", async () => {

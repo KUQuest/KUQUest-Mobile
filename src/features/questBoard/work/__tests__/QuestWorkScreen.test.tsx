@@ -243,6 +243,45 @@ function makeSnapshot(overrides: SnapshotOverrides = {}): LiveQuestSnapshot {
 }
 
 describe("QuestWorkScreen", () => {
+  it("hides a stale edit request after work has started", async () => {
+    mockedGetSnapshot.mockResolvedValue(
+      makeSnapshot({
+        state: "QUEST_IN_PROGRESS",
+        quest: { state: "QUEST_IN_PROGRESS" },
+        editRequest: {
+          status: "EDIT_REQUEST_PENDING",
+          proposedCondition: {
+            items: [{ position: 0, text: "Changed condition" }],
+          },
+        } as never,
+        capabilities: { canRespondToEdit: true },
+      })
+    );
+    const view = await renderWithQueryClient(
+      <QuestWorkScreen questId="quest-work-1" viewerId="worker-1" />
+    );
+    await view.findByRole("button", { name: "Open Work Chat" });
+    expect(view.queryByText(/Changed condition/)).toBeNull();
+  });
+
+  it("shows a pending edit request before work starts", async () => {
+    mockedGetSnapshot.mockResolvedValue(
+      makeSnapshot({
+        editRequest: {
+          status: "EDIT_REQUEST_PENDING",
+          proposedCondition: {
+            items: [{ position: 0, text: "Changed condition" }],
+          },
+        } as never,
+        capabilities: { canRespondToEdit: true },
+      })
+    );
+    const view = await renderWithQueryClient(
+      <QuestWorkScreen questId="quest-work-1" viewerId="worker-1" />
+    );
+    expect(await view.findByText(/Changed condition/)).toBeTruthy();
+  });
+
   beforeEach(() => {
     jest.clearAllMocks();
     beforeRemoveHandler = undefined;
@@ -860,6 +899,54 @@ describe("QuestWorkScreen", () => {
     expect(view.queryByText("Proof submission")).toBeNull();
   });
 
+  it("waits for Hirer approval after the Worker confirms proof-free completion", async () => {
+    mockedGetSnapshot.mockResolvedValue(
+      makeSnapshot({
+        state: "QUEST_IN_PROGRESS",
+        proofRequired: false,
+        nextAction: "CONFIRM_COMPLETION",
+        quest: {
+          ...defaultQuest,
+          state: "QUEST_IN_PROGRESS",
+          proofRequired: false,
+        },
+        completionConfirmations: [
+          {
+            id: "completion-confirmation-1",
+            questId: "quest-work-1",
+            workerId: "worker-1",
+            teamId: null,
+            confirmedByUserId: "worker-1",
+            confirmedAt: "2026-10-01T10:00:00Z",
+            reviewStatus: "COMPLETION_CONFIRMATION_PENDING",
+            reviewDeadlineAt: "2026-10-02T10:00:00Z",
+            reviewReason: null,
+            reviewedAt: null,
+            reviewedBy: null,
+          },
+        ],
+        capabilities: {
+          ...makeSnapshot().capabilities,
+          canConfirmCompletion: true,
+        },
+      })
+    );
+    const view = await renderWithQueryClient(
+      <QuestWorkScreen questId="quest-work-1" viewerId="worker-1" />
+    );
+
+    expect(
+      await view.findByTestId("completion-confirmation-pending")
+    ).toBeTruthy();
+    expect(view.getAllByText("Awaiting Hirer approval").length).toBeGreaterThan(
+      0
+    );
+    expect(
+      view.queryByRole("button", { name: "Confirm completion" })
+    ).toBeNull();
+    expect(view.queryByText("Completed")).toBeNull();
+  });
+
   it("shows the proof form inline instead of navigating to a separate page", async () => {
     mockedGetSnapshot.mockResolvedValue(
       makeSnapshot({
@@ -1093,6 +1180,128 @@ describe("QuestWorkScreen", () => {
       expect(view.queryByLabelText("Work description (optional)")).toBeNull();
       expect(
         view.getByRole("button", { name: "View Quest details" })
+      ).toBeTruthy();
+    });
+
+    it("offers the split to the Team Leader, and only the Leader, after cancellation", async () => {
+      const allocation = (viewerIsLeader: boolean) =>
+        ({
+          status: "PENDING",
+          leaderId: "worker-1",
+          totalRewardSatang: 20_000,
+          deadlineAt: "2099-08-27T12:00:00.000Z",
+          settledAt: null,
+          viewerIsLeader,
+          members: [
+            {
+              memberId: "worker-1",
+              displayName: "Aphinya",
+              isLeader: true,
+              percentageBasisPoints: null,
+              rewardSatang: null,
+            },
+            {
+              memberId: "worker-2",
+              displayName: "Nichakan",
+              isLeader: false,
+              percentageBasisPoints: null,
+              rewardSatang: null,
+            },
+          ],
+        }) as never;
+      mockedGetSnapshot.mockResolvedValue(
+        makeSnapshot({
+          ...groupCandidate,
+          state: "QUEST_CANCELLED",
+          team: makeTeam("worker-1"),
+          teamRole: "LEADER",
+          teamRewardAllocation: allocation(true),
+        })
+      );
+      const leader = await renderWithQueryClient(
+        <QuestWorkScreen questId="quest-work-1" viewerId="worker-1" />
+      );
+      expect(await leader.findByText("Split the team reward")).toBeTruthy();
+      await leader.unmount();
+
+      mockedGetSnapshot.mockResolvedValue(
+        makeSnapshot({
+          ...groupCandidate,
+          state: "QUEST_CANCELLED",
+          team: makeTeam("worker-2"),
+          teamRole: "MEMBER",
+          teamRewardAllocation: allocation(false),
+        })
+      );
+      const member = await renderWithQueryClient(
+        <QuestWorkScreen questId="quest-work-1" viewerId="worker-2" />
+      );
+      expect(await member.findByTestId("team-work-member")).toBeTruthy();
+      expect(member.queryByText("Split the team reward")).toBeNull();
+      await member.unmount();
+
+      // The Team roster read failed, so only the allocation names the Leader.
+      mockedGetSnapshot.mockResolvedValue(
+        makeSnapshot({
+          ...groupCandidate,
+          state: "QUEST_CANCELLED",
+          team: null,
+          teamRole: "UNKNOWN",
+          teamRewardAllocation: allocation(true),
+        })
+      );
+      const unknownRole = await renderWithQueryClient(
+        <QuestWorkScreen questId="quest-work-1" viewerId="worker-1" />
+      );
+      expect(
+        await unknownRole.findByText("Split the team reward")
+      ).toBeTruthy();
+    });
+
+    it("hides File Dispute from a Team Member and keeps it for the Team Leader", async () => {
+      const failed = {
+        ...groupCandidate,
+        state: "QUEST_FAILED" as const,
+        assignment: {
+          ...defaultAssignment,
+          state: "ASSIGNMENT_INCOMPLETE" as const,
+          questState: "QUEST_FAILED" as const,
+        },
+      };
+      mockMineDisputeQuery.mockReturnValue({
+        isPending: false,
+        isError: false,
+        isSuccess: true,
+        isFetching: false,
+        data: { case: null },
+        refetch: jest.fn(),
+      });
+      mockedGetSnapshot.mockResolvedValue(
+        makeSnapshot({
+          ...failed,
+          team: makeTeam("worker-2"),
+          teamRole: "MEMBER",
+        })
+      );
+      const member = await renderWithQueryClient(
+        <QuestWorkScreen questId="quest-work-1" viewerId="worker-1" />
+      );
+      expect(await member.findByTestId("team-work-member")).toBeTruthy();
+      expect(member.queryByRole("button", { name: "File Dispute" })).toBeNull();
+      await member.unmount();
+
+      mockedGetSnapshot.mockResolvedValue(
+        makeSnapshot({
+          ...failed,
+          team: makeTeam("worker-1"),
+          teamRole: "LEADER",
+        })
+      );
+      const leader = await renderWithQueryClient(
+        <QuestWorkScreen questId="quest-work-1" viewerId="worker-1" />
+      );
+      expect(
+        await leader.findByRole("button", { name: "File Dispute" })
       ).toBeTruthy();
     });
 

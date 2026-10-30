@@ -80,7 +80,10 @@ export default function PartialGroupStartConsentScreen(
         title={groupMessages.partialConsentTitle}
         variant="detail"
       />
-      <View className="flex-1 px-ku-20">
+      <View
+        className="flex-1 px-ku-20"
+        style={{ paddingBottom: Math.max(insets.bottom, 32) }}
+      >
         <Text className="mt-ku-sm text-ku-body-small text-ku-text-secondary">
           {groupMessages.partialConsentSubtitle}
         </Text>

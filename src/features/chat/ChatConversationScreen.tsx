@@ -21,6 +21,7 @@ import {
 } from "lucide-react-native";
 
 import {
+  ActivityIndicator,
   FlatList,
   KeyboardAvoidingView,
   Pressable,
@@ -70,6 +71,9 @@ export default function ChatConversationScreen({
     refreshing,
     refresh,
     retryLoad,
+    hasOlderMessages,
+    isLoadingOlderMessages,
+    loadOlderMessages,
     conversationKind,
     canWrite,
     readOnlyDescription,
@@ -120,6 +124,13 @@ export default function ChatConversationScreen({
     lastMessageIdRef.current = latestMessageId;
     messageListRef.current?.scrollToEnd({ animated });
   }, [searchOpen, searchedMessages]);
+  const handleMessageListStartReached = useCallback(() => {
+    // Wait for the first scroll to the newest Message before paging history.
+    if (searchOpen || !hasOlderMessages || lastMessageIdRef.current === null) {
+      return;
+    }
+    loadOlderMessages();
+  }, [hasOlderMessages, loadOlderMessages, searchOpen]);
   const participantId = conversation?.participantId;
   const openParticipantProfile = useMemo(
     () =>
@@ -299,8 +310,6 @@ export default function ChatConversationScreen({
               color={conversation.avatarColor}
               name={conversation.participantName}
               profileId={conversation.participantId}
-              avatarUrl={conversation.participantAvatarUrl}
-              avatarFileId={conversation.participantAvatarFileId}
               onPress={openParticipantProfile}
             />
             <View className={styles.identityCopy}>
@@ -542,6 +551,9 @@ export default function ChatConversationScreen({
               if (!searchOpen) messageListRef.current?.scrollToEnd();
             }}
             keyExtractor={(message) => message.id}
+            maintainVisibleContentPosition={{ minIndexForVisible: 0 }}
+            onStartReached={handleMessageListStartReached}
+            onStartReachedThreshold={0.2}
             ListEmptyComponent={
               searchOpen ? (
                 <View className={styles.searchEmpty}>
@@ -553,8 +565,16 @@ export default function ChatConversationScreen({
             }
             ListHeaderComponent={
               !searchOpen ? (
-                <View className={styles.dateSeparator}>
-                  <Text className={styles.dateText}>{messages.today}</Text>
+                <View>
+                  {isLoadingOlderMessages ? (
+                    <ActivityIndicator
+                      color={colors.primary}
+                      testID="chat-older-messages-loading"
+                    />
+                  ) : null}
+                  <View className={styles.dateSeparator}>
+                    <Text className={styles.dateText}>{messages.today}</Text>
+                  </View>
                 </View>
               ) : null
             }

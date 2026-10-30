@@ -1,6 +1,7 @@
 import { memo } from "react";
 
 import { Avatar } from "@/components/ui/Avatar";
+import { useUserAvatar } from "@/features/profile/api/profileQueries";
 import { formatTimeInBangkok } from "@/domain/datetime";
 import { chatMessages } from "@/locales/chatMessages";
 import { Pressable, Text, View } from "@/tw";
@@ -26,6 +27,7 @@ export const ConversationRow = memo(function ConversationRow({
 }: ConversationRowProps) {
   const messages = chatMessages[locale];
   const participantId = conversation.participantId;
+  const avatar = useUserAvatar(participantId);
   const participantName = conversation.participantName.split(/\s+/)[0];
   const label = [
     conversation.questTitle[locale],
@@ -66,7 +68,8 @@ export const ConversationRow = memo(function ConversationRow({
         style={{ backgroundColor: conversation.avatarColor }}
         testID={`chat-avatar-${participantId ?? conversation.id}`}
         textClassName={styles.avatarText}
-        uri={conversation.participantAvatarUrl}
+        cacheKey={avatar.cacheKey}
+        uri={avatar.uri}
       />
       <View className={styles.rowCopy}>
         <Text className={styles.questTitle} numberOfLines={2}>

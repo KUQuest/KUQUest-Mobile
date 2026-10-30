@@ -81,6 +81,7 @@ export interface CreateQuestMessages {
   startTime: string;
   endTime: string;
   selectTime: string;
+  timeLabel: string;
   selectDate: string;
   selectStartTime: string;
   selectEndTime: string;
@@ -156,7 +157,6 @@ export interface CreateQuestMessages {
   onlineOrAgreed: string;
   noImages: string;
   selectedImages: (count: number) => string;
-  rewardPerPersonValue: (reward: string) => string;
   fallbackTags: Record<
     "design" | "technology" | "tutoring" | "campusLife",
     { label: string; shortLabel: string }
@@ -182,8 +182,6 @@ export interface CreateQuestMessages {
   fixBlocker: string;
   moreBlockers: (count: number) => string;
   publishCheckWarning: string;
-  rewardPool: string;
-  platformFee: string;
   escrowTotal: string;
   escrowDescription: string;
   fundingPerPerson: (amount: string, headcount: number) => string;
@@ -234,7 +232,6 @@ export interface CreateQuestMessages {
     candidateMode: string;
     participation: string;
     headcount: string;
-    reward: string;
   };
   durationUnits: {
     days: (count: number) => string;
@@ -334,6 +331,7 @@ export const createQuestMessages: Record<SupportedLocale, CreateQuestMessages> =
       startTime: "Start time",
       endTime: "End time",
       selectTime: "Select time",
+      timeLabel: "Time",
       selectDate: "Select date",
       selectStartTime: "Select start time",
       selectEndTime: "Select deadline time",
@@ -416,7 +414,6 @@ export const createQuestMessages: Record<SupportedLocale, CreateQuestMessages> =
       onlineOrAgreed: "Online or to be agreed",
       noImages: "None",
       selectedImages: (count) => `${count} selected`,
-      rewardPerPersonValue: (reward) => `${reward} / person`,
       fallbackTags: {
         design: { label: "Design & creative", shortLabel: "Design" },
         technology: { label: "Technology", shortLabel: "Technology" },
@@ -446,8 +443,6 @@ export const createQuestMessages: Record<SupportedLocale, CreateQuestMessages> =
       moreBlockers: (count) => `+${count} more`,
       publishCheckWarning:
         "Images are optional; this warning does not block publishing.",
-      rewardPool: "Reward pool",
-      platformFee: "Platform Fee",
       escrowTotal: "Total Escrow required",
       escrowDescription:
         "The server reserves this inclusive Quest Funding Total for each participant.",
@@ -548,7 +543,6 @@ export const createQuestMessages: Record<SupportedLocale, CreateQuestMessages> =
         candidateMode: "Acceptance method",
         participation: "Participation",
         headcount: "Headcount",
-        reward: "Reward",
       },
       durationUnits: {
         days: (count) => `${count}d`,
@@ -644,6 +638,7 @@ export const createQuestMessages: Record<SupportedLocale, CreateQuestMessages> =
       startTime: "เวลาเริ่มต้น",
       endTime: "เวลาที่สิ้นสุด",
       selectTime: "เลือกเวลา",
+      timeLabel: "เวลา",
       selectDate: "เลือกวันที่",
       selectStartTime: "เลือกเวลาเริ่มต้น",
       selectEndTime: "เลือกเวลาสิ้นสุด (เดดไลน์)",
@@ -723,7 +718,6 @@ export const createQuestMessages: Record<SupportedLocale, CreateQuestMessages> =
       onlineOrAgreed: "ออนไลน์หรือรอตกลงกัน",
       noImages: "ไม่มี",
       selectedImages: (count) => `เลือกแล้ว ${count} รูป`,
-      rewardPerPersonValue: (reward) => `${reward} / คน`,
       fallbackTags: {
         design: { label: "การออกแบบและงานสร้างสรรค์", shortLabel: "การออกแบบ" },
         technology: { label: "เทคโนโลยี", shortLabel: "เทคโนโลยี" },
@@ -759,8 +753,6 @@ export const createQuestMessages: Record<SupportedLocale, CreateQuestMessages> =
       moreBlockers: (count) => `และอีก ${count} รายการ`,
       publishCheckWarning:
         "รูปภาพเป็นข้อมูลเสริม คำเตือนนี้ไม่ขัดขวางการเผยแพร่",
-      rewardPool: "ค่าตอบแทนที่ผู้ทำงานได้รับ",
-      platformFee: "ค่าธรรมเนียมแพลตฟอร์ม",
       escrowTotal: "ยอดเงินที่จะพักไว้",
       escrowDescription:
         "เมื่อเผยแพร่ ระบบจะพักเงินจำนวนนี้จากยอดเงินพร้อมใช้ และจ่ายให้ผู้ทำงานเมื่องานเสร็จ",
@@ -854,7 +846,6 @@ export const createQuestMessages: Record<SupportedLocale, CreateQuestMessages> =
         candidateMode: "วิธีรับผู้สมัคร",
         participation: "การเข้าร่วม",
         headcount: "จำนวนผู้เข้าร่วม",
-        reward: "ค่าตอบแทน",
       },
       durationUnits: {
         days: (count) => `${count} วัน`,

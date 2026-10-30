@@ -53,6 +53,28 @@ describe("CustomDatePickerModal", () => {
     expect(onClose).toHaveBeenCalledTimes(1);
     expect(onConfirm).not.toHaveBeenCalled();
   });
+  it("moves to the next month and selects a date there", async () => {
+    const onConfirm = jest.fn();
+    const view = await render(
+      <CustomDatePickerModal
+        title="Start date"
+        value="2028-02-28"
+        minimumDate="2028-02-28"
+        locale="en"
+        messages={createQuestMessages.en}
+        onConfirm={onConfirm}
+        onClose={jest.fn()}
+      />
+    );
+
+    await fireEvent.press(view.getByTestId("custom-date-picker-next-month"));
+    await fireEvent.press(
+      view.getByTestId("custom-date-picker-day-2028-03-15")
+    );
+    await fireEvent.press(view.getByTestId("custom-date-picker-confirm"));
+    expect(onConfirm).toHaveBeenCalledWith("2028-03-15");
+  });
+
   it("blocks dates after the maximum", async () => {
     const view = await render(
       <CustomDatePickerModal

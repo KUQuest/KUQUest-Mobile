@@ -1,5 +1,6 @@
 import { useEffect, useRef, useState } from "react";
 import { ApiError } from "@/api/ApiClient";
+import type { QuestV2ProofSubmission } from "@/api/questV2Contracts";
 import { ActivityIndicator } from "react-native";
 import { File } from "expo-file-system";
 import * as ImagePicker from "expo-image-picker";
@@ -269,17 +270,46 @@ export function WorkerProofForm({
       failedDraft ??
         (serverDraft && {
           id: serverDraft.id,
+          description: serverDraft.description,
           files: serverDraft.files,
           fileKeys: [],
         }),
       files
     );
+    // Remember an uploaded draft so a retry after a failed upload or submit
+    // reuses its files instead of uploading the local copies again.
+    const rememberDraft = (draft: QuestV2ProofSubmission) => {
+      const fileKeys =
+        plan.kind === "create"
+          ? plan.files.map((file) => file.key)
+          : plan.kind === "retry"
+            ? plan.retries.reduce<(string | null)[]>(
+                (keys, { position, file }) => {
+                  keys[position] = file.key;
+                  return keys;
+                },
+                [...(failedDraft?.fileKeys ?? [])]
+              )
+            : plan.kind === "append"
+              ? [
+                  ...Array.from({ length: serverFileCount }, () => null),
+                  ...plan.files.map((file) => file.key),
+                ]
+              : [];
+      setFailedDraft({
+        id: draft.id,
+        description: draft.description,
+        files: draft.files,
+        fileKeys,
+      });
+    };
     try {
       await proofMutation.mutateAsync({
         questId,
         viewerId,
         plan,
         description: description.trim() || undefined,
+        onDraftUploaded: rememberDraft,
       });
       await finishSent();
     } catch (error) {
@@ -289,30 +319,6 @@ export function WorkerProofForm({
       ) {
         await finishSent();
         return;
-      }
-      if (error instanceof ProofFileUploadError && error.draft) {
-        const fileKeys =
-          plan.kind === "create"
-            ? plan.files.map((file) => file.key)
-            : plan.kind === "retry"
-              ? plan.retries.reduce<(string | null)[]>(
-                  (keys, { position, file }) => {
-                    keys[position] = file.key;
-                    return keys;
-                  },
-                  [...(failedDraft?.fileKeys ?? [])]
-                )
-              : plan.kind === "append"
-                ? [
-                    ...Array.from({ length: serverFileCount }, () => null),
-                    ...plan.files.map((file) => file.key),
-                  ]
-                : [];
-        setFailedDraft({
-          id: error.draft.id,
-          files: error.draft.files,
-          fileKeys,
-        });
       }
       const apiError = error instanceof ApiError ? error : null;
       setNotice(

@@ -1,13 +1,18 @@
 import { useEffect } from "react";
 import { useQuery, useQueryClient } from "@tanstack/react-query";
 
-import { subscribeToHirerQuestEvents } from "@/features/questBoard/live/questEvents";
+import {
+  subscribeToHirerQuestEvents,
+  subscribeToWorkerAssignmentEvents,
+} from "@/features/questBoard/live/questEvents";
 import { myQuestService } from "../myQuestService";
 export const myQuestsKeys = {
   all: ["myQuests"] as const,
   hirer: () => [...myQuestsKeys.all, "hirer"] as const,
-  hirerProofReviewableIds: (failedQuestIds: readonly string[]) =>
-    [...myQuestsKeys.hirer(), "proof-review", failedQuestIds] as const,
+  hirerProofReviewableIds: (proofQuestIds: readonly string[]) =>
+    [...myQuestsKeys.hirer(), "proof-review", proofQuestIds] as const,
+  hirerCompletionReviewableIds: (completionQuestIds: readonly string[]) =>
+    [...myQuestsKeys.hirer(), "completion-review", completionQuestIds] as const,
   worker: (viewerId: string) =>
     [...myQuestsKeys.all, "worker", viewerId] as const,
   workerCandidateApplications: (viewerId: string) =>
@@ -35,29 +40,58 @@ export function useMyHirerQuestsQuery(enabled = true) {
 }
 
 export function useMyHirerProofReviewableIdsQuery(
-  failedQuestIds: readonly string[],
+  proofQuestIds: readonly string[],
   enabled = true
 ) {
   const queryClient = useQueryClient();
   const query = useQuery({
-    enabled: failedQuestIds.length > 0 && enabled,
-    queryKey: myQuestsKeys.hirerProofReviewableIds(failedQuestIds),
+    enabled: proofQuestIds.length > 0 && enabled,
+    queryKey: myQuestsKeys.hirerProofReviewableIds(proofQuestIds),
     queryFn: ({ signal }) =>
-      myQuestService.listMyHirerProofReviewableQuestIds(failedQuestIds, {
+      myQuestService.listMyHirerProofReviewableQuestIds(proofQuestIds, {
         signal,
       }),
   });
   const hasData = query.data !== undefined;
 
   useEffect(() => {
-    if (!enabled || failedQuestIds.length === 0 || !hasData) return;
+    if (!enabled || proofQuestIds.length === 0 || !hasData) return;
     const invalidate = () => {
       void queryClient.invalidateQueries({
-        queryKey: myQuestsKeys.hirerProofReviewableIds(failedQuestIds),
+        queryKey: myQuestsKeys.hirerProofReviewableIds(proofQuestIds),
       });
     };
     return subscribeToHirerQuestEvents(invalidate, invalidate);
-  }, [enabled, failedQuestIds, hasData, queryClient]);
+  }, [enabled, proofQuestIds, hasData, queryClient]);
+
+  return query;
+}
+
+export function useMyHirerCompletionReviewableIdsQuery(
+  completionQuestIds: readonly string[],
+  enabled = true
+) {
+  const queryClient = useQueryClient();
+  const query = useQuery({
+    enabled: completionQuestIds.length > 0 && enabled,
+    queryKey: myQuestsKeys.hirerCompletionReviewableIds(completionQuestIds),
+    queryFn: ({ signal }) =>
+      myQuestService.listMyHirerCompletionReviewableQuestIds(
+        completionQuestIds,
+        { signal }
+      ),
+  });
+  const hasData = query.data !== undefined;
+
+  useEffect(() => {
+    if (!enabled || completionQuestIds.length === 0 || !hasData) return;
+    const invalidate = () => {
+      void queryClient.invalidateQueries({
+        queryKey: myQuestsKeys.hirerCompletionReviewableIds(completionQuestIds),
+      });
+    };
+    return subscribeToHirerQuestEvents(invalidate, invalidate);
+  }, [enabled, completionQuestIds, hasData, queryClient]);
 
   return query;
 }
@@ -66,7 +100,8 @@ export function useMyWorkerQuestSnapshotsQuery(
   viewerId: string | null,
   enabled = true
 ) {
-  return useQuery({
+  const queryClient = useQueryClient();
+  const query = useQuery({
     enabled: Boolean(viewerId) && enabled,
     queryKey: myQuestsKeys.worker(viewerId ?? ""),
     queryFn: ({ signal }) => {
@@ -78,6 +113,16 @@ export function useMyWorkerQuestSnapshotsQuery(
       });
     },
   });
+  useEffect(() => {
+    if (!enabled || !viewerId) return;
+    const invalidate = () => {
+      void queryClient.invalidateQueries({
+        queryKey: myQuestsKeys.worker(viewerId),
+      });
+    };
+    return subscribeToWorkerAssignmentEvents(invalidate, invalidate);
+  }, [enabled, queryClient, viewerId]);
+  return query;
 }
 
 export function useMyWorkerCandidateApplicationsQuery(

@@ -104,7 +104,6 @@ describe("ProofReviewModal", () => {
       .mockImplementation(() => undefined);
     const view = await renderModal(jest.fn());
 
-    await fireEvent.press(view.getByTestId("proof-review-not-approve"));
     await fireEvent(view.getByTestId("proof-review-reason-input"), "focus");
 
     expect(scrollToEnd).toHaveBeenCalledWith({ animated: true });
@@ -117,10 +116,6 @@ describe("ProofReviewModal", () => {
     const view = await renderModal(onReview, onClose);
 
     await fireEvent.press(view.getByTestId("proof-review-not-approve"));
-    const confirmButton = await view.findByTestId(
-      "proof-review-confirm-not-approve"
-    );
-    await fireEvent.press(confirmButton);
 
     expect(await view.findByTestId("proof-review-error")).toBeTruthy();
     expect(onReview).not.toHaveBeenCalled();
@@ -130,9 +125,7 @@ describe("ProofReviewModal", () => {
       await view.findByTestId("proof-review-reason-input"),
       "The submitted result does not match the completion conditions."
     );
-    await fireEvent.press(
-      await view.findByTestId("proof-review-confirm-not-approve")
-    );
+    await fireEvent.press(view.getByTestId("proof-review-not-approve"));
 
     await waitFor(() => {
       expect(onReview).toHaveBeenCalledWith({

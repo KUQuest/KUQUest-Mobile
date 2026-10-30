@@ -23,6 +23,33 @@ function configure(variant?: string, versionCode?: string) {
   }
   return configureApp({ config: baseConfig } as ConfigContext);
 }
+describe("app config Android architectures", () => {
+  const nodeEnv = process.env.NODE_ENV;
+  const buildArchs = () => {
+    const plugins = configure().plugins ?? [];
+    const buildProperties = plugins.find(
+      (plugin) => Array.isArray(plugin) && plugin[0] === "expo-build-properties"
+    ) as [string, { android: { buildArchs: string[] } }];
+    return buildProperties[1].android.buildArchs;
+  };
+
+  afterEach(() => {
+    (process.env as Record<string, string | undefined>).NODE_ENV = nodeEnv;
+  });
+
+  test("builds phones only for a production build", () => {
+    (process.env as Record<string, string | undefined>).NODE_ENV = "production";
+
+    expect(buildArchs()).toEqual(["arm64-v8a"]);
+  });
+
+  test("keeps the emulator architecture for a local build", () => {
+    (process.env as Record<string, string | undefined>).NODE_ENV = "test";
+
+    expect(buildArchs()).toEqual(["arm64-v8a", "x86_64"]);
+  });
+});
+
 describe("app config push", () => {
   afterEach(() => {
     delete process.env.GOOGLE_SERVICES_JSON;

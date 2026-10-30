@@ -4,6 +4,7 @@ import { Animated } from "react-native";
 import { Text, TouchableOpacity, View } from "@/tw";
 import {
   ArrowRightLeft,
+  Banknote,
   Clock,
   Lock,
   Plus,
@@ -36,6 +37,8 @@ interface HirerBalanceCardsProps {
   onTopUp: () => void;
   transferButtonLabel: string;
   onTransferEarnings: () => void;
+  payoutButtonLabel: string;
+  onRequestPayout: () => void;
 }
 
 /** Dips a card out and back in; the content swap happens at the midpoint. */
@@ -95,6 +98,8 @@ export function HirerBalanceCards({
   onTopUp,
   transferButtonLabel,
   onTransferEarnings,
+  payoutButtonLabel,
+  onRequestPayout,
 }: HirerBalanceCardsProps) {
   const { colors } = useAppTheme();
   const { isWorker } = useRoleWorkspace();
@@ -214,6 +219,17 @@ export function HirerBalanceCards({
               strokeWidth={2.4}
             />
             <Text className={styles.transferText}>{transferButtonLabel}</Text>
+          </TouchableOpacity>
+          <TouchableOpacity
+            accessibilityLabel={payoutButtonLabel}
+            accessibilityRole="button"
+            activeOpacity={0.85}
+            className={styles.transferButton}
+            onPress={onRequestPayout}
+            testID="hirer-balance-payout-btn"
+          >
+            <Banknote color={colors.onPrimary} size={16} strokeWidth={2.4} />
+            <Text className={styles.transferText}>{payoutButtonLabel}</Text>
           </TouchableOpacity>
         </View>
       </AnimatedView>

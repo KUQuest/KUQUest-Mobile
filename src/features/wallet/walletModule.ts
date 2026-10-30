@@ -122,12 +122,9 @@ export async function checkTopUpPayment(topUpId: string): Promise<TopUpData> {
 
 export async function simulateTopUpPayment(
   topUpId: string
-): Promise<TopUpData | null> {
-  // POST /api/v1/top-ups/{id}/simulate is documented nowhere; production
-  // payment verification uses getTopUpStatus, so simulation stays dev-only.
-  if (!__DEV__) {
-    return null;
-  }
+): Promise<TopUpData> {
+  // POST /api/v1/top-ups/{id}/simulate is undocumented; shown in every build
+  // so testers can top up on release APKs. The backend must refuse it in prod.
   return walletApi.simulateTopUp(topUpId);
 }
 
@@ -215,6 +212,7 @@ export interface ClassifiedHirerTransaction {
   sourceApiLabel: string;
   reference?: string;
   destinationInfo?: string;
+  payoutId?: string;
   createdAt: string;
 }
 
@@ -298,6 +296,8 @@ export function classifyHirerTransaction(
   let subtitle: string | undefined;
   if (tx.destinationInfo) {
     subtitle = tx.destinationInfo;
+  } else if (tx.quest?.title) {
+    subtitle = tx.quest.title;
   } else if (tx.reference && !tx.reference.match(/^[0-9a-f-]{36}$/i)) {
     subtitle = tx.reference;
   }
@@ -334,6 +334,7 @@ export function classifyHirerTransaction(
     sourceApiLabel,
     reference: tx.reference,
     destinationInfo: tx.destinationInfo,
+    payoutId: tx.payoutId,
     createdAt: tx.createdAt,
   };
 }

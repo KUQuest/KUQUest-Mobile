@@ -11,7 +11,9 @@ import type { RequestOptions } from "@/api/ApiClient";
 import { liveQuestService } from "@/features/questBoard/live/liveQuestService";
 import { isTerminalStatus, QuestStatus } from "@/domain/questLifecycle";
 import {
+  QuestCompletionConfirmationStatus,
   QuestMode,
+  QuestParticipation,
   QuestProofStatus,
 } from "@/features/questBoard/domain/types";
 import { formatSatang } from "@/domain/satang";
@@ -32,12 +34,25 @@ export type {
   QuestSummary,
 } from "./myQuestTypes";
 
+export function canReviewCompletionForQuest(
+  quest: QuestV2CanonicalQuest
+): boolean {
+  if (quest.proofRequired) return false;
+  if (quest.state === QuestStatus.QUEST_IN_PROGRESS) return true;
+  return (
+    quest.state === QuestStatus.QUEST_FAILED &&
+    quest.mode === QuestMode.FIRST_COME_FIRST_SERVED &&
+    quest.participation === QuestParticipation.GROUP
+  );
+}
+
 export function getLiveHirerItems(
   quests: QuestV2CanonicalQuest[],
   tab: HirerTab,
   locale: SupportedLocale,
   tagCatalog: readonly TagItem[] = [],
-  proofReviewableQuestIds?: ReadonlySet<string>
+  proofReviewableQuestIds?: ReadonlySet<string>,
+  completionReviewableQuestIds?: ReadonlySet<string>
 ): QuestSummary[] {
   const messages = myQuestMessages[locale];
   return quests.flatMap((quest) => {
@@ -80,9 +95,14 @@ export function getLiveHirerItems(
         status,
         statusTone: liveQuestStatusTone(statusValue),
         primaryAction: isDraft ? "edit" : terminal ? "review" : "manage",
-        ...(quest.state === QuestStatus.QUEST_FAILED &&
+        ...((quest.state === QuestStatus.QUEST_IN_PROGRESS ||
+          quest.state === QuestStatus.QUEST_FAILED) &&
         proofReviewableQuestIds?.has(quest.id) === true
           ? { canReviewProof: true }
+          : {}),
+        ...(canReviewCompletionForQuest(quest) &&
+        completionReviewableQuestIds?.has(quest.id) === true
+          ? { canReviewCompletion: true }
           : {}),
         cancelFromCard: isDraft
           ? ("draft" as const)
@@ -170,20 +190,43 @@ export async function listMyWorkerCandidateApplications(
 }
 
 /**
- * Loads proof lists only for failed, proof-required Hirer Quests. A Quest is
- * reviewable only when server data has a submitted pending Proof.
+ * Loads proof lists for active and failed, proof-required Hirer Quests. A Quest
+ * is reviewable only when server data has a submitted pending Proof.
  */
 export async function listMyHirerProofReviewableQuestIds(
-  failedProofQuestIds: readonly string[],
+  proofQuestIds: readonly string[],
   options?: RequestOptions
 ): Promise<string[]> {
   const reviewableIds = await Promise.all(
-    failedProofQuestIds.map(async (questId) => {
+    proofQuestIds.map(async (questId) => {
       const proofs = await questApi.listProofSubmissions(questId, options);
       return proofs.some(
         (proof) =>
           proof.status === QuestProofStatus.PROOF_PENDING &&
           proof.submittedAt !== null
+      )
+        ? questId
+        : null;
+    })
+  );
+  return reviewableIds.filter((questId): questId is string => questId !== null);
+}
+
+/** Loads proof-free completion lists for active Hirer Quests and returns those with pending decisions. */
+export async function listMyHirerCompletionReviewableQuestIds(
+  completionQuestIds: readonly string[],
+  options?: RequestOptions
+): Promise<string[]> {
+  const reviewableIds = await Promise.all(
+    completionQuestIds.map(async (questId) => {
+      const confirmations = await questApi.listCompletionConfirmations(
+        questId,
+        options
+      );
+      return confirmations.some(
+        (confirmation) =>
+          confirmation.reviewStatus ===
+          QuestCompletionConfirmationStatus.COMPLETION_CONFIRMATION_PENDING
       )
         ? questId
         : null;
@@ -200,4 +243,5 @@ export const myQuestService = {
   listMyWorkerCandidateApplications,
   listMyWorkerQuestSnapshots,
   listMyHirerProofReviewableQuestIds,
+  listMyHirerCompletionReviewableQuestIds,
 };

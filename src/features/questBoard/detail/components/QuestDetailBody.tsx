@@ -51,7 +51,10 @@ import {
   QuestParticipantRoster,
   type QuestParticipant,
 } from "./QuestParticipantRoster";
-import { LiveEntrySurface } from "./QuestDetailEntrySurfaces";
+import {
+  LiveEntrySurface,
+  QuestDetailTeamRoster,
+} from "./QuestDetailEntrySurfaces";
 
 function proofLabel(
   quest: QuestBoardQuest,
@@ -685,16 +688,22 @@ export function QuestDetailBody({
         </View>
       ) : null}
       {liveEntry ? (
-        <LiveEntrySurface
-          snapshot={liveEntry.snapshot}
-          locale={locale}
-          groupMessages={liveEntry.groupMessages}
-          busy={liveEntry.busy}
-          hideTeamEntry={Boolean(status?.title)}
-          onOpenTeam={liveEntry.onOpenTeam}
-          onOpenCandidateReview={liveEntry.onOpenCandidateReview}
-          onOpenPartialConsent={liveEntry.onOpenPartialConsent}
-        />
+        <>
+          <QuestDetailTeamRoster
+            snapshot={liveEntry.snapshot}
+            groupMessages={liveEntry.groupMessages}
+          />
+          <LiveEntrySurface
+            snapshot={liveEntry.snapshot}
+            locale={locale}
+            groupMessages={liveEntry.groupMessages}
+            busy={liveEntry.busy}
+            hideTeamEntry={Boolean(status?.title)}
+            onOpenTeam={liveEntry.onOpenTeam}
+            onOpenCandidateReview={liveEntry.onOpenCandidateReview}
+            onOpenPartialConsent={liveEntry.onOpenPartialConsent}
+          />
+        </>
       ) : null}
     </ScrollView>
   );

@@ -46,6 +46,34 @@ describe("Worker settlement", () => {
     ).toBeTruthy();
     expect(view.queryByTestId("work-settlement-amount")).toBeNull();
   });
+  it.each([
+    [true, /^Split the team reward by .+the Server splits it equally\.$/],
+    [false, /^Waiting for the Team Leader to split the reward by .+equally\.$/],
+  ])(
+    "names who must act while a cancelled Team split is pending (Leader: %s)",
+    async (viewerIsLeader, message) => {
+      const cancelled = {
+        ...snapshot(
+          { status: "PENDING", amountSatang: null, settledAt: null },
+          "ASSIGNMENT_CANCELLED"
+        ),
+        state: "QUEST_CANCELLED",
+        teamRewardAllocation: {
+          status: "PENDING",
+          viewerIsLeader,
+          deadlineAt: "2026-10-31T16:00:00.000+07:00",
+          members: [],
+        },
+      } as unknown as LiveQuestSnapshot;
+      const view = await renderWithQueryClient(
+        <QuestWorkSettlementCard snapshot={cancelled} />
+      );
+      expect(view.getByText(message)).toBeTruthy();
+      expect(
+        view.queryByText("Payment pending. Refresh to check the transfer.")
+      ).toBeNull();
+    }
+  );
   it("shows zero for a Team Member or Assignment with no payment", async () => {
     const view = await renderWithQueryClient(
       <QuestWorkSettlementCard

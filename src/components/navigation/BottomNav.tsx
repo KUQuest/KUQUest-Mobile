@@ -56,6 +56,14 @@ export function BottomNav({
     typeof profileImage.uri === "string"
       ? profileImage.uri
       : null;
+  // Same fileId cache key as every other avatar, so the tab icon matches.
+  const avatarCacheKey =
+    typeof profileImage === "object" &&
+    profileImage !== null &&
+    "cacheKey" in profileImage &&
+    typeof profileImage.cacheKey === "string"
+      ? profileImage.cacheKey
+      : undefined;
   const activeItems = getRoleWorkspaceNavigation(workspace);
   const workspaceLabel = getRoleWorkspaceAccessibilityLabel(workspace, locale);
   const compactNavigationPadding = Math.max(
@@ -260,7 +268,12 @@ export function BottomNav({
                     >
                       <Image
                         accessibilityLabel={label}
-                        source={{ uri: avatarUri }}
+                        cachePolicy="memory-disk"
+                        source={
+                          avatarCacheKey
+                            ? [{ uri: avatarUri, cacheKey: avatarCacheKey }]
+                            : { uri: avatarUri }
+                        }
                         style={{ height: "100%", width: "100%" }}
                         testID="tab-profile-avatar"
                       />

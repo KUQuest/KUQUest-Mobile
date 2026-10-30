@@ -159,6 +159,7 @@ describe("WalletApi", () => {
             payoutReservedDeltaSatang: 0,
             resourceType: "wallet_ledger_transaction",
             resourceId: "ledger-1",
+            quest: null,
           },
           {
             id: "activity-2",
@@ -171,6 +172,7 @@ describe("WalletApi", () => {
             payoutReservedDeltaSatang: 0,
             resourceType: "wallet_ledger_transaction",
             resourceId: "ledger-2",
+            quest: { id: "quest-1", title: "Help me move a desk" },
           },
         ],
       },
@@ -223,6 +225,48 @@ describe("WalletApi", () => {
         titleKey: "questEscrowReserved",
         amountSatang: 50000,
         direction: "OUTFLOW",
+        quest: { id: "quest-1", title: "Help me move a desk" },
+      })
+    );
+  });
+
+  it("carries the Payout record id on payout history rows for status lookups", async () => {
+    const respond = (data: unknown) =>
+      Promise.resolve({
+        ok: true,
+        status: 200,
+        headers: new Headers({ "content-type": "application/json" }),
+        text: async () => JSON.stringify({ success: true, data }),
+      });
+    fetchMock.mockImplementation((url: string) => {
+      if (url.includes("/api/v1/payouts")) {
+        return respond({
+          items: [
+            {
+              id: "payout-9",
+              payoutStatus: "PENDING_ADMIN_APPROVAL",
+              maximumDebitSatang: 11545,
+              createdAt: "2026-09-14T10:00:00Z",
+            },
+          ],
+        });
+      }
+      return respond(
+        url.includes("/api/v1/wallet/activities")
+          ? { activities: [] }
+          : { items: [] }
+      );
+    });
+
+    const history = await api.getTransactionHistory(30);
+
+    expect(history.items).toHaveLength(1);
+    expect(history.items[0]).toEqual(
+      expect.objectContaining({
+        id: "payout-9",
+        sourceApi: "PAYOUTS",
+        payoutId: "payout-9",
+        status: "PENDING_ADMIN_APPROVAL",
       })
     );
   });
@@ -619,6 +663,7 @@ describe("WalletApi", () => {
             payoutReservedDeltaSatang: 0,
             resourceType: "TOP_UP",
             resourceId: "topup-uuid-1",
+            quest: null,
           },
         ],
       },
@@ -716,6 +761,7 @@ describe("WalletApi", () => {
             payoutReservedDeltaSatang: 0,
             resourceType: "wallet_ledger_transaction",
             resourceId: "ledger-only",
+            quest: null,
           },
         ],
       },
@@ -755,5 +801,184 @@ describe("WalletApi", () => {
         type: "TOP_UP",
       }),
     ]);
+  });
+
+  describe("transaction history sources", () => {
+    const okJson = (data: unknown) =>
+      Promise.resolve({
+        ok: true,
+        status: 200,
+        headers: new Headers(),
+        text: async () => JSON.stringify({ success: true, data }),
+      });
+    const unavailable = () =>
+      Promise.resolve({
+        ok: false,
+        status: 503,
+        headers: new Headers(),
+        text: async () => JSON.stringify({ message: "Unavailable" }),
+      });
+    const mockSources = (sources: {
+      activities?: unknown[] | "fail";
+      topUps?: unknown[] | "fail";
+      payouts?: unknown[] | "fail";
+    }) => {
+      fetchMock.mockImplementation((url: string) => {
+        const pick = (value: unknown[] | "fail" | undefined, key: string) =>
+          value === "fail" ? unavailable() : okJson({ [key]: value ?? [] });
+        if (url.includes("/api/v1/wallet/activities")) {
+          return pick(sources.activities, "activities");
+        }
+        if (url.includes("/api/v1/top-ups")) {
+          return pick(sources.topUps, "items");
+        }
+        return pick(sources.payouts, "items");
+      });
+    };
+    const topUpActivity = {
+      id: "act-topup",
+      occurredAt: "2026-09-18T10:00:10Z",
+      type: "TOP_UP",
+      activityStatus: "COMPLETED",
+      spendingDeltaSatang: 10000,
+      earningsDeltaSatang: 0,
+      fundingReservedDeltaSatang: 0,
+      payoutReservedDeltaSatang: 0,
+      resourceType: null,
+      resourceId: null,
+      quest: null,
+    };
+    const topUpItem = (id: string, topUpStatus: string, createdAt: string) => ({
+      id,
+      internalReference: `top-up:${id}`,
+      creditSatang: 10000,
+      topUpStatus,
+      creditedLedgerTransactionId: null,
+      createdAt,
+    });
+    const payoutItem = (
+      id: string,
+      payoutStatus: string,
+      debits: { actualDebitSatang: number | null; maximumDebitSatang: number }
+    ) => ({
+      id,
+      internalReference: `payout:${id}`,
+      principalSatang: 50000,
+      receiptSatang: 50000,
+      ...debits,
+      payoutStatus,
+      reserveLedgerTransactionId: `reserve-${id}`,
+      finalLedgerTransactionId: null,
+      createdAt: "2026-09-18T12:00:00Z",
+    });
+
+    it("shows what left Earnings for a payout, falling back to the maximum debit", async () => {
+      mockSources({
+        payouts: [
+          payoutItem("payout-settled", "SUCCEEDED", {
+            actualDebitSatang: 51000,
+            maximumDebitSatang: 51500,
+          }),
+          payoutItem("payout-pending", "PENDING_ADMIN_APPROVAL", {
+            actualDebitSatang: null,
+            maximumDebitSatang: 51500,
+          }),
+        ],
+      });
+
+      const history = await api.getTransactionHistory();
+
+      expect(history.items).toEqual(
+        expect.arrayContaining([
+          expect.objectContaining({
+            id: "payout-settled",
+            amountSatang: 51000,
+            payoutReservedDeltaSatang: -51000,
+          }),
+          expect.objectContaining({
+            id: "payout-pending",
+            amountSatang: 51500,
+          }),
+        ])
+      );
+    });
+
+    it("keeps two same-amount top-ups created close together as separate rows", async () => {
+      mockSources({
+        topUps: [
+          topUpItem("topup-paid", "PAID", "2026-09-18T10:00:00Z"),
+          topUpItem("topup-expired", "EXPIRED", "2026-09-18T10:00:20Z"),
+        ],
+      });
+
+      const history = await api.getTransactionHistory();
+
+      expect(history.items).toHaveLength(2);
+      expect(history.items).toEqual(
+        expect.arrayContaining([
+          expect.objectContaining({ id: "topup-paid", status: "PAID" }),
+          expect.objectContaining({ id: "topup-expired", status: "EXPIRED" }),
+        ])
+      );
+    });
+
+    it("never matches one ledger activity to two top-ups", async () => {
+      mockSources({
+        activities: [topUpActivity],
+        topUps: [
+          topUpItem("topup-paid", "PAID", "2026-09-18T10:00:00Z"),
+          topUpItem("topup-expired", "EXPIRED", "2026-09-18T10:00:20Z"),
+        ],
+      });
+
+      const history = await api.getTransactionHistory();
+
+      expect(history.items).toHaveLength(2);
+      expect(history.items).toEqual(
+        expect.arrayContaining([
+          expect.objectContaining({ id: "act-topup", status: "PAID" }),
+          expect.objectContaining({ id: "topup-expired", status: "EXPIRED" }),
+        ])
+      );
+    });
+
+    it("keeps two same-amount payouts created together as separate rows", async () => {
+      const debits = { actualDebitSatang: null, maximumDebitSatang: 51500 };
+      mockSources({
+        payouts: [
+          payoutItem("payout-a", "SUCCEEDED", debits),
+          payoutItem("payout-b", "FAILED", debits),
+        ],
+      });
+
+      const history = await api.getTransactionHistory();
+
+      expect(history.items).toHaveLength(2);
+      expect(history.items).toEqual(
+        expect.arrayContaining([
+          expect.objectContaining({ id: "payout-a", status: "SUCCEEDED" }),
+          expect.objectContaining({ id: "payout-b", status: "FAILED" }),
+        ])
+      );
+    });
+
+    it("rejects when the activities ledger cannot be read", async () => {
+      mockSources({
+        activities: "fail",
+        topUps: [topUpItem("topup-paid", "PAID", "2026-09-18T10:00:00Z")],
+      });
+
+      await expect(api.getTransactionHistory()).rejects.toMatchObject({
+        status: 503,
+      });
+    });
+
+    it("rejects instead of showing an empty history when every source fails", async () => {
+      mockSources({ activities: "fail", topUps: "fail", payouts: "fail" });
+
+      await expect(api.getTransactionHistory()).rejects.toMatchObject({
+        status: 503,
+      });
+    });
   });
 });

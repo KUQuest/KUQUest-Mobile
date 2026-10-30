@@ -12,6 +12,7 @@ import {
 } from "@/features/questBoard/shared/useServerCountdown";
 
 import { ActivityIndicator, Pressable, ScrollView, Text, View } from "@/tw";
+import { showSweetAlert, SweetAlertVariant } from "@/components/ui/SweetAlert";
 import { useAppTheme } from "@/features/workspace/AppThemeProvider";
 import { useLocale } from "@/features/preferences/localeStore";
 import type { SupportedLocale } from "@/locales/locale";
@@ -32,6 +33,7 @@ import {
 } from "../../domain/types";
 import type { QuestV2Underfilled } from "@/api/questV2Contracts";
 import type { PartialGroupStartVoter } from "../types";
+import { useSelectRosterMemberProfile } from "../../roster/useSelectRosterMemberProfile";
 import styles from "../groupQuestStyles";
 
 export type PartialGroupStartSurfaceState =
@@ -219,7 +221,7 @@ export function PartialGroupStartConsentContent({
         )?.member?.displayName;
         return {
           id,
-          displayName: provided?.displayName ?? serverName ?? "…",
+          displayName: serverName ?? provided?.displayName ?? "…",
           role,
         };
       }),
@@ -517,7 +519,7 @@ export function PartialGroupStartConsentContent({
               {terminal === "approved" && onOpenWorkHub ? (
                 <Pressable
                   accessibilityRole="button"
-                  className={`${styles.consentAction} ${styles.consentActionApprove}`}
+                  className={`${styles.consentAction} ${styles.consentActionApprove} mt-ku-sm`}
                   onPress={onOpenWorkHub}
                 >
                   <Text
@@ -529,7 +531,7 @@ export function PartialGroupStartConsentContent({
               ) : terminal === "cancelled" && onBrowseQuests ? (
                 <Pressable
                   accessibilityRole="button"
-                  className={`${styles.consentAction} ${styles.consentActionApprove}`}
+                  className={`${styles.consentAction} ${styles.consentActionApprove} mt-ku-sm`}
                   onPress={onBrowseQuests}
                 >
                   <Text
@@ -544,7 +546,7 @@ export function PartialGroupStartConsentContent({
 
           <View
             accessibilityLabel={`${messages.requestedHeadcount}: ${requested}. ${messages.actualHeadcount}: ${actual}`}
-            className={styles.proposalSummary}
+            className="mt-ku-12"
             testID="partial-group-start-summary"
           >
             <View className={styles.reviewHeader}>
@@ -572,13 +574,14 @@ export function PartialGroupStartConsentContent({
                 </Text>
               </View>
             </View>
-            <View className={styles.reviewRows}>
+            <View className={`${styles.reviewRows} ${styles.proposalSummary}`}>
               <View className={styles.reviewRow}>
                 <Text className={styles.reviewLabel}>
                   {messages.requestedHeadcount}
                 </Text>
                 <Text className={styles.reviewValue}>{requested}</Text>
               </View>
+              <View className="border-t border-ku-border-accent" />
               <View className={styles.reviewRow}>
                 <Text className={styles.reviewLabel}>
                   {messages.actualHeadcount}
@@ -589,27 +592,50 @@ export function PartialGroupStartConsentContent({
             {underfilled ? (
               <>
                 {newRewardSatang !== undefined ? (
-                  <View className={styles.reviewRow}>
-                    <Text className={styles.reviewLabel}>
+                  <View className={`${styles.proposalSummary} gap-ku-2`}>
+                    <Text className="font-ku-regular text-ku-body-small text-ku-text-secondary">
                       {messages.newRewardPerWorker}
                     </Text>
-                    <Text selectable className={styles.reviewValue}>
+                    {originalRewardSatang !== undefined ? (
+                      <>
+                        <Text className="font-ku-regular text-ku-body-small text-ku-text-secondary">
+                          {messages.previousValue}:{" "}
+                          {formatSatang(originalRewardSatang, locale)}
+                        </Text>
+                        <View className="my-ku-xs border-t border-ku-border-accent" />
+                      </>
+                    ) : null}
+                    <Text
+                      selectable
+                      className="font-ku-semibold text-ku-body-small text-ku-text-strong"
+                    >
                       {originalRewardSatang !== undefined
-                        ? `${formatSatang(originalRewardSatang, locale)} → `
+                        ? `${messages.newValue}: `
                         : ""}
                       {formatSatang(newRewardSatang, locale)}
                     </Text>
                   </View>
                 ) : null}
                 {underfilled.dueAt ? (
-                  <View className={styles.reviewRow}>
-                    <Text className={styles.reviewLabel}>
+                  <View className={`${styles.proposalSummary} gap-ku-2`}>
+                    <Text className="font-ku-regular text-ku-body-small text-ku-text-secondary">
                       {messages.dueDate}
                     </Text>
-                    <Text selectable className={styles.reviewValue}>
-                      {originalDueAt
-                        ? `${formatTimestampDate(originalDueAt, locale)} ${formatTimeInBangkok(originalDueAt)} → `
-                        : ""}
+                    {originalDueAt ? (
+                      <>
+                        <Text className="font-ku-regular text-ku-body-small text-ku-text-secondary">
+                          {messages.previousValue}:{" "}
+                          {formatTimestampDate(originalDueAt, locale)}{" "}
+                          {formatTimeInBangkok(originalDueAt)}
+                        </Text>
+                        <View className="my-ku-xs border-t border-ku-border-accent" />
+                      </>
+                    ) : null}
+                    <Text
+                      selectable
+                      className="font-ku-semibold text-ku-body-small text-ku-text-strong"
+                    >
+                      {originalDueAt ? `${messages.newValue}: ` : ""}
                       {formatTimestampDate(underfilled.dueAt, locale)}{" "}
                       {formatTimeInBangkok(underfilled.dueAt)}
                     </Text>
@@ -620,29 +646,55 @@ export function PartialGroupStartConsentContent({
           </View>
 
           {decisionPending ? (
-            <>
+            <View className="mt-ku-sm">
               <Text className={styles.reviewCopy}>
-                {messages.proceedConsequence}
+                {messages.decisionSummary}
               </Text>
-              <Text className={styles.reviewCopy}>
-                {messages.cancelConsequence}
-              </Text>
-            </>
+              <Pressable
+                accessibilityRole="button"
+                accessibilityLabel={messages.responseDetails}
+                className="self-start py-ku-sm"
+                onPress={() =>
+                  showSweetAlert({
+                    title: messages.responseDetails,
+                    message: `${messages.proceedConsequence}\n\n${messages.cancelConsequence}`,
+                    variant: SweetAlertVariant.Info,
+                  })
+                }
+              >
+                <Text className="font-ku-semibold text-ku-body-small text-ku-primary">
+                  {messages.responseDetails}
+                </Text>
+              </Pressable>
+            </View>
           ) : underfilled ? (
-            <>
+            <View className="mt-ku-sm">
               <Text className={styles.reviewCopy}>
-                {messages.acceptingWaitsForEveryone}
+                {messages.responseSummary}
               </Text>
-              <Text className={styles.reviewCopy}>
-                {messages.decliningCancelsForEveryone}
-              </Text>
+              <Pressable
+                accessibilityRole="button"
+                accessibilityLabel={messages.responseDetails}
+                className="self-start py-ku-sm"
+                onPress={() =>
+                  showSweetAlert({
+                    title: messages.responseDetails,
+                    message: `${messages.acceptingWaitsForEveryone}\n\n${messages.decliningCancelsForEveryone}`,
+                    variant: SweetAlertVariant.Info,
+                  })
+                }
+              >
+                <Text className="font-ku-semibold text-ku-body-small text-ku-primary">
+                  {messages.responseDetails}
+                </Text>
+              </Pressable>
               {currentResponse ===
               QuestPartialStartVoteStatus.PARTIAL_START_VOTE_APPROVED ? (
                 <Text accessibilityRole="alert" className={styles.reviewCopy}>
                   {messages.acceptedWaiting(underfilled.consent.pendingCount)}
                 </Text>
               ) : null}
-            </>
+            </View>
           ) : null}
           {terminal === "pending" ? (
             <View
@@ -657,48 +709,53 @@ export function PartialGroupStartConsentContent({
             </View>
           ) : null}
 
-          <View
-            className={styles.voterSection}
-            testID="partial-group-start-roster"
-          >
-            <View className={styles.sectionHeader}>
-              <Text accessibilityRole="header" className={styles.sectionTitle}>
-                {messages.frozenRoster}
-              </Text>
-              <Text className={styles.sectionMeta}>
-                {decisionPending
-                  ? messages.workerHeadcountJoined(actual, requested)
-                  : underfilled
-                    ? messages.workersAcceptedProgress(
-                        approvedCount,
-                        requiredCount
-                      )
-                    : messages.votesProgress(approvedCount, requiredCount)}
-              </Text>
+          {!underfilled || decisionPending ? (
+            <View
+              className={styles.voterSection}
+              testID="partial-group-start-roster"
+            >
+              <View className="items-start gap-ku-2">
+                <Text
+                  accessibilityRole="header"
+                  className={styles.sectionTitle}
+                >
+                  {messages.frozenRoster}
+                </Text>
+                <Text className={styles.sectionMeta}>
+                  {decisionPending
+                    ? messages.workerHeadcountJoined(actual, requested)
+                    : underfilled
+                      ? messages.workersAcceptedProgress(
+                          approvedCount,
+                          requiredCount
+                        )
+                      : messages.votesProgress(approvedCount, requiredCount)}
+                </Text>
+              </View>
+              <View className={styles.voterList}>
+                {frozenWorkerIds.map((workerId) => {
+                  const voter = requiredVoters.find(
+                    (candidate) => candidate.id === workerId
+                  );
+                  return voter ? (
+                    <VoterRow
+                      key={workerId}
+                      labels={messages}
+                      response={responseMap.get(workerId)}
+                      voter={voter}
+                    />
+                  ) : null;
+                })}
+              </View>
             </View>
-            <View className={styles.voterList}>
-              {frozenWorkerIds.map((workerId) => {
-                const voter = requiredVoters.find(
-                  (candidate) => candidate.id === workerId
-                );
-                return voter ? (
-                  <VoterRow
-                    key={workerId}
-                    labels={messages}
-                    response={responseMap.get(workerId)}
-                    voter={voter}
-                  />
-                ) : null;
-              })}
-            </View>
-          </View>
+          ) : null}
 
-          {!decisionPending ? (
+          {!decisionPending && (!underfilled || terminal === "pending") ? (
             <View
               className={styles.voterSection}
               testID="partial-group-start-votes"
             >
-              <View className={styles.sectionHeader}>
+              <View className="items-start gap-ku-2">
                 <Text
                   accessibilityRole="header"
                   className={styles.sectionTitle}
@@ -812,6 +869,10 @@ function VoterRow({
     QuestPartialStartConsent["responses"][number] | QuestPartialStartVoteStatus;
   labels: ReturnType<typeof getMessages>;
 }) {
+  const needsProfile =
+    voter.displayName === "…" || voter.displayName === voter.id;
+  const profile = useSelectRosterMemberProfile(needsProfile ? voter.id : "");
+  const name = needsProfile ? (profile?.displayName ?? "…") : voter.displayName;
   const responseStatus =
     typeof response === "string" ? response : response?.status;
   const approved =
@@ -825,18 +886,16 @@ function VoterRow({
       : labels.pendingVote;
   return (
     <View
-      accessibilityLabel={`${voter.displayName}. ${voter.role === QuestActor.HIRER ? labels.hirer : labels.worker}. ${statusLabel}`}
+      accessibilityLabel={`${name}. ${voter.role === QuestActor.HIRER ? labels.hirer : labels.worker}. ${statusLabel}`}
       className={styles.voterRow}
       testID={`partial-group-start-voter-${voter.id}`}
     >
       <View className={styles.voterAvatar}>
-        <Text className={styles.voterAvatarText}>
-          {initialsFor(voter.displayName)}
-        </Text>
+        <Text className={styles.voterAvatarText}>{initialsFor(name)}</Text>
       </View>
       <View className={styles.voterCopy}>
         <Text className={styles.voterName} numberOfLines={1}>
-          {voter.displayName}
+          {name}
         </Text>
         <Text className={styles.voterRole}>
           {voter.role === QuestActor.HIRER ? labels.hirer : labels.worker}

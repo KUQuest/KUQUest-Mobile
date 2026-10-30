@@ -1,6 +1,7 @@
 import { Check, CircleX } from "lucide-react-native";
 
 import { Pressable, Text, View } from "@/tw";
+import { cn } from "@/tw/cn";
 import { colors } from "@/theme/colors";
 import { QuestTeamStatus } from "../../domain/types";
 
@@ -31,41 +32,49 @@ export function TeamAssembleLockedState({
   return (
     <View
       accessibilityLiveRegion="polite"
-      className={`${styles.notice} ${rejected ? styles.noticeDanger : styles.noticeSuccess}`}
+      className={cn(
+        styles.notice,
+        rejected ? styles.noticeDanger : styles.noticeSuccess,
+        "flex-col"
+      )}
       testID="team-assemble-locked-state"
     >
-      <View
-        className={`${styles.noticeIcon} ${rejected ? styles.noticeIconDanger : ""}`}
-      >
-        {rejected ? (
-          <CircleX color={colors.dangerDark} size={18} strokeWidth={2.1} />
-        ) : (
-          <Check color={colors.success} size={18} strokeWidth={2.4} />
-        )}
+      <View className="flex-row items-start">
+        <View
+          className={`${styles.noticeIcon} ${rejected ? styles.noticeIconDanger : ""}`}
+        >
+          {rejected ? (
+            <CircleX color={colors.dangerDark} size={18} strokeWidth={2.1} />
+          ) : (
+            <Check color={colors.success} size={18} strokeWidth={2.4} />
+          )}
+        </View>
+        <View className={styles.noticeCopy}>
+          <Text className={styles.noticeTitle}>
+            {rejected
+              ? rejectedLabel
+              : status === QuestTeamStatus.TEAM_SELECTED
+                ? selectedLabel
+                : submittedTitle}
+          </Text>
+          <Text className={styles.noticeText}>{description}</Text>
+        </View>
       </View>
-      <View className={styles.noticeCopy}>
-        <Text className={styles.noticeTitle}>
-          {rejected
-            ? rejectedLabel
-            : status === QuestTeamStatus.TEAM_SELECTED
-              ? selectedLabel
-              : submittedTitle}
-        </Text>
-        <Text className={styles.noticeText}>{description}</Text>
-        {status === QuestTeamStatus.TEAM_SELECTED &&
-        viewerIsMember &&
-        onOpenWorkHub ? (
-          <Pressable
-            accessibilityLabel={openWorkHubLabel}
-            accessibilityRole="button"
-            className="mt-ku-sm min-h-[48px] items-center justify-center"
-            onPress={onOpenWorkHub}
-            testID="team-assemble-open-work-hub"
-          >
-            <Text>{openWorkHubLabel}</Text>
-          </Pressable>
-        ) : null}
-      </View>
+      {status === QuestTeamStatus.TEAM_SELECTED &&
+      viewerIsMember &&
+      onOpenWorkHub ? (
+        <Pressable
+          accessibilityLabel={openWorkHubLabel}
+          accessibilityRole="button"
+          className="mt-ku-sm min-h-[48px] w-full items-center justify-center rounded-ku-pill bg-ku-hirer px-ku-md"
+          onPress={onOpenWorkHub}
+          testID="team-assemble-open-work-hub"
+        >
+          <Text className="font-ku-semibold text-ku-body-small text-ku-on-hirer">
+            {openWorkHubLabel}
+          </Text>
+        </Pressable>
+      ) : null}
     </View>
   );
 }

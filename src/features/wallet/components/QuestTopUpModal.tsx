@@ -1,4 +1,4 @@
-import { useCallback, useEffect } from "react";
+import { useCallback, useEffect, useRef } from "react";
 import { Modal } from "react-native";
 import { StatusBar } from "expo-status-bar";
 import { useSafeAreaInsets } from "react-native-safe-area-context";
@@ -41,11 +41,17 @@ export function QuestTopUpModal({
     onPaid: finish,
   });
   const { openTopUp } = flow;
+  // The shortfall follows the live wallet balance. Read it only when the modal
+  // opens, so a wallet refetch does not reset an active PromptPay QR.
+  const suggestedAmountRef = useRef(suggestedAmountSatang);
+  useEffect(() => {
+    suggestedAmountRef.current = suggestedAmountSatang;
+  }, [suggestedAmountSatang]);
 
   useEffect(() => {
     if (!visible) return;
-    openTopUp(suggestedAmountSatang);
-  }, [openTopUp, suggestedAmountSatang, visible]);
+    openTopUp(suggestedAmountRef.current);
+  }, [openTopUp, visible]);
 
   if (!visible) return null;
 

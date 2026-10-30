@@ -6,12 +6,14 @@ import { isTerminalStatus } from "@/domain/questLifecycle";
 import {
   QuestApplicationStatus,
   QuestAssignmentStatus,
+  QuestCompletionConfirmationStatus,
   QuestNextAction,
   QuestProofStatus,
   QuestStatus,
   QuestTeamStatus,
 } from "@/features/questBoard/domain/types";
 import { isOwnProofSubmission } from "@/features/questBoard/domain/proofOwnership";
+import { ownCompletionConfirmation } from "@/features/questBoard/domain/completionConfirmationOwnership";
 import type { LiveQuestSnapshot } from "@/features/questBoard/live/liveQuestTypes";
 import type { WorkerWorkItem, WorkerWorkProjection } from "./workerWorkTypes";
 
@@ -29,6 +31,13 @@ function proofOwnership(snapshot: LiveQuestSnapshot, viewerId: string) {
       participation: snapshot.participation,
       team: snapshot.team,
     });
+}
+
+function hasPendingCompletionReview(snapshot: LiveQuestSnapshot): boolean {
+  return (
+    ownCompletionConfirmation(snapshot)?.reviewStatus ===
+    QuestCompletionConfirmationStatus.COMPLETION_CONFIRMATION_PENDING
+  );
 }
 
 /** Latest sent Proof Submission belonging to this Worker's Assignment. */
@@ -63,6 +72,14 @@ export function unsentProofDraft(
 function activeStatus(
   snapshot: LiveQuestSnapshot
 ): Pick<WorkerWorkItem, "status" | "tone" | "action" | "needsAction"> {
+  if (hasPendingCompletionReview(snapshot)) {
+    return {
+      status: "completionPending",
+      tone: "progress",
+      action: "open",
+      needsAction: false,
+    };
+  }
   switch (snapshot.nextAction) {
     case "RESPOND_TO_EDIT":
       return {
@@ -118,6 +135,9 @@ function activeStatus(
 function historyStatus(
   snapshot: LiveQuestSnapshot
 ): Pick<WorkerWorkItem, "status" | "tone"> {
+  if (hasPendingCompletionReview(snapshot)) {
+    return { status: "completionPending", tone: "progress" };
+  }
   const assignmentState = snapshot.assignment?.state;
   if (
     assignmentState === QuestAssignmentStatus.ASSIGNMENT_COMPLETED ||

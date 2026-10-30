@@ -1,0 +1,11 @@
+{
+  "version": "0.0.1",
+  "configurations": [
+    {
+      "name": "metro-dev-client",
+      "runtimeExecutable": "bunx",
+      "runtimeArgs": ["expo", "start", "--dev-client", "--port", "6767"],
+      "port": 6767
+    }
+  ]
+}

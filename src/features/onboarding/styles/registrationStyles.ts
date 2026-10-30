@@ -17,6 +17,7 @@ const styles = {
     "shadow-[0px_1px_1.5px_rgb(18_32_24_/0.2)] absolute -right-[4px] -bottom-[4px] bg-ku-success-bright w-[28px] h-[28px] rounded-[14px] justify-center items-center border-2 border-ku-white",
   formSection:
     "w-full bg-ku-card border border-ku-border-subtle rounded-[16px] px-ku-md py-ku-20",
+  editFormSection: "w-full py-ku-sm",
   termsLabel: "font-ku-bold text-ku-label text-ku-text-secondary mb-ku-6",
   policySummary:
     "bg-ku-surface-accent border border-ku-border-accent rounded-[12px] p-ku-md mb-ku-md",

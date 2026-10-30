@@ -31,44 +31,50 @@ export function useFileDispute() {
   const confirmFileDispute = useCallback(
     (questId: string) => {
       if (!viewerId || filingRef.current || isPending) return;
-      showDisputeForm((input) => {
-        if (filingRef.current) return;
-        filingRef.current = true;
-        mutate(
-          { questId, viewerId, input },
-          {
-            onSuccess: (filedCase) =>
-              showSweetAlert({
-                title: messages.successTitle,
-                message: messages.successDescription(filedCase.displayId),
-                variant: SweetAlertVariant.Success,
-              }),
-            onError: (error) => {
-              const alreadyFiled =
-                error instanceof ApiError &&
-                error.status === 409 &&
-                queryClient.getQueryData<{ case: DisputeCase | null }>(
-                  questBoardKeys.myDisputeCase(questId, viewerId)
-                )?.case != null;
-              showSweetAlert({
-                title: messages.errorTitle,
-                message: alreadyFiled
-                  ? messages.alreadyFiled
-                  : error instanceof ApiError &&
-                      error.code === "DISPUTE_CASE_WINDOW_EXPIRED"
-                    ? messages.windowClosed
-                    : getLocalizedErrorMessage(error, locale, {
-                        fallback: messages.errorFallback,
-                      }),
-                variant: SweetAlertVariant.Error,
-              });
-            },
-            onSettled: () => {
-              filingRef.current = false;
-            },
-          }
-        );
-      });
+      showDisputeForm(
+        (input) =>
+          new Promise<boolean>((resolve) => {
+            if (filingRef.current) return resolve(false);
+            filingRef.current = true;
+            mutate(
+              { questId, viewerId, input },
+              {
+                onSuccess: (filedCase) => {
+                  resolve(true);
+                  showSweetAlert({
+                    title: messages.successTitle,
+                    message: messages.successDescription(filedCase.displayId),
+                    variant: SweetAlertVariant.Success,
+                  });
+                },
+                onError: (error) => {
+                  resolve(false);
+                  const alreadyFiled =
+                    error instanceof ApiError &&
+                    error.status === 409 &&
+                    queryClient.getQueryData<{ case: DisputeCase | null }>(
+                      questBoardKeys.myDisputeCase(questId, viewerId)
+                    )?.case != null;
+                  showSweetAlert({
+                    title: messages.errorTitle,
+                    message: alreadyFiled
+                      ? messages.alreadyFiled
+                      : error instanceof ApiError &&
+                          error.code === "DISPUTE_CASE_WINDOW_EXPIRED"
+                        ? messages.windowClosed
+                        : getLocalizedErrorMessage(error, locale, {
+                            fallback: messages.errorFallback,
+                          }),
+                    variant: SweetAlertVariant.Error,
+                  });
+                },
+                onSettled: () => {
+                  filingRef.current = false;
+                },
+              }
+            );
+          })
+      );
     },
     [isPending, locale, messages, mutate, queryClient, viewerId]
   );

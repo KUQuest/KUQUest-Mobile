@@ -97,7 +97,7 @@ function CancelQuestGuardrailSheetContent({
       <View className="gap-ku-md py-ku-lg">
         {tier === 2 ? (
           <>
-            <GestureHandlerRootView>
+            <GestureHandlerRootView style={{ flex: 0 }}>
               <View
                 className="h-[56px] justify-center rounded-ku-pill bg-ku-surface-muted"
                 onLayout={onTrackLayout}
@@ -111,6 +111,13 @@ function CancelQuestGuardrailSheetContent({
                     accessibilityLabel={slideLabel}
                     accessibilityRole="adjustable"
                     accessibilityState={{ disabled: busy }}
+                    accessibilityActions={[
+                      { name: "increment", label: slideLabel },
+                    ]}
+                    onAccessibilityAction={(event) => {
+                      if (!busy && event.nativeEvent.actionName === "increment")
+                        onConfirm();
+                    }}
                     className="absolute top-[4px] left-0 h-[48px] w-[48px] items-center justify-center rounded-ku-pill bg-ku-danger-dark"
                     style={animatedThumbStyle}
                     testID="cancel-guardrail-slide-thumb"
@@ -122,18 +129,6 @@ function CancelQuestGuardrailSheetContent({
                 </GestureDetector>
               </View>
             </GestureHandlerRootView>
-            <Pressable
-              accessibilityRole="button"
-              accessibilityState={{ busy, disabled: busy }}
-              className="min-h-[48px] items-center justify-center rounded-ku-pill bg-ku-danger-dark px-ku-lg active:opacity-80"
-              disabled={busy}
-              onPress={onConfirm}
-              testID="cancel-guardrail-confirm"
-            >
-              <Text className="text-center font-ku-semibold text-ku-body-small text-ku-on-primary">
-                {confirmLabel}
-              </Text>
-            </Pressable>
           </>
         ) : (
           <>

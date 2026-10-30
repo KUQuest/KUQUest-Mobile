@@ -41,6 +41,7 @@ export default function HirerProofReviewScreen({
     proofFileLinksQuery,
     proofForReview,
     ratingReviewQuestId,
+    ratingReviewWorkerId,
     review,
     rows,
     selectedProof,
@@ -147,6 +148,7 @@ export default function HirerProofReviewScreen({
       <QuestReviewModal
         onClose={closeRatingReview}
         questId={ratingReviewQuestId}
+        revieweeId={ratingReviewWorkerId}
       />
     </ScreenLayout>
   );

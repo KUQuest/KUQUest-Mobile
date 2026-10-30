@@ -1,11 +1,6 @@
 import React, { useState } from "react";
 import { cn } from "@/tw/cn";
-import {
-  Keyboard,
-  Modal,
-  Pressable as RNPressable,
-  useWindowDimensions,
-} from "react-native";
+import { Keyboard, Modal, Pressable as RNPressable } from "react-native";
 import {
   FlatList,
   KeyboardAvoidingView,
@@ -44,16 +39,8 @@ export interface SelectProps {
   clearSearchLabel?: string;
   closeLabel?: string;
   disabled?: boolean;
-  dropdown?: boolean;
   success?: boolean;
 }
-
-type DropdownPosition = {
-  x: number;
-  y: number;
-  width: number;
-  height: number;
-};
 
 export const Select = React.forwardRef<
   React.ComponentRef<typeof RNPressable>,
@@ -77,7 +64,6 @@ export const Select = React.forwardRef<
     loadingMessage = "Loading...",
     clearSearchLabel = "Clear search",
     closeLabel = "Close",
-    dropdown = false,
     disabled = false,
     success = false,
   },
@@ -86,10 +72,6 @@ export const Select = React.forwardRef<
   const { colors } = useAppTheme();
   const [modalVisible, setModalVisible] = useState(false);
   const [searchQuery, setSearchQuery] = useState("");
-  const [dropdownPosition, setDropdownPosition] =
-    useState<DropdownPosition | null>(null);
-  const triggerRef = React.useRef<React.ComponentRef<typeof RNPressable>>(null);
-  const { width: windowWidth, height: windowHeight } = useWindowDimensions();
   const fieldAccessibilityLabel = accessibilityLabel ?? label;
   const selectedOption = options.find((opt) => opt.value === value);
   const normalizedQuery = searchQuery.trim().toLocaleLowerCase();
@@ -99,60 +81,12 @@ export const Select = React.forwardRef<
       )
     : options;
 
-  const openModal = () => {
-    setModalVisible(true);
-    if (!dropdown) return;
-
-    setDropdownPosition(null);
-    triggerRef.current?.measureInWindow((x, y, width, height) => {
-      setDropdownPosition({ x, y, width, height });
-    });
-  };
-
-  const dropdownStyle = dropdownPosition
-    ? (() => {
-        const width = Math.min(dropdownPosition.width, windowWidth - 24);
-        const left = Math.min(
-          Math.max(12, dropdownPosition.x),
-          windowWidth - width - 12
-        );
-        const spaceBelow =
-          windowHeight - dropdownPosition.y - dropdownPosition.height - 12;
-        const spaceAbove = dropdownPosition.y - 12;
-        const openAbove = spaceBelow < 160 && spaceAbove > spaceBelow;
-        const maxHeight = Math.min(
-          320,
-          Math.max(160, openAbove ? spaceAbove : spaceBelow)
-        );
-
-        return {
-          position: "absolute" as const,
-          top: openAbove
-            ? Math.max(12, dropdownPosition.y - maxHeight - 4)
-            : dropdownPosition.y + dropdownPosition.height + 4,
-          left,
-          width,
-          maxHeight,
-        };
-      })()
-    : { position: "absolute" as const, top: 0, left: 0, right: 0, opacity: 0 };
-
-  const setTriggerRef = (
-    node: React.ComponentRef<typeof RNPressable> | null
-  ) => {
-    triggerRef.current = node;
-    if (typeof ref === "function") {
-      ref(node);
-    } else if (ref) {
-      ref.current = node;
-    }
-  };
+  const openModal = () => setModalVisible(true);
 
   const closeModal = () => {
     Keyboard.dismiss();
     setSearchQuery("");
     onSearchChange?.("");
-    setDropdownPosition(null);
     setModalVisible(false);
   };
 
@@ -167,10 +101,7 @@ export const Select = React.forwardRef<
       clearIconColor={colors.textMuted}
       clearIconSize={18}
       clearIconStrokeWidth={2}
-      className={cn(
-        styles.searchContainer,
-        dropdown ? styles.dropdownSearchContainer : null
-      )}
+      className={styles.searchContainer}
       iconColor={colors.textMuted}
       iconSize={18}
       iconStrokeWidth={2}
@@ -235,7 +166,7 @@ export const Select = React.forwardRef<
     <View className={styles.container}>
       <Text className={styles.label}>{label}</Text>
       <Pressable
-        ref={setTriggerRef}
+        ref={ref}
         className={cn(
           styles.selectBox,
           error ? styles.selectBoxError : null,
@@ -277,65 +208,44 @@ export const Select = React.forwardRef<
       <Modal
         visible={modalVisible}
         transparent
-        animationType={dropdown ? "none" : "slide"}
+        animationType="slide"
         onRequestClose={closeModal}
       >
-        {dropdown ? (
-          <View className={styles.dropdownOverlay}>
-            <Pressable
-              testID="select-dropdown-dismiss"
-              className={styles.dropdownDismissArea}
-              onPress={closeModal}
-            />
-            <View
-              testID="select-dropdown"
-              className={styles.dropdownMenu}
-              style={dropdownStyle}
-            >
-              {pickerSearch}
-              {pickerOptions}
-            </View>
-          </View>
-        ) : (
-          <SafeAreaProvider>
-            <SafeAreaView className={styles.modalOverlay} edges={["bottom"]}>
-              <Pressable
-                className={styles.modalDismissArea}
-                onPress={closeModal}
+        <SafeAreaProvider>
+          <SafeAreaView className={styles.modalOverlay} edges={["bottom"]}>
+            <Pressable className={styles.modalDismissArea} onPress={closeModal}>
+              <KeyboardAvoidingView
+                className={styles.keyboardAvoidingView}
+                behavior="padding"
               >
-                <KeyboardAvoidingView
-                  className={styles.keyboardAvoidingView}
-                  behavior="padding"
+                <Pressable
+                  className={styles.modalContent}
+                  onPress={(event) => event.stopPropagation()}
                 >
-                  <Pressable
-                    className={styles.modalContent}
-                    onPress={(event) => event.stopPropagation()}
-                  >
-                    <View className={styles.modalHandle} />
-                    <View className={styles.modalHeader}>
-                      <Text className={styles.modalTitle}>{label}</Text>
-                      <Pressable
-                        onPress={closeModal}
-                        className={styles.closeButton}
-                        accessibilityRole="button"
-                        accessibilityLabel={closeLabel}
-                        testID="close-select-button"
-                      >
-                        <X
-                          color={colors.textSecondary}
-                          size={20}
-                          strokeWidth={2}
-                        />
-                      </Pressable>
-                    </View>
-                    {pickerSearch}
-                    {pickerOptions}
-                  </Pressable>
-                </KeyboardAvoidingView>
-              </Pressable>
-            </SafeAreaView>
-          </SafeAreaProvider>
-        )}
+                  <View className={styles.modalHandle} />
+                  <View className={styles.modalHeader}>
+                    <Text className={styles.modalTitle}>{label}</Text>
+                    <Pressable
+                      onPress={closeModal}
+                      className={styles.closeButton}
+                      accessibilityRole="button"
+                      accessibilityLabel={closeLabel}
+                      testID="close-select-button"
+                    >
+                      <X
+                        color={colors.textSecondary}
+                        size={20}
+                        strokeWidth={2}
+                      />
+                    </Pressable>
+                  </View>
+                  {pickerSearch}
+                  {pickerOptions}
+                </Pressable>
+              </KeyboardAvoidingView>
+            </Pressable>
+          </SafeAreaView>
+        </SafeAreaProvider>
       </Modal>
     </View>
   );

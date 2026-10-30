@@ -21,13 +21,12 @@ const PROOF_FILE_REJECTED_CODES = new Set([
 /**
  * A draft that still holds a failed file cannot be submitted.
  * `rejected` means the server refused a file's content, not a transient
- * upload failure. `draft` is the server draft when one exists.
+ * upload failure.
  */
 export class ProofFileUploadError extends Error {
   constructor(
     readonly failedCount: number,
-    readonly rejected = false,
-    readonly draft: QuestV2ProofSubmission | null = null
+    readonly rejected = false
   ) {
     super(`${failedCount} proof file(s) failed to upload`);
     this.name = "ProofFileUploadError";
@@ -103,11 +102,23 @@ export function useSubmitProofMutation() {
       questId,
       plan,
       description,
+      onDraftUploaded,
     }: WorkerMutationInput & {
       plan: ProofSendPlan<UploadAsset & { key: string }>;
       description?: string;
+      /** Called with the uploaded draft before submit, so a retry can submit it without uploading again. */
+      onDraftUploaded?: (draft: QuestV2ProofSubmission) => void;
     }) => {
       if (plan.kind === "existing") {
+        // The draft may have been uploaded with an older description.
+        if (description !== undefined && description !== plan.description) {
+          await questApi.updateProofDraft(
+            questId,
+            plan.draftId,
+            { description },
+            createQuestIdempotencyKey()
+          );
+        }
         return questApi.submitProofDraft(
           questId,
           plan.draftId,
@@ -115,6 +126,7 @@ export function useSubmitProofMutation() {
         );
       }
       const proofDraft = await uploadProofDraft(questId, plan, description);
+      onDraftUploaded?.(proofDraft);
       const failedFiles = proofDraft.files.filter(
         (file) => file.uploadStatus === QuestProofFileStatus.PROOF_FILE_FAILED
       );
@@ -125,8 +137,7 @@ export function useSubmitProofMutation() {
             (file) =>
               file.failureCode !== null &&
               PROOF_FILE_REJECTED_CODES.has(file.failureCode)
-          ),
-          proofDraft
+          )
         );
       }
       const readyFileCount = proofDraft.files.filter(

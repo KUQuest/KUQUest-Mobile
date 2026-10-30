@@ -1,3 +1,4 @@
+import { useCallback } from "react";
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 
 import {
@@ -10,7 +11,6 @@ import { QuestStatus, isTerminalStatus } from "@/domain/questLifecycle";
 import { liveQuestService } from "@/features/questBoard/live/liveQuestService";
 import { QuestActor } from "@/features/questBoard/domain/types";
 import { ConversationMode, type ChatConversation } from "../chatTypes";
-import { enrichChatConversation } from "./chatProfile";
 import {
   mergeDisplayMessages,
   type DisplayChatMessage,
@@ -45,7 +45,39 @@ export const chatKeys = {
     viewerId: string,
     mode: ChatConversationMode = ConversationMode.WORK
   ) => [...chatKeys.all, "messages", mode, conversationId, viewerId] as const,
+  messageHistory: (
+    conversationId: string,
+    viewerId: string,
+    mode: ChatConversationMode
+  ) =>
+    [
+      ...chatKeys.all,
+      "message-history",
+      mode,
+      conversationId,
+      viewerId,
+    ] as const,
 };
+
+const MESSAGE_PAGE_SIZE = 50;
+
+/** Cursor for the next older Message page; `null` once history is exhausted. */
+interface MessageHistory {
+  before: string | null;
+}
+
+function fetchMessagePage(
+  conversationId: string,
+  mode: ChatConversationMode,
+  params: { limit: number; before?: string },
+  signal?: AbortSignal
+) {
+  return mode === ConversationMode.CANDIDATE_INQUIRY
+    ? liveQuestService.getCandidateInquiryMessages(conversationId, params, {
+        signal,
+      })
+    : chatApi.getMessages(conversationId, params, { signal });
+}
 
 function candidateInquiryToConversation(
   inquiry: ServerCandidateInquiry,
@@ -109,7 +141,7 @@ export function useListConversationsQuery(
             const otherParticipant =
               participants.find((participant) => participant.id !== viewerId) ??
               participants[0];
-            return enrichChatConversation({
+            return {
               ...converted,
               ...(otherParticipant?.id
                 ? { participantId: otherParticipant.id }
@@ -125,7 +157,7 @@ export function useListConversationsQuery(
               )
                 .slice(0, 2)
                 .toUpperCase(),
-            });
+            };
           } catch {
             return converted;
           }
@@ -149,12 +181,8 @@ export function useListCandidateInquiriesQuery(
         { limit: 20 },
         { signal }
       );
-      return Promise.all(
-        page.items.map((inquiry) =>
-          enrichChatConversation(
-            candidateInquiryToConversation(inquiry, viewerId)
-          )
-        )
+      return page.items.map((inquiry) =>
+        candidateInquiryToConversation(inquiry, viewerId)
       );
     },
   });
@@ -222,24 +250,89 @@ export function useMessagesQuery(
     enabled: Boolean(conversationId && viewerId) && enabled,
     queryKey,
     queryFn: async ({ signal }) => {
-      const page =
-        mode === "CANDIDATE_INQUIRY"
-          ? await liveQuestService.getCandidateInquiryMessages(
-              conversationId,
-              { limit: 50 },
-              { signal }
-            )
-          : await chatApi.getMessages(
-              conversationId,
-              { limit: 50 },
-              { signal }
-            );
+      const page = await fetchMessagePage(
+        conversationId,
+        mode,
+        { limit: MESSAGE_PAGE_SIZE },
+        signal
+      );
+      const current =
+        queryClient.getQueryData<DisplayChatMessage[]>(queryKey) ?? [];
+      const historyKey = chatKeys.messageHistory(
+        conversationId,
+        viewerId,
+        mode
+      );
+      // Older pages already merged keep their own cursor; only a fresh cache
+      // starts history from the newest page.
+      if (
+        current.length === 0 ||
+        !queryClient.getQueryData<MessageHistory>(historyKey)
+      ) {
+        queryClient.setQueryData<MessageHistory>(historyKey, {
+          before: page.hasMore ? page.nextCursor : null,
+        });
+      }
       return mergeDisplayMessages(
-        queryClient.getQueryData<DisplayChatMessage[]>(queryKey) ?? [],
+        current,
         page.items.map((message) => toDisplayMessage(message, viewerId))
       );
     },
   });
+}
+
+/** Loads the Message page before the oldest loaded one into the Message cache. */
+export function useOlderMessages(
+  conversationId: string,
+  viewerId: string,
+  mode: ChatConversationMode
+) {
+  const queryClient = useQueryClient();
+  const historyKey = chatKeys.messageHistory(conversationId, viewerId, mode);
+  const historyQuery = useQuery<MessageHistory>({
+    enabled: false,
+    queryKey: historyKey,
+    queryFn: () => ({ before: null }),
+    staleTime: Infinity,
+  });
+  const before = historyQuery.data?.before ?? null;
+  const olderMutation = useMutation({
+    mutationFn: (cursor: string) =>
+      fetchMessagePage(conversationId, mode, {
+        limit: MESSAGE_PAGE_SIZE,
+        before: cursor,
+      }),
+    onSuccess: async (page) => {
+      const messagesKey = chatKeys.messages(conversationId, viewerId, mode);
+      // A newest-page fetch in flight would commit over this merge and drop
+      // the older page; let it land first.
+      await queryClient
+        .getQueryCache()
+        .find({ queryKey: messagesKey })
+        ?.promise?.catch(() => undefined);
+      queryClient.setQueryData<DisplayChatMessage[]>(messagesKey, (current) =>
+        mergeDisplayMessages(
+          current ?? [],
+          page.items.map((message) => toDisplayMessage(message, viewerId))
+        )
+      );
+      queryClient.setQueryData<MessageHistory>(historyKey, {
+        before: page.hasMore ? page.nextCursor : null,
+      });
+    },
+  });
+  const isLoadingOlderMessages = olderMutation.isPending;
+  const { mutateAsync } = olderMutation;
+  const loadOlderMessages = useCallback(async () => {
+    if (!before || isLoadingOlderMessages) return;
+    await mutateAsync(before);
+  }, [before, isLoadingOlderMessages, mutateAsync]);
+
+  return {
+    hasOlderMessages: before !== null,
+    isLoadingOlderMessages,
+    loadOlderMessages,
+  };
 }
 
 export function useWorkConversationQuery(
@@ -284,13 +377,15 @@ export function useWorkConversationQuery(
         liveSnapshot.capabilities.canWriteWorkChat && !workConversation.readOnly
       );
       const terminal = isTerminalStatus(liveSnapshot.state);
-      return enrichChatConversation({
+      return {
         ...converted,
         ...(otherParticipant?.id ? { participantId: otherParticipant.id } : {}),
         participantName:
           otherParticipant?.displayName ?? converted.participantName,
         participantRole:
-          otherParticipant?.role === QuestActor.HIRER ? "owner" : "member",
+          otherParticipant?.role === QuestActor.HIRER
+            ? ("owner" as const)
+            : ("member" as const),
         initials: (otherParticipant?.displayName ?? converted.participantName)
           .slice(0, 2)
           .toUpperCase(),
@@ -301,7 +396,7 @@ export function useWorkConversationQuery(
           readOnly: !canWrite,
           ...(terminal ? { readOnlyReason: "TERMINAL" as const } : {}),
         },
-      });
+      };
     },
   });
 }
@@ -333,8 +428,9 @@ export function useCandidateConversationQuery(
       ) {
         return null;
       }
-      return enrichChatConversation(
-        candidateInquiryToConversation({ ...inquiry, participants }, viewerId)
+      return candidateInquiryToConversation(
+        { ...inquiry, participants },
+        viewerId
       );
     },
   });
@@ -388,14 +484,13 @@ export function useSendChatMessageMutation(socket: UseChatSocketResult) {
         variables.mode
       );
       await queryClient.cancelQueries({ queryKey });
-      const previous = queryClient.getQueryData<DisplayChatMessage[]>(queryKey);
       const optimisticMessage = variables.optimisticMessage;
       if (optimisticMessage) {
         queryClient.setQueryData<DisplayChatMessage[]>(queryKey, (current) =>
           mergeDisplayMessages(current ?? [], [optimisticMessage])
         );
       }
-      return { previous, queryKey };
+      return { queryKey };
     },
     onSuccess: async (sentMessage, variables, context) => {
       const queryKey =
@@ -443,15 +538,15 @@ export function useSendChatMessageMutation(socket: UseChatSocketResult) {
       await queryClient.invalidateQueries({ queryKey });
     },
     onError: (_error, variables, context) => {
+      // Remove only this send's optimistic message. Restoring the onMutate
+      // snapshot would bring back other sends' optimistic messages that have
+      // been confirmed since.
       if (context?.queryKey) {
         queryClient.setQueryData<DisplayChatMessage[]>(
           context.queryKey,
           (current) =>
-            mergeDisplayMessages(
-              context.previous ?? [],
-              (current ?? []).filter(
-                (message) => message.id !== variables.clientMessageId
-              )
+            (current ?? []).filter(
+              (message) => message.id !== variables.clientMessageId
             )
         );
       }

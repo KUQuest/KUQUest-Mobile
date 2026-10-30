@@ -7,13 +7,16 @@ export type PenaltyResult =
   | "PENALTY_PERMANENT_BAN";
 
 export interface ProfileMessages {
-  penaltyStatusTitle: string;
+  penaltyStatusUnavailable: string;
   penaltyMisconductLadder: string;
   penaltyReviewLadder: string;
   penaltyStrikes: (strikeCount: number, ladderLength: number) => string;
   penaltyNextResult: (result: string) => string;
   penaltyResults: Record<PenaltyResult, string>;
+  penaltyRedFlagTitle: string;
   penaltyRedFlagActive: (date: string) => string;
+  penaltyRedFlagRestrictions: string[];
+  penaltyRedFlagExistingQuests: string;
   loading: string;
   error: string;
   retry: string;
@@ -73,7 +76,7 @@ export interface ProfileMessages {
 
 export const profileMessages: Record<SupportedLocale, ProfileMessages> = {
   en: {
-    penaltyStatusTitle: "Penalty status",
+    penaltyStatusUnavailable: "Penalty status is temporarily unavailable.",
     penaltyMisconductLadder: "Misconduct",
     penaltyReviewLadder: "Low review average",
     penaltyStrikes: (strikeCount, ladderLength) =>
@@ -85,8 +88,14 @@ export const profileMessages: Record<SupportedLocale, ProfileMessages> = {
       PENALTY_TEMPORARY_BAN_1_MONTH: "1-month ban",
       PENALTY_PERMANENT_BAN: "Permanent ban",
     },
-    penaltyRedFlagActive: (date) =>
-      `Red Flag until ${date}. You cannot apply as a Candidate, join FCFS Quests, or publish new Quests. Your existing Quests continue.`,
+    penaltyRedFlagTitle: "Red Flag active",
+    penaltyRedFlagActive: (date) => `Red Flag until ${date}`,
+    penaltyRedFlagRestrictions: [
+      "Apply as a Candidate",
+      "Join FCFS Quests",
+      "Publish new Quests",
+    ],
+    penaltyRedFlagExistingQuests: "Your existing Quests continue as normal.",
     loading: "Loading profile...",
     error: "Unable to load your profile.",
     retry: "Try again",
@@ -146,7 +155,7 @@ export const profileMessages: Record<SupportedLocale, ProfileMessages> = {
     reviewsError: "Unable to load reviews.",
   },
   th: {
-    penaltyStatusTitle: "สถานะบทลงโทษ",
+    penaltyStatusUnavailable: "สถานะบทลงโทษไม่พร้อมใช้งานชั่วคราว",
     penaltyMisconductLadder: "การกระทำผิด",
     penaltyReviewLadder: "คะแนนรีวิวเฉลี่ยต่ำ",
     penaltyStrikes: (strikeCount, ladderLength) =>
@@ -158,8 +167,14 @@ export const profileMessages: Record<SupportedLocale, ProfileMessages> = {
       PENALTY_TEMPORARY_BAN_1_MONTH: "แบน 1 เดือน",
       PENALTY_PERMANENT_BAN: "แบนถาวร",
     },
-    penaltyRedFlagActive: (date) =>
-      `ติด Red Flag ถึง ${date} ระหว่างนี้สมัครเป็น Candidate เข้าร่วมเควสต์ FCFS และเผยแพร่เควสต์ใหม่ไม่ได้ เควสต์เดิมทำต่อได้ตามปกติ`,
+    penaltyRedFlagTitle: "ติด Red Flag",
+    penaltyRedFlagActive: (date) => `Red Flag ถึง ${date}`,
+    penaltyRedFlagRestrictions: [
+      "สมัครเป็น Candidate",
+      "เข้าร่วมเควสต์ FCFS",
+      "เผยแพร่เควสต์ใหม่",
+    ],
+    penaltyRedFlagExistingQuests: "เควสต์เดิมทำต่อได้ตามปกติ",
     loading: "กำลังโหลดโปรไฟล์...",
     error: "ไม่สามารถโหลดโปรไฟล์ของคุณได้",
     retry: "ลองอีกครั้ง",

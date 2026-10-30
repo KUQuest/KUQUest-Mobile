@@ -40,6 +40,7 @@ import {
   useCandidateConversationQuery,
   useListConversationsQuery,
   useMessagesQuery,
+  useOlderMessages,
   useSendChatMessageMutation,
   useUploadChatAttachmentMutation,
   useWorkConversationQuery,
@@ -157,6 +158,11 @@ export function useChatConversationController(
     viewerId,
     conversationType,
     Boolean(routeConversationId && viewerId)
+  );
+  const olderMessages = useOlderMessages(
+    routeConversationId ?? "",
+    viewerId,
+    conversationType
   );
   const candidateInquiryClosed =
     conversationType === ConversationMode.CANDIDATE_INQUIRY &&
@@ -746,6 +752,16 @@ export function useChatConversationController(
   const retryLoad = () => {
     void refresh().catch(() => undefined);
   };
+  const loadOlderMessages = () => {
+    void olderMessages.loadOlderMessages().catch((error: unknown) => {
+      showErrorAlert(
+        conversationKind,
+        getLocalizedErrorMessage(error, locale, {
+          fallback: messages.loadError,
+        })
+      );
+    });
+  };
 
   return {
     router,
@@ -761,6 +777,9 @@ export function useChatConversationController(
     refreshing,
     refresh,
     retryLoad,
+    hasOlderMessages: olderMessages.hasOlderMessages,
+    isLoadingOlderMessages: olderMessages.isLoadingOlderMessages,
+    loadOlderMessages,
     role,
     conversationKind,
     canWrite,

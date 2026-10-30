@@ -3,7 +3,10 @@ import { act } from "@testing-library/react-native";
 import { groupQuestMessages } from "@/locales/groupQuestMessages";
 import { questBoardMessages } from "@/locales/questBoardMessages";
 import { renderWithAppTheme } from "@/testing/queryTestUtils";
-import { LiveEntrySurface } from "../components/QuestDetailEntrySurfaces";
+import {
+  LiveEntrySurface,
+  QuestDetailTeamRoster,
+} from "../components/QuestDetailEntrySurfaces";
 import { QuestDetailBody } from "../components/QuestDetailBody";
 import { QuestMode, QuestParticipation } from "../../domain/types";
 
@@ -118,6 +121,46 @@ function body(cancellationReason: string | null, ownDeclined = false) {
 }
 
 describe("Quest underfilled cancellation outcomes", () => {
+  it("shows team members on the Quest detail page", async () => {
+    const snapshot = {
+      ...(liveSnapshot(null) as object),
+      mode: QuestMode.CANDIDATE,
+      team: {
+        leaderId: "leader-1",
+        members: [
+          { memberId: "leader-1", member: { displayName: "Alice Example" } },
+          { memberId: "worker-1", member: { displayName: "Team Worker" } },
+        ],
+      },
+    } as never;
+    const screen = await renderWithAppTheme(
+      <QuestDetailTeamRoster snapshot={snapshot} groupMessages={messages} />
+    );
+    expect(screen.getByText("Alice Example")).toBeTruthy();
+    expect(screen.getByText("Team Worker")).toBeTruthy();
+  });
+
+  it("does not show the team entry card when a team already exists", async () => {
+    const snapshot = {
+      ...(liveSnapshot(null) as object),
+      mode: QuestMode.CANDIDATE,
+      team: {},
+      underfilled: null,
+      capabilities: { canUpdateTeam: true },
+    } as never;
+    const screen = await renderWithAppTheme(
+      <LiveEntrySurface
+        snapshot={snapshot}
+        locale="en"
+        groupMessages={messages}
+        onOpenTeam={() => undefined}
+        onOpenCandidateReview={() => undefined}
+        onOpenPartialConsent={() => undefined}
+      />
+    );
+    expect(screen.queryByTestId("quest-team-entry-surface")).toBeNull();
+  });
+
   it("hides the team entry when a status card is displayed", async () => {
     const snapshot = {
       ...(liveSnapshot(null) as object),

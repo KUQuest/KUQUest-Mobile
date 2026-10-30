@@ -4,6 +4,7 @@ import {
   subscribeToHirerQuestEvents,
   subscribeToQuestBoardEvents,
   subscribeToQuestEvents,
+  subscribeToWorkerAssignmentEvents,
 } from "../questEvents";
 import { MockWebSocket } from "@/testing/mockWebSocket";
 
@@ -504,5 +505,29 @@ describe("Quest event subscription", () => {
     expect(nextSocket.close).not.toHaveBeenCalled();
     stopNext();
     expect(nextSocket.close).toHaveBeenCalledTimes(1);
+  });
+
+  it("subscribes to worker assignment invalidations", () => {
+    const onInvalidated = jest.fn();
+    const onSubscribed = jest.fn();
+    const stop = subscribeToWorkerAssignmentEvents(onInvalidated, onSubscribed);
+    const socket = MockWebSocket.instances[0];
+
+    expect(socket?.url).toBe(
+      "wss://api.example.com/api/v2/me/worker-assignments/events"
+    );
+    if (!socket) throw new Error("Expected a worker assignment event socket");
+    socket.receive(
+      JSON.stringify({ type: "WORKER_ASSIGNMENTS_INVALIDATED", version: 1 })
+    );
+    socket.receive(JSON.stringify({ type: "SUBSCRIBED", version: 1 }));
+    socket.receive(
+      JSON.stringify({ type: "WORKER_ASSIGNMENTS_INVALIDATED", version: 1 })
+    );
+
+    expect(onSubscribed).toHaveBeenCalledTimes(1);
+    expect(onInvalidated).toHaveBeenCalledTimes(1);
+    stop();
+    expect(socket.close).toHaveBeenCalledTimes(1);
   });
 });

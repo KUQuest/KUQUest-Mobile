@@ -37,6 +37,7 @@ export interface HirerQuestProgressCardProps {
     displayName: string;
     faculty?: string;
     avatarUri?: string;
+    avatarCacheKey?: string;
   };
   assignedWorkers?: QuestMemberProfile[];
   applicants?: QuestMemberProfile[];
@@ -255,6 +256,7 @@ export function HirerQuestProgressCard({
                 name={primaryWorker.displayName}
                 size={44}
                 textClassName={`${styles.workerAvatarText} text-ku-hirer-dark`}
+                cacheKey={primaryWorker.avatarCacheKey}
                 uri={primaryWorker.avatarUri}
               />
               <View className={styles.workerCopy}>

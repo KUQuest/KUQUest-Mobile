@@ -21,7 +21,11 @@ export function useHirerProofReviewFeature(questId?: string) {
   const reviewProofMutation = useReviewProofMutation();
   const snapshot = snapshotQuery.data;
   const [selectedProofId, setSelectedProofId] = useState<string | null>(null);
-  const [decided, setDecided] = useState(false);
+  // Set once a decision lands; `revieweeId` is null for a Team proof so the
+  // Hirer picks each teammate (quest-mode-matrix-contract.md, Quadrant 4).
+  const [decided, setDecided] = useState<{ revieweeId: string | null } | null>(
+    null
+  );
 
   const rows = useMemo(
     () => (snapshot ? projectProofReviewRows(snapshot) : []),
@@ -63,7 +67,9 @@ export function useHirerProofReviewFeature(questId?: string) {
         viewerId: viewerId ?? undefined,
         idempotencyKey: createQuestIdempotencyKey(),
       });
-      setDecided(true);
+      setDecided({
+        revieweeId: selectedProof.teamId ? null : selectedProof.workerId,
+      });
       return true;
     } catch (caught) {
       // Another device may have decided first; show the Server's current state.
@@ -84,7 +90,9 @@ export function useHirerProofReviewFeature(questId?: string) {
       snapshot?.capabilities.canCreateReview
         ? (questId ?? null)
         : null,
-    closeRatingReview: () => setDecided(false),
+    // The Rating Review opens for the Worker whose proof was just decided.
+    ratingReviewWorkerId: decided?.revieweeId ?? null,
+    closeRatingReview: () => setDecided(null),
     openProof: setSelectedProofId,
     pendingCount,
     proofFileLinksQuery,

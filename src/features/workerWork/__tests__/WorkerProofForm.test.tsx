@@ -386,6 +386,56 @@ describe("WorkerProofForm", () => {
     expect(onSubmitted).not.toHaveBeenCalled();
     expect(screen.getByDisplayValue("Done")).toBeTruthy();
   });
+  it("re-submits the uploaded draft without uploading again after submit fails", async () => {
+    mockedPicker.mockResolvedValue({
+      canceled: false,
+      assets: [
+        {
+          uri: "file:///one.jpg",
+          fileName: "one.jpg",
+          mimeType: "image/jpeg",
+          type: "image",
+          width: 10,
+          height: 10,
+        },
+      ],
+    });
+    mockedQuestApi.createProofDraft.mockResolvedValue({
+      id: "draft-1",
+      description: null,
+      files: [
+        { position: 0, uploadStatus: "PROOF_FILE_READY", fileId: "file-1" },
+      ],
+    } as never);
+    mockedQuestApi.submitProofDraft
+      .mockRejectedValueOnce(new Error("Network request failed"))
+      .mockResolvedValueOnce({ id: "draft-1" } as never);
+    const onSubmitted = jest.fn();
+
+    const screen = await renderForm(submittable, onSubmitted);
+    await fireEvent.press(
+      screen.getByRole("button", { name: "Add images or videos" })
+    );
+    await waitFor(() => expect(screen.getByText("1/5 files")).toBeTruthy());
+    await fireEvent.press(screen.getByRole("button", { name: "Submit proof" }));
+    await fireEvent.press(screen.getByRole("button", { name: "Confirm" }));
+    await waitFor(() =>
+      expect(mockedQuestApi.submitProofDraft).toHaveBeenCalledTimes(1)
+    );
+    expect(onSubmitted).not.toHaveBeenCalled();
+
+    await fireEvent.press(screen.getByRole("button", { name: "Submit proof" }));
+    await fireEvent.press(screen.getByRole("button", { name: "Confirm" }));
+
+    await waitFor(() => expect(onSubmitted).toHaveBeenCalled());
+    expect(mockedQuestApi.createProofDraft).toHaveBeenCalledTimes(1);
+    expect(mockedQuestApi.updateProofDraft).not.toHaveBeenCalled();
+    expect(mockedQuestApi.submitProofDraft).toHaveBeenLastCalledWith(
+      "quest-1",
+      "draft-1",
+      expect.any(String)
+    );
+  });
   it.each([
     [
       "rejects the upload",

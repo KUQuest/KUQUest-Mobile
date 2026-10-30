@@ -12,6 +12,7 @@ import {
   useChatNotificationConversationsQuery,
   useHasUnreadChatQuery,
   useMessagesQuery,
+  useOlderMessages,
   useSendChatMessageMutation,
 } from "../api/chatQueries";
 import {
@@ -209,6 +210,62 @@ describe("chat message transport", () => {
     );
   });
 
+  it("loads older history through the page cursor until the start is reached", async () => {
+    const getMessages = jest
+      .spyOn(chatApi, "getMessages")
+      .mockImplementation(async (_conversationId, params = {}) =>
+        params.before === "cursor-older"
+          ? {
+              items: [
+                makeServerMessage("message-1", 1),
+                makeServerMessage("message-2", 2),
+              ],
+              nextCursor: null,
+              hasMore: false,
+            }
+          : {
+              items: [
+                makeServerMessage("message-3", 3),
+                makeServerMessage("message-4", 4),
+              ],
+              nextCursor: "cursor-older",
+              hasMore: true,
+            }
+      );
+    const { result } = await renderHook(
+      () => ({
+        messages: useMessagesQuery("conversation-1", "member-1", "WORK"),
+        older: useOlderMessages("conversation-1", "member-1", "WORK"),
+      }),
+      { wrapper: createWrapper() }
+    );
+    await waitFor(() =>
+      expect(result.current.older.hasOlderMessages).toBe(true)
+    );
+
+    await act(async () => {
+      await result.current.older.loadOlderMessages();
+    });
+
+    expect(getMessages).toHaveBeenLastCalledWith(
+      "conversation-1",
+      { limit: 50, before: "cursor-older" },
+      expect.anything()
+    );
+    await waitFor(() =>
+      expect(
+        result.current.messages.data?.map((message) => message.id)
+      ).toEqual(["message-1", "message-2", "message-3", "message-4"])
+    );
+    expect(result.current.older.hasOlderMessages).toBe(false);
+
+    await act(async () => {
+      await result.current.messages.refetch();
+    });
+    expect(result.current.messages.data).toHaveLength(4);
+    expect(result.current.older.hasOlderMessages).toBe(false);
+  });
+
   it("sends connected text over WebSocket and replaces its optimistic message", async () => {
     const acceptedMessage = makeServerMessage("server-message", 1);
     const sendMessage = jest.fn().mockResolvedValue(acceptedMessage);
@@ -258,6 +315,70 @@ describe("chat message transport", () => {
         )
         ?.map((message) => message.id)
     ).toEqual(["server-message"]);
+  });
+
+  it("does not restore another send's confirmed optimistic message when a send fails", async () => {
+    let resolveFirst: (message: ServerChatMessage) => void = () => {};
+    let rejectSecond: (error: Error) => void = () => {};
+    const sendMessage = jest
+      .fn()
+      .mockImplementationOnce(
+        () => new Promise((resolve) => (resolveFirst = resolve))
+      )
+      .mockImplementationOnce(
+        () => new Promise((_resolve, reject) => (rejectSecond = reject))
+      );
+    const socket = {
+      status: "connected" as const,
+      reconnectAttempt: 0,
+      sendMessage,
+    };
+    const queryClient = createQueryClient();
+    const queryKey = chatKeys.messages("conversation-1", "member-1", "WORK");
+    const send = (id: string) => ({
+      conversationId: "conversation-1",
+      mode: "WORK" as const,
+      text: id,
+      clientMessageId: id,
+      attachmentIds: [],
+      viewerId: "member-1",
+      optimisticMessage: {
+        id,
+        sender: "me" as const,
+        text: { en: id, th: id },
+        createdAt: "2026-09-24T12:00:00Z",
+        attachments: [],
+      },
+    });
+    const { result } = await renderHook(
+      () => useSendChatMessageMutation(socket),
+      { wrapper: createWrapper(queryClient) }
+    );
+
+    let first: Promise<unknown> = Promise.resolve();
+    let second: Promise<unknown> = Promise.resolve();
+    await act(async () => {
+      first = result.current.mutateAsync(send("client-a"));
+    });
+    await waitFor(() => expect(sendMessage).toHaveBeenCalledTimes(1));
+    await act(async () => {
+      second = result.current.mutateAsync(send("client-b")).catch(() => null);
+    });
+    await waitFor(() => expect(sendMessage).toHaveBeenCalledTimes(2));
+    await act(async () => {
+      resolveFirst(makeServerMessage("server-a", 1));
+      await first;
+    });
+    await act(async () => {
+      rejectSecond(new Error("ack timeout"));
+      await second;
+    });
+
+    expect(
+      queryClient
+        .getQueryData<DisplayChatMessage[]>(queryKey)
+        ?.map((message) => message.id)
+    ).toEqual(["server-a"]);
   });
 
   it("sends connected Candidate Inquiry attachments over WebSocket", async () => {

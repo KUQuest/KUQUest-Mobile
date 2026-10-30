@@ -1,5 +1,5 @@
 import { useState } from "react";
-import { Modal, Platform } from "react-native";
+import { Modal } from "react-native";
 import { create } from "zustand";
 import { Button } from "@/components/ui/Button";
 import { TextArea } from "@/components/ui/TextArea";
@@ -8,10 +8,13 @@ import { useLocale } from "@/features/preferences/localeStore";
 import { disputeMessages } from "@/locales/disputeMessages";
 import { KeyboardAvoidingView, Pressable, ScrollView, Text, View } from "@/tw";
 
-const useForm = create<{ submit: ((input: DisputeInput) => void) | null }>(
-  () => ({ submit: null })
-);
-export function showDisputeForm(submit: (input: DisputeInput) => void) {
+/** Resolves `true` once the case is filed; `false` keeps the form open. */
+type SubmitDispute = (input: DisputeInput) => Promise<boolean>;
+
+const useForm = create<{ submit: SubmitDispute | null }>(() => ({
+  submit: null,
+}));
+export function showDisputeForm(submit: SubmitDispute) {
   useForm.setState({ submit });
 }
 
@@ -20,20 +23,24 @@ export function DisputeFormHost() {
   return submit ? <DisputeForm submit={submit} /> : null;
 }
 
-function DisputeForm({ submit }: { submit: (input: DisputeInput) => void }) {
+function DisputeForm({ submit }: { submit: SubmitDispute }) {
   const { locale } = useLocale();
   const messages = disputeMessages[locale];
   const [category, setCategory] = useState<DisputeInput["category"] | null>(
     null
   );
   const [detail, setDetail] = useState("");
+  const [isSubmitting, setIsSubmitting] = useState(false);
   const labels = messages.categories;
-  const close = () => useForm.setState({ submit: null });
+  const close = () => {
+    if (!isSubmitting) useForm.setState({ submit: null });
+  };
   const detailLabel = messages.detailLabel;
   return (
     <Modal visible transparent animationType="slide" onRequestClose={close}>
       <KeyboardAvoidingView
-        behavior={Platform.OS === "ios" ? "padding" : "height"}
+        // "height" leaves Android inputs under the keyboard (gotchas.md).
+        behavior="padding"
         className="flex-1 justify-end bg-ku-overlay"
       >
         <View
@@ -78,16 +85,27 @@ function DisputeForm({ submit }: { submit: (input: DisputeInput) => void }) {
               />
             </View>
             <View className="mt-ku-lg flex-row gap-ku-sm">
-              <Button className="flex-1" variant="secondary" onPress={close}>
+              <Button
+                className="flex-1"
+                variant="secondary"
+                disabled={isSubmitting}
+                onPress={close}
+              >
                 {messages.cancel}
               </Button>
               <Button
                 className="flex-1"
-                disabled={!category || !detail.trim()}
+                disabled={!category || !detail.trim() || isSubmitting}
                 onPress={() => {
-                  if (!category || !detail.trim()) return;
-                  close();
-                  submit({ category, submittedDetail: detail.trim() });
+                  if (!category || !detail.trim() || isSubmitting) return;
+                  setIsSubmitting(true);
+                  void submit({
+                    category,
+                    submittedDetail: detail.trim(),
+                  }).then((filed) => {
+                    if (filed) useForm.setState({ submit: null });
+                    else setIsSubmitting(false);
+                  });
                 }}
               >
                 {messages.confirm}

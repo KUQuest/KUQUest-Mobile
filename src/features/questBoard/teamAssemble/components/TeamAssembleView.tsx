@@ -403,6 +403,7 @@ export function TeamAssembleView({
       !submissionReady ||
       isLocked ||
       submitting ||
+      isPickingFile ||
       (canonical && !proposalText.trim())
     ) {
       return;
@@ -609,6 +610,7 @@ export function TeamAssembleView({
               submissionReady={submissionReady}
               submitting={submitting}
               text={proposalText}
+              uploading={isPickingFile}
             />
           ) : null}
         </>

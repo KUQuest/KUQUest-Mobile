@@ -141,7 +141,7 @@ export function QuestLogisticsFields({
               )}
               dateLabel={messages.startDate}
               timeValue={draft.startTime}
-              timeLabel={messages.startTime}
+              timeLabel={messages.timeLabel}
               hasValue={Boolean(
                 draft.startDate && TIME_PATTERN.test(draft.startTime)
               )}
@@ -209,7 +209,7 @@ export function QuestLogisticsFields({
             )}
             dateLabel={messages.endDate}
             timeValue={draft.endTime}
-            timeLabel={messages.endTime}
+            timeLabel={messages.timeLabel}
             hasValue={Boolean(
               draft.deadline && TIME_PATTERN.test(draft.endTime)
             )}

@@ -46,15 +46,45 @@ export function usePenaltyStatusQuery() {
   });
 }
 
+export function invalidatePenaltyStatus(
+  queryClient: QueryClient
+): Promise<void> {
+  return queryClient.invalidateQueries(
+    { queryKey: profileKeys.penaltyStatus() },
+    { cancelRefetch: false }
+  );
+}
+
+async function fetchPublicProfile(userId: string, signal?: AbortSignal) {
+  const api = await authService.getStudentApi();
+  return api.getPublicProfile(userId, { signal });
+}
+
 export function usePublicProfileQuery(userId: string) {
   return useQuery({
     enabled: Boolean(userId),
     queryKey: profileKeys.public(userId),
-    queryFn: async ({ signal }) => {
-      const api = await authService.getStudentApi();
-      return api.getPublicProfile(userId, { signal });
-    },
+    queryFn: ({ signal }) => fetchPublicProfile(userId, signal),
   });
+}
+
+// Avatar links are temporary; refetch well before they expire.
+const AVATAR_STALE_TIME_MS = 5 * 60 * 1000;
+
+/**
+ * Any Member's avatar, read from the shared public profile cache so every
+ * screen shows the same picture. `cacheKey` is the avatar fileId, which keeps
+ * the image cached across link refreshes.
+ */
+export function useUserAvatar(userId: string | null | undefined) {
+  const { data } = useQuery({
+    enabled: Boolean(userId),
+    queryKey: profileKeys.public(userId ?? ""),
+    queryFn: ({ signal }) => fetchPublicProfile(userId ?? "", signal),
+    select: (profile) => profile.avatar,
+    staleTime: AVATAR_STALE_TIME_MS,
+  });
+  return { uri: data?.url, cacheKey: data?.fileId };
 }
 
 export function usePublicProfileReviewsQuery(userId: string) {

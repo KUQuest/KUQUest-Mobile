@@ -113,9 +113,6 @@ export function ProofReviewPanel({
   const { colors } = useAppTheme();
   const { locale } = useLocale();
   const messages = questBoardMessages[locale];
-  const [decisionMode, setDecisionMode] = useState<"review" | "not-approved">(
-    "review"
-  );
   const [reason, setReason] = useState("");
   const [busy, setBusy] = useState(false);
   const [error, setError] = useState<string>();
@@ -373,22 +370,20 @@ export function ProofReviewPanel({
           )}
         </View>
 
-        {decisionMode === "not-approved" ? (
-          <View className="mt-ku-20">
-            <TextArea
-              accessibilityLabel={messages.proofReviewReasonLabel}
-              label={messages.proofReviewReasonLabel}
-              maxLength={MAX_REVIEW_REASON_LENGTH}
-              onChangeText={setReason}
-              placeholder={messages.proofReviewReasonPlaceholder}
-              onFocus={() =>
-                scrollViewRef.current?.scrollToEnd({ animated: true })
-              }
-              testID="proof-review-reason-input"
-              value={reason}
-            />
-          </View>
-        ) : null}
+        <View className="mt-ku-20">
+          <TextArea
+            accessibilityLabel={messages.proofReviewReasonLabel}
+            label={messages.proofReviewReasonLabel}
+            maxLength={MAX_REVIEW_REASON_LENGTH}
+            onChangeText={setReason}
+            placeholder={messages.proofReviewReasonPlaceholder}
+            onFocus={() =>
+              scrollViewRef.current?.scrollToEnd({ animated: true })
+            }
+            testID="proof-review-reason-input"
+            value={reason}
+          />
+        </View>
 
         {error ? (
           <Text
@@ -402,50 +397,23 @@ export function ProofReviewPanel({
       </ScrollView>
 
       <View className={styles.proofSheetActions}>
-        {decisionMode === "not-approved" ? (
-          <>
-            <Button
-              className="w-auto flex-1"
-              disabled={busy}
-              onPress={() => {
-                setDecisionMode("review");
-                setError(undefined);
-              }}
-              testID="proof-review-back"
-              variant="secondary"
-            >
-              {messages.cancel}
-            </Button>
-            <Button
-              className="w-auto flex-1"
-              disabled={busy}
-              onPress={confirmNotApproved}
-              testID="proof-review-confirm-not-approve"
-            >
-              {messages.proofReviewConfirmNotApproved}
-            </Button>
-          </>
-        ) : (
-          <>
-            <Button
-              className="w-auto flex-1"
-              disabled={busy}
-              onPress={() => setDecisionMode("not-approved")}
-              testID="proof-review-not-approve"
-              variant="secondary"
-            >
-              {messages.proofReviewDoNotApprove}
-            </Button>
-            <Button
-              className="w-auto flex-1"
-              disabled={busy}
-              onPress={() => void runReview({ decision: "PROOF_APPROVED" })}
-              testID="proof-review-approve"
-            >
-              {messages.proofReviewApprove}
-            </Button>
-          </>
-        )}
+        <Button
+          className="w-auto flex-1"
+          disabled={busy}
+          onPress={confirmNotApproved}
+          testID="proof-review-not-approve"
+          variant="secondary"
+        >
+          {messages.proofReviewDoNotApprove}
+        </Button>
+        <Button
+          className="w-auto flex-1"
+          disabled={busy}
+          onPress={() => void runReview({ decision: "PROOF_APPROVED" })}
+          testID="proof-review-approve"
+        >
+          {messages.proofReviewApprove}
+        </Button>
       </View>
       <ImageViewerModal
         closeLabel={messages.close}
