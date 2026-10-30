@@ -11,6 +11,7 @@ import {
 } from "@/tw";
 import { Landmark, X } from "lucide-react-native";
 import { Input } from "@/components/ui/Input";
+import { Select } from "@/components/ui/Select";
 import { showConfirmModal } from "@/components/ui/SweetAlert";
 import { useLocale } from "@/features/preferences/localeStore";
 import type { WalletMessages } from "@/locales/walletMessages";
@@ -23,6 +24,7 @@ import {
   useSavePayoutDestinationMutation,
 } from "../../api/walletQueries";
 import payoutStyles from "./payoutStyles";
+import { getThaiBankLabel, getThaiBankOptions } from "./thaiBanks";
 
 interface PayoutDestinationModalProps {
   visible: boolean;
@@ -93,7 +95,7 @@ export function PayoutDestinationModal({
       givenName: form.givenName.trim(),
       surname: form.surname.trim(),
       accountHolderName: form.accountHolderName.trim(),
-      bankCode: form.bankCode.trim().toUpperCase(),
+      bankCode: form.bankCode,
       accountNumber: form.accountNumber.replace(/[\s-]/g, ""),
     };
     const nextErrors: FormErrors = {};
@@ -177,16 +179,18 @@ export function PayoutDestinationModal({
         testID="payout-destination-holder-name"
         value={form.accountHolderName}
       />
-      <Input
-        accessibilityHint={m.destinationBankCodeHint}
-        autoCapitalize="characters"
-        autoCorrect={false}
-        editable={!busy}
+      <Select
+        clearSearchLabel={m.clearSearch}
+        closeLabel={m.closeButton}
+        disabled={busy}
         error={errors.bankCode}
-        label={m.destinationBankCodeLabel}
-        onChangeText={setField("bankCode")}
-        placeholder={m.destinationBankCodeHint}
-        testID="payout-destination-bank-code"
+        label={m.destinationBankLabel}
+        noResultsMessage={m.destinationBankNoResults}
+        onValueChange={setField("bankCode")}
+        options={getThaiBankOptions(locale)}
+        placeholder={m.destinationBankPlaceholder}
+        searchable
+        searchPlaceholder={m.destinationBankSearch}
         value={form.bankCode}
       />
       <Input
@@ -259,7 +263,9 @@ export function PayoutDestinationModal({
             {m.destinationBankLabel}
           </Text>
           <Text className={payoutStyles.rowValue}>
-            {destination.bankCode ?? "-"}
+            {destination.bankCode
+              ? getThaiBankLabel(destination.bankCode, locale)
+              : "-"}
           </Text>
         </View>
         <View className={payoutStyles.row}>

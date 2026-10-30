@@ -62,9 +62,9 @@ async function fillForm(view: Awaited<ReturnType<typeof renderModal>>) {
     view.getByTestId("payout-destination-holder-name"),
     "Somchai Jaidee"
   );
-  await fireEvent.changeText(
-    view.getByTestId("payout-destination-bank-code"),
-    "kbank"
+  await fireEvent.press(view.getByTestId("select-trigger"));
+  await fireEvent.press(
+    view.getByLabelText(`${m.destinationBankLabel}: ธนาคารกสิกรไทย (KBANK)`)
   );
   await fireEvent.changeText(
     view.getByTestId("payout-destination-account-number"),
@@ -89,7 +89,7 @@ describe("PayoutDestinationModal", () => {
     expect(view.getByTestId("payout-destination-masked")).toHaveTextContent(
       "•••• 1234"
     );
-    expect(view.getByText("KBANK")).toBeTruthy();
+    expect(view.getByText("ธนาคารกสิกรไทย (KBANK)")).toBeTruthy();
   });
 
   it("shows an empty state and opens the form from Add account", async () => {
