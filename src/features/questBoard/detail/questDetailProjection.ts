@@ -91,27 +91,24 @@ export function getQuestDetailProjection(
         : hasPendingApplication
           ? ("pending" as const)
           : undefined;
+  const workedAssignments = source.assignments.filter(
+    (assignment) =>
+      assignment.state !== QuestAssignmentStatus.ASSIGNMENT_CANCELLED
+  );
   const participants =
     source.participants ??
-    source.assignments
-      .filter(
-        (assignment) =>
-          assignment.state !== QuestAssignmentStatus.ASSIGNMENT_CANCELLED
-      )
-      .map((assignment) => ({
-        id: assignment.workerId,
-        displayName: assignment.workerId,
-      }));
+    workedAssignments.map((assignment) => ({
+      id: assignment.workerId,
+      displayName: assignment.workerId,
+    }));
   // activeWorkerCount drops to 0 once settlement ends every Assignment, so a
-  // terminal Quest counts the roster of Workers who worked it instead.
+  // terminal Quest counts the Workers who worked it instead. The snapshot
+  // roster is always empty for a SINGLE Quest, so it falls back to Assignments.
   const participantCount = isTerminalStatus(source.state)
-    ? participants.length
+    ? Math.max(participants.length, workedAssignments.length)
     : "activeWorkerCount" in source.quest
       ? source.quest.activeWorkerCount
-      : source.assignments.filter(
-          (assignment) =>
-            assignment.state !== QuestAssignmentStatus.ASSIGNMENT_CANCELLED
-        ).length;
+      : workedAssignments.length;
   const quest = liveQuest(source, participantCount);
   return {
     quest,
