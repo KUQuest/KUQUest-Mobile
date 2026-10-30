@@ -6,7 +6,10 @@ import {
   ArrowLeft,
   CalendarDays,
   Image as ImageIcon,
+  Pencil,
+  X,
 } from "lucide-react-native";
+import { formatDate } from "@/domain/datetime";
 import { useLocale } from "@/features/preferences/localeStore";
 import { useAppTheme } from "@/features/workspace/AppThemeProvider";
 import { Image, Pressable, SafeAreaView, Text, View } from "../../../tw";
@@ -124,14 +127,11 @@ export function ImagePickerField({
   };
 
   return (
-    <View className="gap-ku-sm">
-      <Text className="font-ku-semibold text-ku-label text-ku-text-secondary">
-        {label}
-      </Text>
+    <View className={styles.imageField}>
       <Pressable
         accessibilityRole="button"
         accessibilityLabel={uri ? label : placeholder}
-        className={styles.imagePicker}
+        className={uri ? styles.imagePickerFilled : styles.imagePicker}
         style={{ aspectRatio: 4 / 3 }}
         onPress={() => void chooseImage()}
       >
@@ -144,21 +144,24 @@ export function ImagePickerField({
           />
         ) : (
           <View className="flex-1 items-center justify-center gap-ku-xs">
-            <ImageIcon color={colors.textMuted} size={24} />
+            <ImageIcon color={colors.textMuted} size={28} />
             <Text className={styles.imagePickerText}>{placeholder}</Text>
           </View>
         )}
+        {uri ? (
+          <View className={styles.imageEditBadge}>
+            <Pencil color={colors.onPrimary} size={16} />
+          </View>
+        ) : null}
       </Pressable>
       {uri ? (
         <Pressable
           accessibilityRole="button"
           accessibilityLabel={removeLabel}
-          className="min-h-[48px] justify-center self-start"
+          className={styles.imageRemoveButton}
           onPress={() => onChange("")}
         >
-          <Text className="font-ku-semibold text-ku-meta text-ku-primary">
-            {removeLabel}
-          </Text>
+          <X color={colors.onPrimary} size={18} strokeWidth={2.4} />
         </Pressable>
       ) : null}
     </View>
@@ -185,6 +188,7 @@ export function DateField({
   const { colors } = useAppTheme();
   const { locale } = useLocale();
   const [open, setOpen] = useState(false);
+  const displayValue = value ? formatDate(value, locale, value) : "";
   const today = new Date();
   const maximumDate = `${today.getFullYear()}-${String(today.getMonth() + 1).padStart(2, "0")}-${String(today.getDate()).padStart(2, "0")}`;
   return (
@@ -194,13 +198,13 @@ export function DateField({
       </Text>
       <Pressable
         accessibilityRole="button"
-        accessibilityLabel={`${label}: ${value || placeholder}`}
+        accessibilityLabel={`${label}: ${displayValue || placeholder}`}
         accessibilityState={{ expanded: open }}
         className={styles.dateButton}
         onPress={() => setOpen(true)}
       >
         <Text className={value ? styles.dateText : styles.datePlaceholder}>
-          {value || placeholder}
+          {displayValue || placeholder}
         </Text>
         <CalendarDays color={colors.textMuted} size={18} />
       </Pressable>

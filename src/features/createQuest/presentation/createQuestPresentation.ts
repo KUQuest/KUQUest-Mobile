@@ -252,12 +252,6 @@ export function getCreateQuestReviewView({
           : messages.noImages,
         imageUris: draft.imageUris,
       },
-      {
-        label: messages.summary.reward,
-        value: draft.wage
-          ? messages.rewardPerPersonValue(rewardPerPerson)
-          : messages.notSelected,
-      },
     ],
     rewardPerPerson,
     missingSatang,

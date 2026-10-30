@@ -1,4 +1,5 @@
 import React from "react";
+import { formatDate } from "@/domain/datetime";
 import { fireEvent, waitFor } from "@testing-library/react-native";
 import { SweetAlertHost } from "@/components/ui/SweetAlert";
 import { renderWithQueryClient } from "@/testing/queryTestUtils";
@@ -101,8 +102,7 @@ describe("Edit Profile hub", () => {
     await waitFor(() =>
       expect(view.getByTestId("profile-edit-section-basics")).toBeTruthy()
     );
-    expect(view.getByTestId("profile-edit-section-basics")).toBeTruthy();
-    expect(view.getAllByText("Name, avatar, and bio")).toHaveLength(2);
+    expect(view.getByLabelText("Profile basics: Ada Student")).toBeTruthy();
     expect(view.getByText("0 entries")).toBeTruthy();
     expect(view.getByText("0 projects")).toBeTruthy();
     expect(view.getByText("0 certificates")).toBeTruthy();
@@ -166,7 +166,7 @@ describe("Edit Profile hub", () => {
         view.getByText("This section is temporarily unavailable.")
       ).toBeTruthy()
     );
-    expect(view.queryByText("Add")).toBeNull();
+    expect(view.queryByLabelText("Add")).toBeNull();
     expect(view.getByText("Try again")).toBeTruthy();
   });
 
@@ -181,7 +181,7 @@ describe("Edit Profile hub", () => {
     const view = await renderWithQueryClient(<ProfileEditSectionScreen />);
 
     await waitFor(() => expect(view.getByText("Unavailable")).toBeTruthy());
-    expect(view.queryByText("Add")).toBeNull();
+    expect(view.queryByLabelText("Add")).toBeNull();
     expect(view.queryByText("Try again")).toBeNull();
   });
 
@@ -266,7 +266,11 @@ describe("Edit Profile hub", () => {
     );
     await fireEvent.press(view.getByTestId("custom-date-picker-confirm"));
 
-    expect(view.getByLabelText(`Start date: ${todayValue}`)).toBeTruthy();
+    expect(
+      view.getByLabelText(
+        `Start date: ${formatDate(todayValue, "en", todayValue)}`
+      )
+    ).toBeTruthy();
   });
 
   it("uses an editor-shaped skeleton for a new certificate route", async () => {
@@ -341,9 +345,9 @@ describe("Edit Profile hub", () => {
     mockRouteParams.itemId = "missing-experience";
     const view = await renderWithQueryClient(<ProfileEditSectionScreen />);
 
-    await waitFor(() => expect(view.getByText("Add")).toBeTruthy());
+    await waitFor(() => expect(view.getByLabelText("Add")).toBeTruthy());
     expect(view.queryByLabelText("Title")).toBeNull();
-    expect(view.getByText("Add")).toBeTruthy();
+    expect(view.getByLabelText("Add")).toBeTruthy();
   });
 
   it("saves a focused basics edit without exposing protected fields", async () => {

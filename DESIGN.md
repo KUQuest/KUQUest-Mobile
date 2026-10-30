@@ -330,7 +330,7 @@ Use the `on-*` token for text and icons on role-colored controls. Keep `addition
 - **Title (24px / 29px)**: Section headers, Quest titles in detail view, reward amounts.
 - **Body (16px / 24px)**: Primary interactive controls, search inputs, description paragraphs.
 - **Body Small (14px / 21px)**: Quest card titles, form field labels, metadata rows.
-- **Label (12px / 18px)**: Status badges, category chips, bottom tab labels, small timestamps.
+- **Label (12px / 18px)**: Status badges, category chips, bottom tab labels, small timestamps. No text token is below 12px; count badges cap text scaling at 1.5×.
 
 ### Editorial Guidelines
 

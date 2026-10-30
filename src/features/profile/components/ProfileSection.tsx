@@ -63,16 +63,11 @@ export function Section({
     >
       <Text
         accessibilityRole="header"
-        className={styles.sectionTitle}
+        className={styles.sectionTitleHidden}
         maxFontSizeMultiplier={2}
-        style={{
-          fontSize: metrics.sectionTitleFontSize,
-          lineHeight: Math.round(metrics.sectionTitleFontSize * 1.3),
-        }}
       >
         {title}
       </Text>
-      <View className={styles.rule} />
       {errorText ? (
         <SectionNotice
           errorText={errorText}

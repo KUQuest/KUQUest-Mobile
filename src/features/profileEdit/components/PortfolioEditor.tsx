@@ -80,10 +80,7 @@ export function PortfolioEditor({
               ) : undefined
             }
           />
-          <View className={styles.formGroup}>
-            <Text className={styles.formGroupTitle}>
-              {messages.portfolioSection}
-            </Text>
+          <View className={styles.editorForm}>
             <ImagePickerField
               label={messages.image}
               uri={form.imageUri}

@@ -1486,6 +1486,7 @@ paths:
                             - payoutReservedDeltaSatang
                             - resourceType
                             - resourceId
+                            - quest
                           properties: 
                             id: 
                               format: uuid
@@ -1534,6 +1535,21 @@ paths:
                             resourceId: 
                               anyOf: 
                                 - type: string
+                                - type: "null"
+                            quest: 
+                              anyOf: 
+                                - type: object
+                                  required: 
+                                    - id
+                                    - title
+                                  properties: 
+                                    id: 
+                                      format: uuid
+                                      type: string
+                                    title: 
+                                      anyOf: 
+                                        - type: string
+                                        - type: "null"
                                 - type: "null"
         "400": 
           description: Response for status 400

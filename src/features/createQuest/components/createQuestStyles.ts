@@ -1,10 +1,11 @@
 const styles = {
   safeArea: "bg-ku-hirer flex-1",
   hero: "bg-ku-hirer px-ku-lg pb-ku-22 pt-ku-xs",
-  heroTop: "items-center flex-row min-h-[64px] justify-between",
+  heroTop: "relative items-center flex-row min-h-[64px] justify-between",
   heroButton:
     "items-center border border-ku-on-hirer/[0.42] rounded-[14px] h-[48px] justify-center w-[48px]",
-  heroTitleGroup: "flex-1 items-center px-ku-sm",
+  heroTitleGroup:
+    "absolute inset-x-0 items-center px-[64px] pointer-events-none",
   heroTitle: "text-ku-on-hirer font-ku-bold text-ku-title text-center",
   progressTrack: "items-center flex-row mt-ku-12",
   progressNodePressable:
@@ -245,9 +246,8 @@ const styles = {
     "text-ku-text-strong flex-1 font-ku-medium text-ku-meta min-w-0",
   summaryImages: "flex-1 flex-row flex-wrap gap-ku-sm min-w-0",
   summaryImage: "bg-ku-surface-muted rounded-[8px] h-[56px] w-[56px]",
-  publishCheckCard:
-    "bg-ku-card border-ku-border-subtle rounded-[16px] border mt-ku-md p-ku-14",
-  publishCheckCardBlocked: "border-ku-border-danger",
+  publishCheckCard: "bg-ku-card rounded-[16px] mt-ku-md p-ku-14",
+  publishCheckCardBlocked: "border-ku-border-danger border",
   publishCheckHeader: "items-center flex-row gap-ku-10",
   publishCheckIcon:
     "items-center bg-ku-surface-success rounded-ku-pill h-[40px] justify-center shrink-0 w-[40px]",
@@ -269,10 +269,6 @@ const styles = {
   fundingLabel: "text-ku-text-secondary font-ku-medium text-ku-meta",
   fundingTotal: "text-ku-text-strong font-ku-bold text-ku-title-small mt-ku-2",
   fundingFormula: "text-ku-text-muted font-ku-regular text-ku-label mt-ku-1",
-  escrowRows: "border-t-ku-border-subtle border-t mt-ku-10 pt-ku-6",
-  escrowRow: "flex-row items-start py-ku-5",
-  escrowLabel: "text-ku-text-secondary flex-1 font-ku-regular text-ku-meta",
-  escrowValue: "text-ku-text-strong font-ku-semibold text-ku-meta",
   publishCheckNoteRow: "flex-row items-start gap-ku-6 mt-ku-10",
   publishCheckNote:
     "text-ku-text-secondary flex-1 font-ku-regular text-ku-meta min-w-0",

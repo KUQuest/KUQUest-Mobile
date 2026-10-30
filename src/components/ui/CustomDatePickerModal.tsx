@@ -169,6 +169,7 @@ export function CustomDatePickerModal({
             accessibilityLabel={messages.nextMonth}
             accessibilityState={{ disabled: !canGoForward }}
             disabled={!canGoForward}
+            onPress={() => shiftMonth(1)}
             className={cn(
               styles.navButton,
               !canGoForward && styles.navButtonDisabled

@@ -159,6 +159,7 @@ describe("WalletApi", () => {
             payoutReservedDeltaSatang: 0,
             resourceType: "wallet_ledger_transaction",
             resourceId: "ledger-1",
+            quest: null,
           },
           {
             id: "activity-2",
@@ -171,6 +172,7 @@ describe("WalletApi", () => {
             payoutReservedDeltaSatang: 0,
             resourceType: "wallet_ledger_transaction",
             resourceId: "ledger-2",
+            quest: { id: "quest-1", title: "Help me move a desk" },
           },
         ],
       },
@@ -223,6 +225,7 @@ describe("WalletApi", () => {
         titleKey: "questEscrowReserved",
         amountSatang: 50000,
         direction: "OUTFLOW",
+        quest: { id: "quest-1", title: "Help me move a desk" },
       })
     );
   });
@@ -716,6 +719,7 @@ describe("WalletApi", () => {
             payoutReservedDeltaSatang: 0,
             resourceType: "wallet_ledger_transaction",
             resourceId: "ledger-only",
+            quest: null,
           },
         ],
       },

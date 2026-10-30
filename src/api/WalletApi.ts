@@ -58,6 +58,9 @@ export const walletActivitySchema = z.object({
   payoutReservedDeltaSatang: z.number().int(),
   resourceType: z.string().nullable(),
   resourceId: z.string().nullable(),
+  quest: z
+    .object({ id: z.string().min(1), title: z.string().nullable() })
+    .nullable(),
 });
 export type WalletActivity = z.infer<typeof walletActivitySchema>;
 
@@ -147,6 +150,7 @@ export interface UserTransaction {
   createdAt: string;
   reference?: string;
   resourceType?: string | null;
+  quest?: { id: string; title: string | null } | null;
   ledgerTransactionId?: string;
   spendingDeltaSatang?: number;
   earningsDeltaSatang?: number;
@@ -197,6 +201,7 @@ function transactionFromActivity(activity: WalletActivity): UserTransaction {
     createdAt: activity.occurredAt,
     reference: activity.resourceId ?? undefined,
     resourceType: activity.resourceType,
+    quest: activity.quest,
     ledgerTransactionId: activity.ledgerTransactionId,
     spendingDeltaSatang: activity.spendingDeltaSatang,
     earningsDeltaSatang: activity.earningsDeltaSatang,

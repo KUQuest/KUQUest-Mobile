@@ -345,4 +345,21 @@ describe("Hirer wallet formatting and classification", () => {
     expect(classified.isInflow).toBe(false);
     expect(classified.iconKind).toBe("fee");
   });
+
+  it("shows the linked Quest title as the subtitle of an earning", () => {
+    const classified = classifyHirerTransaction(
+      {
+        id: "tx-4",
+        type: "EARN",
+        titleKey: WalletTransactionTitleKey.QUEST_EARNINGS,
+        amountSatang: 9_500,
+        direction: "INFLOW",
+        status: "COMPLETED",
+        createdAt: "2024-04-03T10:00:00Z",
+        quest: { id: "quest-1", title: "Help me move a desk" },
+      },
+      "th"
+    );
+    expect(classified.subtitle).toBe("Help me move a desk");
+  });
 });
