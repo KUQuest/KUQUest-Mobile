@@ -455,7 +455,7 @@ describe("QuestBoardScreen - Owner Profile and Card Actions", () => {
     });
   });
 
-  it("rejects candidate application through live API when confirmed by Hirer", async () => {
+  it("shows only the selection action for a candidate application", async () => {
     const base = createLiveSnapshot();
 
     const snapshot = createLiveSnapshot({
@@ -479,14 +479,6 @@ describe("QuestBoardScreen - Owner Profile and Card Actions", () => {
       },
     });
     (liveQuestService.getLiveSnapshot as jest.Mock).mockResolvedValue(snapshot);
-    (questApi.rejectCandidateApplication as jest.Mock).mockResolvedValue({
-      id: "app-live-1",
-      questId: "quest-live-1",
-      memberId: "applicant-1",
-      state: "APPLICATION_REJECTED",
-      appliedAt: "2026-09-17T10:00:00.000Z",
-    });
-
     const view = await render(
       <>
         <QuestDetailScreen questId="quest-live-1" studentId="hirer-1" />
@@ -503,26 +495,10 @@ describe("QuestBoardScreen - Owner Profile and Card Actions", () => {
       view.getByTestId("quest-candidate-review-entry-action")
     );
 
-    const rejectButton = await view.findByTestId(
-      "candidate-review-reject-app-live-1"
-    );
-    await fireEvent.press(rejectButton);
-
-    expect(view.getByTestId("sweet-alert")).toBeTruthy();
-    expect(questApi.rejectCandidateApplication).not.toHaveBeenCalled();
-    await fireEvent.press(view.getByRole("button", { name: "Cancel" }));
-    expect(questApi.rejectCandidateApplication).not.toHaveBeenCalled();
-
-    await fireEvent.press(rejectButton);
-    await fireEvent.press(view.getByRole("button", { name: "Reject" }));
-
-    await waitFor(() => {
-      expect(questApi.rejectCandidateApplication).toHaveBeenCalledWith(
-        "quest-live-1",
-        "app-live-1",
-        expect.any(String)
-      );
-    });
+    expect(
+      await view.findByTestId("candidate-review-accept-app-live-1")
+    ).toBeTruthy();
+    expect(view.queryByTestId("candidate-review-reject-app-live-1")).toBeNull();
   });
   it("opens the live underfilled consent branch and invokes the worker callback", async () => {
     const base = createLiveSnapshot();
