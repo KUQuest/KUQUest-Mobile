@@ -110,17 +110,13 @@ export function WorkerRow({
 export function ProposalCard({
   proposal,
   canSelect,
-  canReject,
   selectLabel,
-  rejectLabel,
   pendingAction,
   ...profileLink
 }: ProfileLinkProps & {
   proposal: RosterProposal;
   canSelect: boolean;
-  canReject: boolean;
   selectLabel: string;
-  rejectLabel: string;
   pendingAction: PendingRosterAction | null;
 }) {
   const { colors } = useAppTheme();
@@ -139,28 +135,8 @@ export function ProposalCard({
         memberId={proposal.memberId}
         testID={`${proposal.testID}-profile`}
       />
-      {canSelect || canReject ? (
+      {canSelect ? (
         <View className={styles.actions}>
-          {canReject ? (
-            <Pressable
-              accessibilityLabel={`${rejectLabel}: ${name}`}
-              accessibilityRole="button"
-              accessibilityState={{ disabled, busy: busyKind === "reject" }}
-              className={cn(
-                styles.actionBase,
-                styles.rejectAction,
-                disabled && styles.disabled
-              )}
-              disabled={disabled}
-              onPress={proposal.onReject}
-              testID={`${proposal.testID}-reject`}
-            >
-              {busyKind === "reject" ? (
-                <ActivityIndicator color={colors.dangerDark} size="small" />
-              ) : null}
-              <Text className={styles.rejectText}>{rejectLabel}</Text>
-            </Pressable>
-          ) : null}
           {canSelect ? (
             <Pressable
               accessibilityLabel={`${selectLabel}: ${name}`}

@@ -243,6 +243,45 @@ function makeSnapshot(overrides: SnapshotOverrides = {}): LiveQuestSnapshot {
 }
 
 describe("QuestWorkScreen", () => {
+  it("hides a stale edit request after work has started", async () => {
+    mockedGetSnapshot.mockResolvedValue(
+      makeSnapshot({
+        state: "QUEST_IN_PROGRESS",
+        quest: { state: "QUEST_IN_PROGRESS" },
+        editRequest: {
+          status: "EDIT_REQUEST_PENDING",
+          proposedCondition: {
+            items: [{ position: 0, text: "Changed condition" }],
+          },
+        } as never,
+        capabilities: { canRespondToEdit: true },
+      })
+    );
+    const view = await renderWithQueryClient(
+      <QuestWorkScreen questId="quest-work-1" viewerId="worker-1" />
+    );
+    await view.findByRole("button", { name: "Open Work Chat" });
+    expect(view.queryByText(/Changed condition/)).toBeNull();
+  });
+
+  it("shows a pending edit request before work starts", async () => {
+    mockedGetSnapshot.mockResolvedValue(
+      makeSnapshot({
+        editRequest: {
+          status: "EDIT_REQUEST_PENDING",
+          proposedCondition: {
+            items: [{ position: 0, text: "Changed condition" }],
+          },
+        } as never,
+        capabilities: { canRespondToEdit: true },
+      })
+    );
+    const view = await renderWithQueryClient(
+      <QuestWorkScreen questId="quest-work-1" viewerId="worker-1" />
+    );
+    expect(await view.findByText(/Changed condition/)).toBeTruthy();
+  });
+
   beforeEach(() => {
     jest.clearAllMocks();
     beforeRemoveHandler = undefined;
