@@ -7,7 +7,7 @@ import { authService } from "./AuthService";
 import { useSessionQuery } from "./sessionQueries";
 import { authMessages } from "../../locales/authMessages";
 import { useLocale } from "@/features/preferences/localeStore";
-import { RoutingDestination } from "./types";
+import { AuthError, RoutingDestination } from "./types";
 import { consumePendingTeamInvite } from "@/features/questBoard/teamAssemble/pendingTeamInvite";
 
 export default function Index() {
@@ -51,7 +51,10 @@ export default function Index() {
       .then((dest) => {
         if (mounted) return handleNavigate(dest);
       })
-      .catch(() => {
+      .catch((error: unknown) => {
+        // AuthMiddleware ends the session and shows the ban on the Login screen.
+        if (error instanceof AuthError && error.code === "MEMBER_BANNED")
+          return;
         if (mounted) setRoutingFailed(true);
       });
     return () => {

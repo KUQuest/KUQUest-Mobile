@@ -1,6 +1,6 @@
 import type { SignInResponse } from "@react-native-google-signin/google-signin";
 import * as SecureStore from "expo-secure-store";
-import { ApiClient, ApiError } from "../../api/ApiClient";
+import { ApiClient, ApiError, parseMemberBan } from "../../api/ApiClient";
 import { debugLog } from "../../api/debugLog";
 import { authUserSchema } from "../../api/contracts";
 import { StudentApi } from "../../api/StudentApi";
@@ -167,6 +167,11 @@ export class AuthService implements AuthAdapter {
         await this.authClient.signOut().catch(() => undefined);
         throw new AuthError("SESSION_EXPIRED");
       }
+      if (error instanceof ApiError && error.code === "MEMBER_BANNED") {
+        throw new AuthError("MEMBER_BANNED", error.message, {
+          memberBan: error.memberBan,
+        });
+      }
       authDebug("registration status failed", {
         message: getErrorMessage(error),
       });
@@ -291,6 +296,13 @@ export class AuthService implements AuthAdapter {
       }
       if (code === "PLAY_SERVICES_NOT_AVAILABLE") {
         throw new AuthError("PLAY_SERVICES_UNAVAILABLE");
+      }
+      if (code === "MEMBER_BANNED") {
+        throw new AuthError("MEMBER_BANNED", message, {
+          memberBan: parseMemberBan(
+            (error as { memberBan?: unknown }).memberBan
+          ),
+        });
       }
       if (error instanceof ApiError && error.status === 401) {
         throw new AuthError(

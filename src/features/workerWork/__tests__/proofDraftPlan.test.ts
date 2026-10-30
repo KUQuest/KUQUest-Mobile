@@ -15,7 +15,6 @@ describe("planProofSend", () => {
   it("creates a draft when none exists", () => {
     expect(planProofSend(null, [a])).toEqual({
       kind: "create",
-      replaceDraftId: null,
       files: [a],
     });
   });
@@ -31,16 +30,20 @@ describe("planProofSend", () => {
   it("replaces the draft when a ready file was removed", () => {
     expect(planProofSend(draft, [c])).toEqual({
       kind: "create",
-      replaceDraftId: "draft-1",
       files: [c],
     });
+  });
+
+  it("creates a replacement for a draft that holds no file", () => {
+    expect(
+      planProofSend({ id: "draft-empty", files: [], fileKeys: [] }, [a])
+    ).toEqual({ kind: "create", files: [a] });
   });
 
   it("replaces the draft when more files were added than positions failed", () => {
     const d = { key: "d" };
     expect(planProofSend(draft, [a, c, d])).toMatchObject({
       kind: "create",
-      replaceDraftId: "draft-1",
     });
   });
 

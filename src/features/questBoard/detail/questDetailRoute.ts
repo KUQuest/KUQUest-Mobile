@@ -1,7 +1,3 @@
-import {
-  parseBoardPreviewState,
-  type BoardPreviewState,
-} from "../fixtures/questBoardHarness";
 export type QuestDetailMode = "public" | "join" | "post";
 export type QuestJoinStatus = "pending" | "accepted" | "history";
 
@@ -44,7 +40,6 @@ export function parseQuestJoinStatus(
 }
 
 export interface QuestDetailScreenProps {
-  previewState?: BoardPreviewState;
   questId?: string;
   studentId?: string;
   mode?: QuestDetailMode;
@@ -55,7 +50,6 @@ export interface QuestDetailScreenProps {
 export interface QuestDetailRouteParams {
   id?: string | string[];
   intent?: string | string[];
-  preview?: string | string[];
   mode?: string | string[];
   joinStatus?: string | string[];
   studentId?: string | string[];
@@ -66,7 +60,6 @@ export interface ResolvedQuestDetailRoute {
   studentId?: string;
   mode: QuestDetailMode;
   joinStatus?: QuestJoinStatus;
-  previewState?: BoardPreviewState;
   intent?: "apply";
 }
 
@@ -82,9 +75,6 @@ export function resolveQuestDetailRoute(
     studentId: props.studentId ?? parseSingleRouteParam(params.studentId),
     mode: props.mode ?? parseQuestDetailMode(params.mode),
     joinStatus: props.joinStatus ?? parseQuestJoinStatus(params.joinStatus),
-    previewState:
-      props.previewState ??
-      (__DEV__ ? parseBoardPreviewState(params.preview) : undefined),
     intent: props.intent ?? parseQuestIntent(params.intent),
   };
 }

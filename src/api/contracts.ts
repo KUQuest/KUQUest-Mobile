@@ -127,6 +127,28 @@ export const experienceMutationDataSchema = z
   .object({ experience: experienceSchema })
   .optional();
 
+export const penaltyStatusDataSchema = z.object({
+  misconduct: z.object({
+    strikeCount: nonNegativeIntegerSchema,
+    ladderLength: nonNegativeIntegerSchema,
+    nextResult: z.enum([
+      "PENALTY_RED_FLAG",
+      "PENALTY_TEMPORARY_BAN_7_DAYS",
+      "PENALTY_PERMANENT_BAN",
+    ]),
+  }),
+  review: z.object({
+    strikeCount: nonNegativeIntegerSchema,
+    ladderLength: nonNegativeIntegerSchema,
+    nextResult: z.enum([
+      "PENALTY_TEMPORARY_BAN_7_DAYS",
+      "PENALTY_TEMPORARY_BAN_1_MONTH",
+      "PENALTY_PERMANENT_BAN",
+    ]),
+  }),
+  redFlagExpiresAt: z.string().nullable(),
+});
+
 export const reputationDataSchema = z.object({
   totalQuests: nonNegativeIntegerSchema,
   rating: z.object({
@@ -293,6 +315,7 @@ export type AcademicRegistrationStatus = z.infer<
 export type ProfileResponse = z.infer<typeof profileDataSchema>;
 export type ExperienceEntry = z.infer<typeof experienceSchema>;
 export type Reputation = z.infer<typeof reputationDataSchema>;
+export type PenaltyStatus = z.infer<typeof penaltyStatusDataSchema>;
 export type ProfileReview = z.infer<typeof reviewSchema>;
 export type PortfolioEntry = z.infer<typeof portfolioDataSchema>[number];
 export type CertificateEntry = z.infer<

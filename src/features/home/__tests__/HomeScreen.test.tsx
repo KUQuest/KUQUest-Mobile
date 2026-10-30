@@ -3,16 +3,12 @@ import { fireEvent, waitFor } from "@testing-library/react-native";
 import { renderWithQueryClient } from "@/testing/queryTestUtils";
 
 import { questApi } from "@/api/QuestApi";
-import { isPrototypeDemoEnabled } from "@/features/auth/authEnvironment";
 import { studentApi } from "@/api/StudentApi";
 import HomeScreen from "../HomeScreen";
 import { DEFAULT_LOCALE } from "@/locales/locale";
 import { hirerHomeMessages } from "@/locales/hirerHomeMessages";
 const mockPush = jest.fn();
 
-jest.mock("@/features/auth/authEnvironment", () => ({
-  isPrototypeDemoEnabled: jest.fn(() => false),
-}));
 jest.mock("expo-router", () => ({
   useRouter: () => ({
     push: mockPush,
@@ -50,7 +46,6 @@ jest.mock("@/api/StudentApi", () => {
 describe("HomeScreen live active quests syncing", () => {
   beforeEach(() => {
     jest.clearAllMocks();
-    jest.mocked(isPrototypeDemoEnabled).mockReturnValue(false);
   });
 
   it("syncs and displays active quests created by the hirer with assigned worker", async () => {
@@ -100,7 +95,7 @@ describe("HomeScreen live active quests syncing", () => {
     expect(queryByText("Design")).toBeNull();
   });
 
-  it("opens live Quest Manage without enabling fixture preview", async () => {
+  it("opens live Quest Manage from the Hirer Home card", async () => {
     (questApi.listMine as jest.Mock).mockResolvedValue({
       items: [
         {
@@ -127,42 +122,6 @@ describe("HomeScreen live active quests syncing", () => {
       pathname: "/quest/[id]/manage",
       params: { id: "live-detail" },
     });
-  });
-
-  it("shows fixture preview after demo backend failure without opening unsupported routes", async () => {
-    jest.mocked(isPrototypeDemoEnabled).mockReturnValue(true);
-    (questApi.listMine as jest.Mock).mockRejectedValue(
-      new Error("Backend unavailable")
-    );
-
-    const { getByTestId, queryByTestId } = await renderWithQueryClient(
-      <HomeScreen />
-    );
-
-    await waitFor(() => {
-      expect(
-        getByTestId("hirer-quest-card-hirer-home-progress-demo")
-      ).toBeTruthy();
-    });
-    expect(queryByTestId("hirer-home-error")).toBeNull();
-    await fireEvent.press(
-      getByTestId("hirer-quest-card-details-hirer-home-progress-demo")
-    );
-    expect(mockPush).toHaveBeenCalledWith({
-      pathname: "/quest/[id]",
-      params: {
-        id: "hirer-home-progress-demo",
-        preview: "populated",
-      },
-    });
-    mockPush.mockClear();
-    await fireEvent.press(
-      getByTestId("hirer-quest-card-worker-hirer-home-progress-demo")
-    );
-    expect(mockPush).not.toHaveBeenCalled();
-    expect(
-      queryByTestId("hirer-quest-card-worker-profile-hirer-home-progress-demo")
-    ).toBeNull();
   });
 
   it("keeps production query failures on the error state", async () => {
@@ -582,13 +541,15 @@ describe("HomeScreen live active quests syncing", () => {
     });
   });
 
-  it("opens My Quests from the overview counts and each shortcut destination", async () => {
+  it("keeps Hirer shortcuts and hides the Worker Quest Board", async () => {
     (questApi.listMine as jest.Mock).mockResolvedValue({
       items: [],
       nextCursor: null,
     });
 
-    const { getByTestId } = await renderWithQueryClient(<HomeScreen />);
+    const { getByTestId, queryByTestId } = await renderWithQueryClient(
+      <HomeScreen />
+    );
 
     await waitFor(() => {
       expect(getByTestId("hirer-home-shortcuts")).toBeTruthy();
@@ -608,8 +569,7 @@ describe("HomeScreen live active quests syncing", () => {
       params: { role: "hirer" },
     });
 
-    await fireEvent.press(getByTestId("hirer-shortcut-board"));
-    expect(mockPush).toHaveBeenCalledWith("/quest-board");
+    expect(queryByTestId("hirer-shortcut-board")).toBeNull();
 
     await fireEvent.press(getByTestId("hirer-shortcut-topup"));
     expect(mockPush).toHaveBeenCalledWith("/top-up");

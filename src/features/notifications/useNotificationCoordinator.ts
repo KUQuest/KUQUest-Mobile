@@ -6,6 +6,7 @@ import { useSessionQuery } from "@/features/auth/sessionQueries";
 import { authEnvironment } from "@/features/auth/authEnvironment";
 import { isPublicAuthRoute } from "@/features/auth/AuthMiddleware";
 import { useChatNotificationConversationsQuery } from "@/features/chat/api/chatQueries";
+import { useChatInboxRealtime } from "@/features/chat/api/useChatInboxRealtime";
 import { getChatRouteParams } from "@/features/chat/chatData";
 import { useLocale } from "@/features/preferences/localeStore";
 import { serverNow } from "@/api/serverClock";
@@ -22,10 +23,7 @@ import {
   myQuestsKeys,
   useMyWorkerCandidateApplicationsQuery,
 } from "@/features/myQuests/api/myQuestsQueries";
-import {
-  useWorkerAssignmentsQuery,
-  workerHomeKeys,
-} from "@/features/workerHome/api/workerHomeQueries";
+import { useWorkerAssignmentsQuery } from "@/features/workerHome/api/workerHomeQueries";
 
 import {
   detectApplicationDecisions,
@@ -81,9 +79,10 @@ export function useNotificationCoordinator() {
   const workerEnabled = Boolean(viewerId) && isWorker && foreground;
   const conversationsQuery = useChatNotificationConversationsQuery(
     viewerId,
-    Boolean(viewerId) && foreground,
-    foreground ? POLL_INTERVAL_MS : undefined
+    Boolean(viewerId) && foreground
   );
+  // Root-mounted so Chat notices stay live on routes opened without the tab bar.
+  useChatInboxRealtime(viewerId, foreground);
   const applicationsQuery = useMyWorkerCandidateApplicationsQuery(
     viewerId || null,
     workerEnabled
@@ -271,6 +270,9 @@ export function useNotificationCoordinator() {
         RESPONSE_REQUIRED: copy.underfilledConsentRequired(),
         DECISION_PENDING: copy.underfilledDecisionPending(),
         FULL_OR_ASSIGNED: copy.questFullOrAssigned(),
+        FAILED: copy.questFailed(),
+        INCOMPLETE: copy.questCompletedNotApproved(),
+        PROOF_NOT_APPROVED: copy.proofNotApproved(),
         CANCELLED: copy.underfilledCancelled(transition.cancellationReason),
       }[transition.kind];
       enqueue(copy.questUpdate, message, {
@@ -293,10 +295,6 @@ export function useNotificationCoordinator() {
     const interval = setInterval(() => {
       void queryClient.refetchQueries({
         queryKey: myQuestsKeys.workerCandidateApplications(viewerId),
-        type: "active",
-      });
-      void queryClient.refetchQueries({
-        queryKey: workerHomeKeys.assignments("all"),
         type: "active",
       });
     }, POLL_INTERVAL_MS);

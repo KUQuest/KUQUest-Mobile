@@ -54,6 +54,7 @@ export const chatConversationSchema = z.object({
     .object({
       id: z.string().min(1),
       kind: z.enum(["USER", "SYSTEM"]),
+      systemType: z.string().nullable(),
       preview: z.string(),
       createdAt: z.string(),
     })
@@ -235,7 +236,10 @@ export function serverConversationToChatConversation(
   conv: ServerChatConversation,
   currentUserId?: string
 ): ChatConversation {
-  const preview = conv.latestMessage?.preview || "";
+  const isMembershipNotice =
+    conv.latestMessage?.systemType === "ACCEPTED_PARTICIPANT_JOINED" ||
+    conv.latestMessage?.systemType === "WORKER_DEPARTED";
+  const preview = isMembershipNotice ? "" : conv.latestMessage?.preview || "";
   const localizedPreview: LocalizedText = { en: preview, th: preview };
   const localizedTitle: LocalizedText = {
     en: conv.quest.title,

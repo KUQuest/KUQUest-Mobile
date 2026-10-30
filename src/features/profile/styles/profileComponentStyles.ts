@@ -1,4 +1,14 @@
 const styles = {
+  penaltyCard:
+    "self-stretch gap-ku-md rounded-ku-card border border-ku-border-warning bg-ku-surface-warning p-ku-md",
+  penaltyTitle: "font-ku-bold text-ku-subtitle text-ku-text-strong",
+  penaltyLadder: "gap-ku-xs",
+  penaltyLadderLabel: "font-ku-semibold text-ku-label text-ku-text-secondary",
+  penaltySteps: "flex-row gap-ku-xs",
+  penaltyStep: "h-2 flex-1 rounded-ku-pill bg-ku-border",
+  penaltyStepFilled: "bg-ku-warning-dark",
+  penaltyText: "font-ku-regular text-ku-body-small text-ku-text-strong",
+  penaltyNextResult: "font-ku-semibold text-ku-body-small text-ku-warning-dark",
   heroCard:
     "self-stretch gap-ku-md rounded-ku-card border border-ku-border bg-ku-surface",
   identityRow: "flex-row items-center gap-ku-md",

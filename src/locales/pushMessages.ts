@@ -1,12 +1,14 @@
 import {
   QuestV2PushTypeValue,
   type QuestV2PushType,
+  type QuestV2PushFailureReason,
   type QuestV2UnderfilledCancellationReason,
 } from "@/api/questV2Contracts";
 import type { SupportedLocale } from "./locale";
 
 export type PushType = QuestV2PushType;
 export type PushCancellationReason = QuestV2UnderfilledCancellationReason;
+export type PushFailureReason = QuestV2PushFailureReason;
 
 const copy = {
   en: {
@@ -37,6 +39,21 @@ const copy = {
       title: "Quest roster filled",
       body: "The Quest is ready for its Workers.",
     },
+    PROOF_NOT_APPROVED: {
+      title: "Proof not approved",
+      body: "The Hirer did not approve your Proof. Your work on this Quest has ended.",
+    },
+    QUEST_COMPLETED_DISPUTE_WINDOW_OPEN: {
+      title: "Quest completed without your payout",
+      body: "Your work was not approved. You can still file a Dispute Case for a limited time.",
+    },
+    QUEST_FAILED: {
+      title: "Quest failed",
+      body: {
+        PROOF_NOT_APPROVED: "No Worker's Proof was approved.",
+        DUE_AT_MISSED: "The due time passed before all Proof was sent.",
+      },
+    },
   },
   th: {
     UNDERFILLED_DECISION_PENDING: {
@@ -66,6 +83,21 @@ const copy = {
       title: "รายชื่อผู้ปฏิบัติงานครบแล้ว",
       body: "เควสต์พร้อมสำหรับผู้ปฏิบัติงานแล้ว",
     },
+    PROOF_NOT_APPROVED: {
+      title: "หลักฐานไม่ได้รับการอนุมัติ",
+      body: "ผู้ว่าจ้างไม่อนุมัติหลักฐานของคุณ งานของคุณในเควสต์นี้สิ้นสุดแล้ว",
+    },
+    QUEST_COMPLETED_DISPUTE_WINDOW_OPEN: {
+      title: "เควสต์เสร็จสิ้นโดยไม่มีการจ่ายเงินให้คุณ",
+      body: "งานของคุณไม่ได้รับการอนุมัติ คุณยังยื่นข้อพิพาทได้ภายในเวลาที่กำหนด",
+    },
+    QUEST_FAILED: {
+      title: "เควสต์ล้มเหลว",
+      body: {
+        PROOF_NOT_APPROVED: "ไม่มีหลักฐานของผู้ปฏิบัติงานคนใดได้รับการอนุมัติ",
+        DUE_AT_MISSED: "เลยกำหนดส่งก่อนที่หลักฐานจะครบ",
+      },
+    },
   },
 } satisfies Record<SupportedLocale, Record<PushType, unknown>>;
 
@@ -75,6 +107,7 @@ export function pushMessage(
   options: {
     remaining?: string;
     cancellationReason?: PushCancellationReason;
+    failureReason?: PushFailureReason;
   } = {}
 ): { title: string; body: string } {
   const messages = copy[locale][type] as {
@@ -82,7 +115,8 @@ export function pushMessage(
     body:
       | string
       | ((remaining: string) => string)
-      | Record<PushCancellationReason, string>;
+      | Record<PushCancellationReason, string>
+      | Record<PushFailureReason, string>;
   };
   if (type === QuestV2PushTypeValue.UNDERFILLED_CANCELLED) {
     const reason = options.cancellationReason;
@@ -94,6 +128,18 @@ export function pushMessage(
           : locale === "th"
             ? "สถานะเควสต์นี้ถูกยกเลิกแล้ว"
             : "This Quest was cancelled.",
+    };
+  }
+  if (type === QuestV2PushTypeValue.QUEST_FAILED) {
+    const reason = options.failureReason;
+    return {
+      title: messages.title,
+      body:
+        reason && typeof messages.body !== "string"
+          ? (messages.body as Record<PushFailureReason, string>)[reason]
+          : locale === "th"
+            ? "เควสต์นี้ล้มเหลว"
+            : "This Quest failed.",
     };
   }
   return {

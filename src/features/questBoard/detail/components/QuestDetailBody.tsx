@@ -27,6 +27,7 @@ import { ImageViewerModal } from "@/components/ui/ImageViewerModal";
 import { Image, Pressable, ScrollView, Text, View } from "@/tw";
 import { cn } from "@/tw/cn";
 import { useAppTheme } from "@/features/workspace/AppThemeProvider";
+import { isTerminalStatus } from "@/domain/questLifecycle";
 import { formatSatang } from "@/domain/satang";
 import {
   groupQuestMessages,
@@ -37,12 +38,12 @@ import type { QuestBoardMessages } from "@/locales/questBoardMessages";
 import { getQuestPriceSatang } from "../../presentation/questBoardViewData";
 import type { LiveQuestSnapshot } from "../../live/liveQuestService";
 import {
-  QuestCandidateMode,
+  QuestMode,
+  QuestParticipation,
   QuestStatus,
   QuestUnderfilledConsentDecision,
   QuestUnderfilledState,
   type QuestBoardQuest,
-  type QuestDetailState,
 } from "../../domain/types";
 import { localizeFacultyName } from "@/locales/academicUnits";
 import styles from "../../styles/questDetailStyles";
@@ -50,10 +51,7 @@ import {
   QuestParticipantRoster,
   type QuestParticipant,
 } from "./QuestParticipantRoster";
-import {
-  GroupQuestEntrySurfaces,
-  LiveEntrySurface,
-} from "./QuestDetailEntrySurfaces";
+import { LiveEntrySurface } from "./QuestDetailEntrySurfaces";
 
 function proofLabel(
   quest: QuestBoardQuest,
@@ -248,7 +246,8 @@ function GroupFcfsJourneyCard({
       ? messages.groupFcfsUnderfillDecisionPending
       : underfilled?.state === QuestUnderfilledState.UNDERFILLED_CONSENT_PENDING
         ? messages.groupFcfsConsentRequired
-        : underfilled?.state === QuestUnderfilledState.UNDERFILLED_COMPLETED
+        : underfilled?.state === QuestUnderfilledState.UNDERFILLED_COMPLETED &&
+            groupFcfs.state === QuestStatus.QUEST_ASSIGNED
           ? messages.groupFcfsConsentComplete
           : underfilled?.state === QuestUnderfilledState.UNDERFILLED_CANCELLED
             ? cancellationReason
@@ -355,6 +354,7 @@ export interface QuestDetailBodyProps {
   quest: QuestBoardQuest;
   locale: "en" | "th";
   messages: QuestBoardMessages;
+  isOwnerPost?: boolean;
   imageUris: string[];
   canonicalStatus?: string;
   refreshing: boolean;
@@ -370,22 +370,13 @@ export interface QuestDetailBodyProps {
     title: string;
     description: string;
     unavailable: boolean;
-    postView: boolean;
     leftQuest: boolean;
     history: boolean;
     Icon: LucideIcon;
     iconColor: string;
+    actionLabel: string;
   };
   onOpenWorkHub: () => void;
-  prototypeEntry?: {
-    state: QuestDetailState;
-    viewerId: string;
-    isHirer: boolean;
-    messages: GroupQuestMessages;
-    onOpenTeam: () => void;
-    onOpenCandidateReview: () => void;
-    onOpenPartialConsent: () => void;
-  };
   liveEntry?: {
     snapshot: LiveQuestSnapshot;
     groupMessages: GroupQuestMessages;
@@ -410,6 +401,7 @@ export function QuestDetailBody({
   quest,
   locale,
   messages,
+  isOwnerPost = false,
   imageUris,
   canonicalStatus,
   refreshing,
@@ -423,7 +415,6 @@ export function QuestDetailBody({
   onOpenParticipantProfile,
   status,
   onOpenWorkHub,
-  prototypeEntry,
   liveEntry,
   groupFcfs,
   onOpenPartialConsent,
@@ -431,6 +422,7 @@ export function QuestDetailBody({
   const { colors } = useAppTheme();
   const [viewingImage, setViewingImage] = useState<number | null>(null);
   const StatusIcon = status?.Icon;
+  const acceptedParticipants = quest.acceptedParticipants ?? participantCount;
   const canJoin =
     canParticipate &&
     !(
@@ -465,9 +457,18 @@ export function QuestDetailBody({
           </View>
           <View className={styles.creatorCopy}>
             <Text className={styles.creatorLabel}>{messages.creator}</Text>
-            <Text className={styles.creatorValue} numberOfLines={1}>
-              {`${quest.creator.name}${quest.creator.faculty ? ` · ${localizeFacultyName(quest.creator.faculty, locale)}` : ""}`}
-            </Text>
+            <View className={styles.creatorIdentityRow}>
+              <Text className={styles.creatorValue} numberOfLines={1}>
+                {`${quest.creator.name}${quest.creator.faculty ? ` · ${localizeFacultyName(quest.creator.faculty, locale)}` : ""}`}
+              </Text>
+              {isOwnerPost ? (
+                <View accessibilityRole="text" className={styles.ownerBadge}>
+                  <Text className={styles.ownerBadgeText}>
+                    {messages.ownerPostLabel}
+                  </Text>
+                </View>
+              ) : null}
+            </View>
           </View>
         </View>
         <View accessibilityLabel={messages.tags} className={styles.tagRow}>
@@ -534,7 +535,7 @@ export function QuestDetailBody({
           <View
             accessible
             accessibilityLabel={messages.participantsSummary(
-              quest.acceptedParticipants,
+              acceptedParticipants,
               quest.headcount
             )}
             className={styles.heroCount}
@@ -542,7 +543,7 @@ export function QuestDetailBody({
             <Text className={styles.heroLabel}>{messages.participants}</Text>
             <Text
               className={styles.heroCountValue}
-            >{`${quest.acceptedParticipants}/${quest.headcount}`}</Text>
+            >{`${acceptedParticipants}/${quest.headcount}`}</Text>
           </View>
         </View>
         <View className={styles.heroFacts}>
@@ -554,7 +555,7 @@ export function QuestDetailBody({
             value={
               groupFcfs
                 ? messages.groupFcfsRequestedWorkers(quest.headcount)
-                : quest.participationMode === "team"
+                : quest.participation === QuestParticipation.GROUP
                   ? messages.team
                   : messages.singlePerson
             }
@@ -563,14 +564,15 @@ export function QuestDetailBody({
             icon={UserRoundCheck}
             label={messages.candidateMode}
             value={
-              quest.candidateMode === QuestCandidateMode.NO_CANDIDATE
+              quest.mode === QuestMode.FIRST_COME_FIRST_SERVED
                 ? messages.firstCome
                 : messages.reviewCandidates
             }
           />
         </View>
       </View>
-      {quest.participationMode === "team" && onOpenParticipantProfile ? (
+      {quest.participation === QuestParticipation.GROUP &&
+      onOpenParticipantProfile ? (
         <QuestParticipantRoster
           countLabel={messages.participantsSummary(
             participantCount,
@@ -582,7 +584,12 @@ export function QuestDetailBody({
           title={messages.participants}
         />
       ) : null}
-      {groupFcfs ? (
+      {groupFcfs &&
+      // A finished Quest has no join or start step left to describe; only an
+      // underfilled cancellation still explains why the Quest ended.
+      (!isTerminalStatus(groupFcfs.state as QuestStatus) ||
+        groupFcfs.underfilled?.state ===
+          QuestUnderfilledState.UNDERFILLED_CANCELLED) ? (
         <GroupFcfsJourneyCard
           groupFcfs={groupFcfs}
           locale={locale}
@@ -651,7 +658,6 @@ export function QuestDetailBody({
           className={cn(
             styles.statusCard,
             status.unavailable && styles.statusCardBlocked,
-            status.postView && styles.statusCardOwner,
             (status.leftQuest || status.history) && styles.statusCardMuted
           )}
         >
@@ -664,7 +670,7 @@ export function QuestDetailBody({
               {status.description}
             </Text>
           ) : null}
-          {!status.unavailable && !status.postView && !status.leftQuest ? (
+          {!status.unavailable && !status.leftQuest ? (
             <Pressable
               accessibilityRole="button"
               onPress={onOpenWorkHub}
@@ -672,22 +678,11 @@ export function QuestDetailBody({
               testID="open-work-hub"
             >
               <Text className={styles.statusActionText}>
-                {messages.openWorkHub}
+                {status.actionLabel}
               </Text>
             </Pressable>
           ) : null}
         </View>
-      ) : null}
-      {prototypeEntry ? (
-        <GroupQuestEntrySurfaces
-          state={prototypeEntry.state}
-          viewerId={prototypeEntry.viewerId}
-          isHirer={prototypeEntry.isHirer}
-          messages={prototypeEntry.messages}
-          onOpenTeam={prototypeEntry.onOpenTeam}
-          onOpenCandidateReview={prototypeEntry.onOpenCandidateReview}
-          onOpenPartialConsent={prototypeEntry.onOpenPartialConsent}
-        />
       ) : null}
       {liveEntry ? (
         <LiveEntrySurface
@@ -695,6 +690,7 @@ export function QuestDetailBody({
           locale={locale}
           groupMessages={liveEntry.groupMessages}
           busy={liveEntry.busy}
+          hideTeamEntry={Boolean(status?.title)}
           onOpenTeam={liveEntry.onOpenTeam}
           onOpenCandidateReview={liveEntry.onOpenCandidateReview}
           onOpenPartialConsent={liveEntry.onOpenPartialConsent}

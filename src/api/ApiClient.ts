@@ -36,13 +36,26 @@ export type MutationMethod = "POST" | "PUT" | "PATCH" | "DELETE";
 
 const MAX_IDEMPOTENCY_KEY_LENGTH = 200;
 
+export type MemberBan = { permanent: boolean; bannedUntil?: string };
+
+/** Reads the `memberBan` details of a `MEMBER_BANNED` error, when present. */
+export function parseMemberBan(value: unknown): MemberBan | undefined {
+  if (!value || typeof value !== "object") return undefined;
+  const { permanent, bannedUntil } = value as Record<string, unknown>;
+  if (typeof permanent !== "boolean") return undefined;
+  return typeof bannedUntil === "string"
+    ? { permanent, bannedUntil }
+    : { permanent };
+}
+
 export class ApiError extends Error {
   constructor(
     public readonly status: number,
     public readonly code: string,
     message: string,
     /** Wait before retrying, from a `Retry-After` header when the Server sent one. */
-    public readonly retryAfterMs?: number
+    public readonly retryAfterMs?: number,
+    public readonly memberBan?: MemberBan
   ) {
     super(message);
     this.name = "ApiError";
@@ -65,6 +78,15 @@ let unauthorizedHandler: (() => void) | null = null;
 
 export function setUnauthorizedHandler(handler: (() => void) | null): void {
   unauthorizedHandler = handler;
+}
+
+let memberBannedHandler: ((memberBan: MemberBan | undefined) => void) | null =
+  null;
+
+export function setMemberBannedHandler(
+  handler: ((memberBan: MemberBan | undefined) => void) | null
+): void {
+  memberBannedHandler = handler;
 }
 
 function normalizeBaseUrl(baseUrl: string | undefined): string | undefined {
@@ -252,7 +274,8 @@ export class ApiClient {
         typeof nestedError.message === "string"
           ? nestedError.message
           : "Request failed",
-        parseRetryAfterMs(response.headers.get("retry-after"))
+        parseRetryAfterMs(response.headers.get("retry-after")),
+        parseMemberBan(nestedError.memberBan)
       );
       debugLog(
         "api",
@@ -260,6 +283,9 @@ export class ApiClient {
         { code: apiError.code }
       );
       if (response.status === 401) unauthorizedHandler?.();
+      if (apiError.code === "MEMBER_BANNED") {
+        memberBannedHandler?.(apiError.memberBan);
+      }
       throw apiError;
     }
     debugLog(

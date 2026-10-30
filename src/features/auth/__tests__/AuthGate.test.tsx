@@ -1,7 +1,8 @@
-import { fireEvent, waitFor } from "@testing-library/react-native";
+import { act, fireEvent, waitFor } from "@testing-library/react-native";
 import { renderWithQueryClient } from "@/testing/queryTestUtils";
 import React from "react";
 import AuthGate from "../AuthGate";
+import { AuthError } from "../types";
 
 const mockReplace = jest.fn();
 const mockRouter = { replace: mockReplace };
@@ -114,6 +115,21 @@ describe("AuthGate real user authentication flow", () => {
     await waitFor(() => {
       expect(view.getByTestId("login-screen")).toBeTruthy();
     });
+  });
+
+  it("does not show the error surface for a Member Ban", async () => {
+    mockGetSession.mockResolvedValueOnce({ user: { id: "student-1" } });
+    mockGetRoutingDestination.mockRejectedValueOnce(
+      new AuthError("MEMBER_BANNED")
+    );
+
+    const view = await renderWithQueryClient(<AuthGate />);
+
+    await waitFor(() => expect(mockGetRoutingDestination).toHaveBeenCalled());
+    await act(async () => {
+      await Promise.resolve();
+    });
+    expect(view.queryByTestId("auth-gate-error")).toBeNull();
   });
 
   it("displays the error surface and supports retry on session load failure", async () => {

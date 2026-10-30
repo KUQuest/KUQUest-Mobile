@@ -53,6 +53,11 @@ jest.mock("@/features/chat/api/chatQueries", () => ({
     data: { conversations: [], inquiries: [] },
   }),
 }));
+const mockUseChatInboxRealtime = jest.fn();
+jest.mock("@/features/chat/api/useChatInboxRealtime", () => ({
+  useChatInboxRealtime: (viewerId: string, enabled: boolean) =>
+    mockUseChatInboxRealtime(viewerId, enabled),
+}));
 jest.mock("@/features/myQuests/api/myQuestsQueries", () => ({
   myQuestsKeys: {
     worker: (viewerId: string) => ["worker", viewerId],
@@ -254,6 +259,66 @@ describe("useNotificationCoordinator application destinations", () => {
       params: { id: "quest-worker" },
     });
     expect(getLiveSnapshot).not.toHaveBeenCalled();
+    await screen.unmount();
+    queryClient.clear();
+  });
+
+  it("tells a Worker their Proof was not approved and opens Quest Detail", async () => {
+    mockApplications = [];
+    mockWorkerAssignments = [];
+    mockPathname = "/(tabs)/my-quests";
+    mockPush.mockClear();
+    const queryClient = new QueryClient({
+      defaultOptions: { queries: { retry: false } },
+    });
+    const screen = await render(
+      <QueryClientProvider client={queryClient}>
+        <NoticeProbe />
+      </QueryClientProvider>
+    );
+    mockWorkerAssignments = [
+      {
+        ...workerAssignment("UNDERFILLED_COMPLETED"),
+        questState: "QUEST_IN_PROGRESS",
+        state: "ASSIGNMENT_INCOMPLETE",
+      },
+    ];
+    await act(async () => {
+      await screen.rerender(
+        <QueryClientProvider client={queryClient}>
+          <NoticeProbe />
+        </QueryClientProvider>
+      );
+    });
+    await fireEvent.press(
+      await screen.findByText(
+        "The Hirer did not approve your Proof. Your work on this Quest has ended."
+      )
+    );
+    expect(mockPush).toHaveBeenCalledWith({
+      pathname: "/quest/[id]",
+      params: { id: "quest-worker" },
+    });
+    await screen.unmount();
+    queryClient.clear();
+  });
+
+  it("keeps the Chat inbox live from the root for the signed-in Member", async () => {
+    mockApplications = [];
+    mockWorkerAssignments = [];
+    mockPathname = "/quest/quest-worker";
+    mockUseChatInboxRealtime.mockClear();
+    const queryClient = new QueryClient({
+      defaultOptions: { queries: { retry: false } },
+    });
+    const screen = await render(
+      <QueryClientProvider client={queryClient}>
+        <NoticeProbe />
+      </QueryClientProvider>
+    );
+    const [viewerId, enabled] = mockUseChatInboxRealtime.mock.lastCall ?? [];
+    expect(viewerId).toBeTruthy();
+    expect(enabled).toBe(true);
     await screen.unmount();
     queryClient.clear();
   });

@@ -17,24 +17,30 @@ import {
   questBoardMessages,
   type QuestBoardMessages,
 } from "@/locales/questBoardMessages";
-import type { QuestBoardQuest } from "../../domain/types";
+import {
+  QuestMode,
+  QuestParticipation,
+  type QuestBoardCard,
+} from "../../domain/types";
 import styles from "../questBoardStyles";
 
 function participationLabel(
-  quest: QuestBoardQuest,
+  quest: QuestBoardCard,
   messages: QuestBoardMessages
 ): string {
   const participation =
-    quest.participationMode === "team" ? messages.team : messages.singlePerson;
+    quest.participation === QuestParticipation.GROUP
+      ? messages.team
+      : messages.singlePerson;
   const mode =
-    quest.candidateMode === "CANDIDATE"
+    quest.mode === QuestMode.CANDIDATE
       ? messages.applyForReview
       : messages.firstCome;
   return `${participation} · ${mode}`;
 }
 
 function questCardAccessibilityLabel(
-  quest: QuestBoardQuest,
+  quest: QuestBoardCard,
   locale: "en" | "th",
   rewardSatang: number
 ): string {
@@ -63,7 +69,7 @@ function InfoIcon({
 }
 
 export interface QuestCardProps {
-  quest: QuestBoardQuest;
+  quest: QuestBoardCard;
   locale: "en" | "th";
   rewardSatang: number;
   onDetail: () => void;
@@ -166,15 +172,6 @@ export function QuestCard({
             <Text className={styles.rewardUnit}>{messages.perPerson}</Text>
           </View>
         </View>
-        {quest.description ? (
-          <Text
-            className={styles.cardDescription}
-            numberOfLines={2}
-            testID={`quest-card-description-${quest.id}`}
-          >
-            {quest.description}
-          </Text>
-        ) : null}
         <View className={styles.cardDivider} />
         <View className={styles.infoList}>
           <View

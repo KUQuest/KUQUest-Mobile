@@ -1,6 +1,11 @@
 import { z, ZodError } from "zod";
 
-import { ApiClient, ApiError, setUnauthorizedHandler } from "../ApiClient";
+import {
+  ApiClient,
+  ApiError,
+  setMemberBannedHandler,
+  setUnauthorizedHandler,
+} from "../ApiClient";
 
 function response(body: unknown, status = 200, headers = new Headers()) {
   return {
@@ -56,6 +61,32 @@ describe("ApiClient", () => {
       new ApiError(401, "UNAUTHORIZED", "Session expired")
     );
     expect(unauthorizedHandler).toHaveBeenCalledTimes(1);
+  });
+
+  test("reports a Member Ban to its handler with the ban details", async () => {
+    const { client, fetchMock } = setup();
+    const memberBannedHandler = jest.fn();
+    setMemberBannedHandler(memberBannedHandler);
+    const memberBan = { permanent: false, bannedUntil: "2026-11-06T00:00:00Z" };
+    fetchMock.mockResolvedValue(
+      response(
+        {
+          success: false,
+          error: {
+            code: "MEMBER_BANNED",
+            message: "This Member is banned.",
+            memberBan,
+          },
+        },
+        403
+      )
+    );
+
+    await expect(
+      client.get("/api/v1/profile", z.unknown())
+    ).rejects.toMatchObject({ code: "MEMBER_BANNED", memberBan });
+    expect(memberBannedHandler).toHaveBeenCalledWith(memberBan);
+    setMemberBannedHandler(null);
   });
 
   test.each([403, 500])(

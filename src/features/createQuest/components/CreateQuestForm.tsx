@@ -56,6 +56,7 @@ export function CreateQuestForm({
   onRetrySave,
   onRetryTags,
   onToggleLogistics,
+  openQuestEdit,
   participationOptions,
   pendingInvalidField,
   publishCheck,
@@ -85,6 +86,7 @@ export function CreateQuestForm({
   onRefreshPublishCheck: () => void;
   onRetrySave: () => void;
   onToggleLogistics: () => void;
+  openQuestEdit: boolean;
   participationOptions: ChoiceOption[];
   pendingInvalidField: string | null;
   publishCheck: QuestPublishCheck;
@@ -296,6 +298,7 @@ export function CreateQuestForm({
             locale={locale}
             participationOptions={participationOptions}
             candidateOptions={candidateOptions}
+            openQuestEdit={openQuestEdit}
             useStackedChoices={useStackedChoices}
             logisticsExpanded={logisticsExpanded}
             logisticsSummary={logisticsSummary}

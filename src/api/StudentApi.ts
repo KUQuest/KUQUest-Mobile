@@ -18,6 +18,7 @@ import {
   portfolioDataSchema,
   portfolioCreateDataSchema,
   profileDataSchema,
+  penaltyStatusDataSchema,
   reputationDataSchema,
   reviewsDataSchema,
   publicProfileDataSchema,
@@ -29,6 +30,7 @@ import {
   type PortfolioEntry,
   type ProfileResponse,
   type ProfileReview,
+  type PenaltyStatus,
   type Reputation,
   type PublicProfileResponse,
   type PublicProfileReviewsData,
@@ -373,6 +375,14 @@ export class StudentApi {
       "DELETE",
       `/api/v1/profile/experience/${id}`,
       z.unknown()
+    );
+  }
+
+  async getPenaltyStatus(options?: RequestOptions): Promise<PenaltyStatus> {
+    return this.client.get(
+      "/api/v1/profile/penalty-status",
+      penaltyStatusDataSchema,
+      options
     );
   }
 

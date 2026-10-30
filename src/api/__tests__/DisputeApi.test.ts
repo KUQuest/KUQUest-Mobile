@@ -10,6 +10,8 @@ function jsonResponse(status: number, payload: unknown) {
   };
 }
 
+const input = { category: "OTHER", submittedDetail: "Details" } as const;
+
 describe("DisputeApi", () => {
   let fetchMock: jest.Mock;
   let api: DisputeApi;
@@ -25,7 +27,7 @@ describe("DisputeApi", () => {
     api = new DisputeApi(client);
   });
 
-  it("files without a request body and reads the Dispute Case from data", async () => {
+  it("files with the required request body and reads the Dispute Case from data", async () => {
     fetchMock.mockResolvedValue(
       jsonResponse(200, {
         success: true,
@@ -47,7 +49,7 @@ describe("DisputeApi", () => {
       })
     );
 
-    const result = await api.fileDispute("quest-101");
+    const result = await api.fileDispute("quest-101", input);
 
     expect(result).toMatchObject({
       displayId: "DC-000123",
@@ -58,7 +60,7 @@ describe("DisputeApi", () => {
       "https://api.example.test/api/v1/quests/quest-101/disputes"
     );
     expect(init).toMatchObject({ method: "POST" });
-    expect(init.body).toBeUndefined();
+    expect(JSON.parse(init.body)).toEqual(input);
   });
 
   it("rejects a response that does not carry the Dispute Case in data", async () => {
@@ -66,7 +68,7 @@ describe("DisputeApi", () => {
       jsonResponse(200, { success: true, data: { dispute: { id: "x" } } })
     );
 
-    await expect(api.fileDispute("quest-101")).rejects.toThrow();
+    await expect(api.fileDispute("quest-101", input)).rejects.toThrow();
   });
 
   it("surfaces the Server rejection when filing is no longer allowed", async () => {
@@ -80,7 +82,7 @@ describe("DisputeApi", () => {
       })
     );
 
-    const rejection = api.fileDispute("quest-101");
+    const rejection = api.fileDispute("quest-101", input);
 
     await expect(rejection).rejects.toBeInstanceOf(ApiError);
     await expect(rejection).rejects.toMatchObject({

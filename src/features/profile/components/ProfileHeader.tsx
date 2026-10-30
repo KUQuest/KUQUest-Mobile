@@ -3,12 +3,7 @@ import { cn } from "@/tw/cn";
 import { Text, View } from "@/tw";
 import { defaultAccessibilityLabels, imageSource } from "./profileShared";
 import { useWindowDimensions } from "react-native";
-import {
-  BookOpen,
-  Building2,
-  GraduationCap,
-  Pencil,
-} from "lucide-react-native";
+import { Building2, Code2, GraduationCap, Pencil } from "lucide-react-native";
 import { Avatar } from "../../../components/ui/Avatar";
 import { Chip } from "../../../components/ui/Chip";
 import { Button } from "../../../components/ui/Button";
@@ -145,7 +140,7 @@ export function ProfileHeader({
             <ProfileMeta icon={Building2}>{facultyName}</ProfileMeta>
           ) : null}
           {departmentName ? (
-            <ProfileMeta icon={BookOpen}>{departmentName}</ProfileMeta>
+            <ProfileMeta icon={Code2}>{departmentName}</ProfileMeta>
           ) : null}
         </View>
       ) : null}

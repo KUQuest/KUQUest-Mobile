@@ -1,8 +1,15 @@
+import type { DisputeCase } from "@/api/DisputeApi";
 import type { SupportedLocale } from "./locale";
 
 export interface DisputeMessages {
   rules: readonly string[];
   confirmTitle: string;
+  categoryLabel: string;
+  detailLabel: string;
+  categories: Record<
+    "PROOF_REVIEW" | "QUEST_CONDITION" | "PARTIAL_WORK" | "OTHER",
+    string
+  >;
   confirm: string;
   cancel: string;
   successTitle: string;
@@ -11,6 +18,8 @@ export interface DisputeMessages {
   errorFallback: string;
   alreadyFiled: string;
   filedStatus: string;
+  filedCase: (caseId: string) => string;
+  caseStatus: Record<DisputeCase["status"], string>;
   statusError: string;
   retryStatus: string;
   windowClosed: string;
@@ -28,6 +37,14 @@ export const disputeMessages: Record<SupportedLocale, DisputeMessages> = {
       "An Admin either dismisses the case or pays a Worker.",
     ],
     confirmTitle: "File a Dispute Case?",
+    categoryLabel: "Dispute category",
+    detailLabel: "Dispute details",
+    categories: {
+      PROOF_REVIEW: "Proof review",
+      QUEST_CONDITION: "Quest conditions",
+      PARTIAL_WORK: "Partial work",
+      OTHER: "Other",
+    },
     confirm: "File",
     cancel: "Cancel",
     successTitle: "Dispute Case filed",
@@ -37,6 +54,12 @@ export const disputeMessages: Record<SupportedLocale, DisputeMessages> = {
     errorFallback: "Please try again.",
     alreadyFiled: "A Dispute Case has already been filed for this Quest.",
     filedStatus: "Dispute filed",
+    filedCase: (caseId) => `Case ${caseId}`,
+    caseStatus: {
+      DISPUTE_CASE_PENDING: "Waiting for Admin review",
+      DISPUTE_CASE_DISMISSED: "Admin dismissed the case",
+      DISPUTE_CASE_RESOLVED: "Admin resolved the case",
+    },
     statusError: "Couldn't check dispute status.",
     retryStatus: "Retry",
     windowClosed: "The 1-day window to file a Dispute Case has closed.",
@@ -53,6 +76,14 @@ export const disputeMessages: Record<SupportedLocale, DisputeMessages> = {
       "ผู้ดูแลระบบจะยกคำร้องหรือจ่ายเงินให้ผู้ทำงาน",
     ],
     confirmTitle: "ยื่นคำร้องข้อพิพาทใช่ไหม",
+    categoryLabel: "ประเภทข้อพิพาท",
+    detailLabel: "รายละเอียดข้อพิพาท",
+    categories: {
+      PROOF_REVIEW: "การตรวจผลงาน",
+      QUEST_CONDITION: "เงื่อนไขเควสต์",
+      PARTIAL_WORK: "งานที่ทำไปบางส่วน",
+      OTHER: "อื่น ๆ",
+    },
     confirm: "ยื่นคำร้อง",
     cancel: "ยกเลิก",
     successTitle: "ยื่นคำร้องข้อพิพาทแล้ว",
@@ -62,6 +93,12 @@ export const disputeMessages: Record<SupportedLocale, DisputeMessages> = {
     errorFallback: "โปรดลองอีกครั้ง",
     alreadyFiled: "มีการยื่นคำร้องข้อพิพาทสำหรับเควสต์นี้แล้ว",
     filedStatus: "ยื่นคำร้องข้อพิพาทแล้ว",
+    filedCase: (caseId) => `คำร้อง ${caseId}`,
+    caseStatus: {
+      DISPUTE_CASE_PENDING: "กำลังรอผู้ดูแลระบบตรวจสอบ",
+      DISPUTE_CASE_DISMISSED: "ผู้ดูแลระบบยกคำร้องแล้ว",
+      DISPUTE_CASE_RESOLVED: "ผู้ดูแลระบบตัดสินคำร้องแล้ว",
+    },
     statusError: "ตรวจสอบสถานะคำร้องข้อพิพาทไม่สำเร็จ",
     retryStatus: "ลองอีกครั้ง",
     windowClosed: "หมดเวลายื่นคำร้องข้อพิพาท (1 วัน) แล้ว",

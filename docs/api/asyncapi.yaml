@@ -300,6 +300,7 @@ components:
               - PROOF_AUTO_APPROVED
               - COMPLETION_CONFIRMED
               - QUEST_COMPLETED
+              - TEAM_REWARD_ALLOCATED
               - QUEST_FAILED
               - DISPUTE_WINDOW_OPENED
               - DISPUTE_WINDOW_CLOSED
@@ -337,6 +338,8 @@ components:
         failure and dispute types. PROOF_REVIEWED means the Hirer reviewed a Proof and
         PROOF_AUTO_APPROVED means the 24-hour review window ended; read
         `reviewedBy`, `reviewReason`, and `reviewedAt` on the Proof Submission.
+        TEAM_REWARD_ALLOCATED means the successful Candidate Team settlement was allocated;
+        reload the participation projection and reward-allocation endpoint.
       payload:
         type: object
         additionalProperties: false
@@ -366,6 +369,7 @@ components:
               - PROOF_AUTO_APPROVED
               - COMPLETION_CONFIRMED
               - QUEST_COMPLETED
+              - TEAM_REWARD_ALLOCATED
               - QUEST_FAILED
               - DISPUTE_WINDOW_OPENED
               - DISPUTE_WINDOW_CLOSED

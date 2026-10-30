@@ -34,6 +34,7 @@ describe("conversationModule Canonical Adapter", () => {
       sequence: 1,
       attachments: [],
       kind: "USER",
+      systemType: null,
     });
   });
 

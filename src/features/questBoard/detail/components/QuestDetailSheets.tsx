@@ -8,7 +8,7 @@ import { X } from "lucide-react-native";
 import { formatSatang } from "@/domain/satang";
 import type { QuestBoardMessages } from "@/locales/questBoardMessages";
 import { getQuestRewardSatang } from "../../presentation/questBoardViewData";
-import type { QuestBoardQuest } from "../../domain/types";
+import { QuestMode, type QuestBoardQuest } from "../../domain/types";
 import styles from "../../styles/questDetailStyles";
 import { formatDate } from "@/domain/datetime";
 import {
@@ -41,7 +41,7 @@ function ConfirmationSheet({
 }: ConfirmationSheetProps) {
   const { colors } = useAppTheme();
   const insets = useSafeAreaInsets();
-  const firstCome = quest.candidateMode === "NO_CANDIDATE";
+  const firstCome = quest.mode === QuestMode.FIRST_COME_FIRST_SERVED;
   const title = firstCome
     ? messages.confirmParticipationTitle
     : messages.confirmApplicationTitle;
@@ -141,21 +141,16 @@ function ConfirmationSheet({
 }
 
 export interface QuestDetailSheetsProps {
-  prototypeCandidateSheet?: CandidateReviewSheetProps;
   liveCandidateSheet?: CandidateReviewSheetProps;
   confirmationSheet?: ConfirmationSheetProps;
 }
 
 export function QuestDetailSheets({
-  prototypeCandidateSheet,
   liveCandidateSheet,
   confirmationSheet,
 }: QuestDetailSheetsProps) {
   return (
     <>
-      {prototypeCandidateSheet ? (
-        <CandidateReviewSheet {...prototypeCandidateSheet} />
-      ) : null}
       {liveCandidateSheet ? (
         <CandidateReviewSheet {...liveCandidateSheet} />
       ) : null}

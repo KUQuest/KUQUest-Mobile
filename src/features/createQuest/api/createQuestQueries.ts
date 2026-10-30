@@ -128,7 +128,7 @@ export function useCreateQuestMutation() {
     }: {
       payload: CreateQuestV2Payload;
       idempotencyKey: string;
-    }) => liveQuestService.createQuest(payload, idempotencyKey),
+    }) => questApi.createQuest(payload, idempotencyKey),
     onSuccess: (created) => invalidateQuestReads(queryClient, created.id),
   });
 }
@@ -142,7 +142,7 @@ export function usePublishQuestMutation() {
     }: {
       questId: string;
       idempotencyKey: string;
-    }) => liveQuestService.publishQuest(questId, idempotencyKey),
+    }) => questApi.publishQuest(questId, idempotencyKey),
     onSuccess: async (_, variables) => {
       await invalidateQuestReads(queryClient, variables.questId);
       await invalidateWalletQueries(queryClient);
@@ -163,7 +163,7 @@ export function usePublishEditQuestMutation() {
       version: number;
       payload: Partial<CreateQuestV2Payload>;
       idempotencyKey: string;
-    }) => liveQuestService.editQuest(questId, version, payload, idempotencyKey),
+    }) => questApi.editQuest(questId, version, payload, idempotencyKey),
     onSuccess: async (_, variables) => {
       await invalidateQuestReads(queryClient, variables.questId);
       await invalidateWalletQueries(queryClient);

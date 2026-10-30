@@ -127,11 +127,7 @@ const serverQuestDetailFixture = {
 
 jest.mock("../../questBoard/live/liveQuestService", () => ({
   liveQuestService: {
-    createQuest: (...args: unknown[]) => mockLiveCreateQuest(...args),
     uploadImages: (...args: unknown[]) => Promise.resolve([]),
-    getPublishCheck: (...args: unknown[]) => mockLiveGetPublishCheck(...args),
-    publishQuest: (...args: unknown[]) => mockLivePublishQuest(...args),
-    editQuest: (...args: unknown[]) => mockLiveEditQuest(...args),
   },
 }));
 
@@ -141,8 +137,10 @@ jest.mock("@/api/QuestApi", () => {
     ...actual,
     questApi: {
       ...actual.questApi,
+      createQuest: (...args: unknown[]) => mockLiveCreateQuest(...args),
       getDetail: (...args: unknown[]) => mockGetQuestDetail(...args),
       getPublishCheck: (...args: unknown[]) => mockLiveGetPublishCheck(...args),
+      publishQuest: (...args: unknown[]) => mockLivePublishQuest(...args),
       editQuest: (...args: unknown[]) => mockLiveEditQuest(...args),
     },
   };

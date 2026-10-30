@@ -49,6 +49,8 @@ import {
   questV2TeamFileLinkSchema,
   questV2TeamSelectionSchema,
   questV2ProofFileLinkSchema,
+  questV2RewardAllocationSchema,
+  questV2RewardAllocationPayloadSchema,
   type QuestV2CandidateApplication,
   type QuestV2ProofFileLink,
   type QuestV2ProofSubmission,
@@ -80,6 +82,7 @@ import {
   type QuestV2TeamFileLink,
   type QuestV2TeamSelection,
   type QuestV2Underfilled,
+  type QuestV2RewardAllocation,
   questV2UnderfilledSchema,
   questV2UnderfilledDecisionPayloadSchema,
   questV2UnderfilledConsentPayloadSchema,
@@ -220,6 +223,34 @@ export class QuestApi {
       `/api/v2/quests/${questId}/participation`,
       questV2ParticipationDetailSchema,
       options
+    );
+  }
+
+  async getTeamRewardAllocation(
+    questId: string,
+    options?: RequestOptions
+  ): Promise<QuestV2RewardAllocation> {
+    const response = await this.client.get(
+      `/api/v2/quests/${questId}/reward-allocation`,
+      questV2RewardAllocationSchema,
+      options
+    );
+    return response;
+  }
+
+  async submitTeamRewardAllocation(
+    questId: string,
+    teammateShares: { memberId: string; percentageBasisPoints: number }[],
+    idempotencyKey = createQuestIdempotencyKey()
+  ): Promise<QuestV2RewardAllocation> {
+    return this.client.send(
+      "POST",
+      `/api/v2/quests/${questId}/reward-allocation`,
+      questV2RewardAllocationSchema,
+      {
+        json: questV2RewardAllocationPayloadSchema.parse({ teammateShares }),
+        idempotencyKey,
+      }
     );
   }
 

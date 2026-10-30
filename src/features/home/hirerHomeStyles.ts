@@ -1,8 +1,5 @@
 export const hirerHomeStyles = {
   screenContent: "gap-ku-lg px-ku-md pt-ku-14",
-  prototypeNotice:
-    "self-start rounded-ku-pill border border-ku-border mb-ku-md px-ku-sm py-ku-6",
-  prototypeNoticeText: "font-ku-semibold text-ku-label leading-[18px]",
   section: "gap-ku-12",
   emptyState:
     "items-center gap-ku-sm rounded-ku-card border border-ku-border bg-ku-surface px-ku-lg py-ku-xl",

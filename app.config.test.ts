@@ -23,6 +23,30 @@ function configure(variant?: string, versionCode?: string) {
   }
   return configureApp({ config: baseConfig } as ConfigContext);
 }
+describe("app config push", () => {
+  afterEach(() => {
+    delete process.env.GOOGLE_SERVICES_JSON;
+  });
+
+  test("turns off push for a build without google-services.json", () => {
+    delete process.env.GOOGLE_SERVICES_JSON;
+    const config = configure();
+
+    expect(config.extra?.pushEnabled).toBe(false);
+    expect(config.android?.googleServicesFile).toBeUndefined();
+  });
+
+  test("turns on push for a build with google-services.json", () => {
+    process.env.GOOGLE_SERVICES_JSON = "/tmp/google-services.json";
+    const config = configure();
+
+    expect(config.extra?.pushEnabled).toBe(true);
+    expect(config.android?.googleServicesFile).toBe(
+      "/tmp/google-services.json"
+    );
+  });
+});
+
 describe("app config variants", () => {
   const initialApiUrl = process.env.EXPO_PUBLIC_API_URL;
 
@@ -44,6 +68,7 @@ describe("app config variants", () => {
     expect(config.android?.package).toBe("org.kubits.kuquest.staging");
     expect(config.ios?.bundleIdentifier).toBe("org.kubits.kuquest.staging");
     expect(config.android?.versionCode).toBe(1);
+    expect(config.extra?.appVariant).toBe("staging");
     expect(config.android?.softwareKeyboardLayoutMode).toBe("resize");
   });
 
@@ -64,6 +89,7 @@ describe("app config variants", () => {
     expect(config.android?.package).toBe("org.kubits.kuquest.uat");
     expect(config.ios?.bundleIdentifier).toBe("org.kubits.kuquest.uat");
     expect(config.android?.versionCode).toBe(311);
+    expect(config.extra?.appVariant).toBe("uat");
   });
 
   test("rejects invalid variants and missing CI version codes", () => {

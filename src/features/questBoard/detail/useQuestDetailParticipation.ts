@@ -7,10 +7,7 @@ import {
   SweetAlertVariant,
 } from "@/components/ui/SweetAlert";
 
-import type {
-  QuestDetailLiveActions,
-  QuestDetailPreviewActions,
-} from "./questDetailActions";
+import type { QuestDetailLiveActions } from "./questDetailActions";
 import type { QuestDetailNavigation } from "./useQuestDetailNavigation";
 import type { QuestDetailPresentationFacts } from "./questDetailPresentation";
 import type { QuestDetailSurfaceTransitions } from "./useQuestDetailSurfaceState";
@@ -23,19 +20,17 @@ export interface QuestDetailParticipationHandlers {
 export function useQuestDetailParticipation({
   facts,
   liveActions,
-  previewActions,
   navigation,
   transitions,
 }: {
   facts: QuestDetailPresentationFacts | null;
   liveActions: QuestDetailLiveActions;
-  previewActions: QuestDetailPreviewActions;
   navigation: QuestDetailNavigation;
   transitions: QuestDetailSurfaceTransitions;
 }): QuestDetailParticipationHandlers {
   const confirmApplication = useCallback(async () => {
     if (!facts || !facts.canApply) return;
-    if (facts.firstCome && facts.source.kind !== "preview") {
+    if (facts.firstCome) {
       const result = await liveActions.join();
       if (result === undefined) return;
       transitions.markJoined("accepted");
@@ -56,23 +51,13 @@ export function useQuestDetailParticipation({
       });
       return;
     }
-    if (
-      facts.source.kind !== "preview" &&
-      facts.projection?.capabilities.canApply
-    ) {
+    if (facts.projection?.capabilities.canApply) {
       const result = await liveActions.apply();
       if (result === undefined) return;
       transitions.closeConfirmation();
       transitions.dismissIntent(facts.routeIntentKey);
-      return;
     }
-    const result = facts.firstCome
-      ? previewActions.directJoin()
-      : previewActions.apply();
-    if (!result.ok) return;
-    transitions.closeConfirmation();
-    transitions.dismissIntent(facts.routeIntentKey);
-  }, [facts, liveActions, navigation, previewActions, transitions]);
+  }, [facts, liveActions, navigation, transitions]);
 
   const leaveQuest = useCallback(() => {
     if (!facts || !facts.canShowWithdraw) return;
@@ -86,24 +71,19 @@ export function useQuestDetailParticipation({
         void (async () => {
           const liveApplication = facts.liveSnapshot?.application;
           if (
-            facts.source.kind !== "preview" &&
-            facts.projection?.capabilities.canWithdrawApplication &&
-            liveApplication
+            !facts.projection?.capabilities.canWithdrawApplication ||
+            !liveApplication
           ) {
-            const result = await liveActions.withdraw(liveApplication.id);
-            if (result === undefined) return;
-          } else if (facts.source.kind === "preview") {
-            const result = previewActions.withdraw();
-            if (!result.ok) return;
-          } else {
             return;
           }
+          const result = await liveActions.withdraw(liveApplication.id);
+          if (result === undefined) return;
           transitions.markLeft();
           AccessibilityInfo.announceForAccessibility(facts.messages.leftQuest);
         })();
       },
     });
-  }, [facts, liveActions, previewActions, transitions]);
+  }, [facts, liveActions, transitions]);
 
   return { confirmApplication, leaveQuest };
 }

@@ -4,7 +4,6 @@ import {
   ChevronRight,
   ClipboardList,
   FileCheck2,
-  LayoutDashboard,
   Settings,
   Users,
   WalletCards,
@@ -133,8 +132,7 @@ export function HirerAttentionSection({
   );
 }
 
-export type HirerShortcutRoute =
-  "/my-quests" | "/quest-board" | "/top-up" | "/settings";
+export type HirerShortcutRoute = "/my-quests" | "/top-up" | "/settings";
 
 export function HirerShortcutsSection({
   messages,
@@ -157,13 +155,6 @@ export function HirerShortcutsSection({
       Icon: ClipboardList,
       title: messages.shortcutMyQuestsTitle,
       description: messages.shortcutMyQuestsDesc,
-    },
-    {
-      key: "board",
-      destination: "/quest-board",
-      Icon: LayoutDashboard,
-      title: messages.shortcutBoardTitle,
-      description: messages.shortcutBoardDesc,
     },
     {
       key: "topup",

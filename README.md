@@ -127,6 +127,7 @@ The two variants mirror the backend environments and install side by side, becau
 | `staging` | `org.kubits.kuquest.staging` | `https://kuquest-dev-api.kubits.org` | `bun android` / `bun ios` (development client, debug key); `android-staging.yml` on every push to `develop` (release APK, staging keystore) |
 | `uat`     | `org.kubits.kuquest.uat`     | `https://uat-api.kubits.org`         | `android-uat.yml` on every push to `main` (release APK, UAT keystore)                                                                       |
 
+- The staging Login screen exposes test accounts in development and release builds; UAT hides them. Sign-in still requires `STAGING_TEST_AUTH_ENABLED=true` on the staging API.
 - CI builds run on a self-hosted runner (labels `self-hosted, linux, x64, android`) on the build server, provisioned by `scripts/provision-android-runner.sh`. `android-apk-build.yml` is the shared build; it reads variables and secrets from the GitHub Environment its caller names (`staging`, `uat`), and its `Validate build configuration` step lists the required names and fails fast when one is missing. The `uat` Environment accepts deployments from `main` only.
 - Each publish job replaces a rolling prerelease (`staging-latest`, `uat-latest`) with the new APK and its `.sha256`.
 - `staging` and `uat` take `versionCode` from the workflow run number; a local `expo start` without `APP_VARIANT` keeps the `app.json` value.
@@ -184,23 +185,7 @@ Development builds print API diagnostics to the Metro terminal through `debugLog
 
 Logs never include cookies, request or response bodies, or signed-URL query strings.
 
-## 3. Standalone Offline Demo Mode
-
-If you need to test the UI, Quest flows, or screen layouts without any backend connection, launch the app in seeded demo mode:
-
-```bash
-bun run demo:start
-```
-
-- **Features**: Includes Quest Board, Quest Details, My Quests, Team Assembly, and Chat with mock data and local SQLite/memory persistence.
-- **Switch Test Accounts on Android**:
-  ```bash
-  bun run demo:android:account
-  ```
-
----
-
-## 4. Code Quality & Testing
+## 3. Code Quality & Testing
 
 ### Verification Scripts
 

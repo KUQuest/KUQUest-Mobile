@@ -4,6 +4,7 @@ import { renderWithAppTheme } from "@/testing/queryTestUtils";
 
 import { chatMessages } from "@/locales/chatMessages";
 import { attachmentLinkCache } from "../api/attachmentLinkCache";
+import * as chatProfile from "../api/chatProfile";
 import { isImageAttachment, MessageBubble } from "../components/MessageBubble";
 import type {
   DisplayChatMessage,
@@ -28,6 +29,33 @@ describe("MessageBubble", () => {
   beforeEach(() => {
     attachmentLinkCache.clear();
     jest.restoreAllMocks();
+  });
+
+  it("shows the sender's profile picture on their message", async () => {
+    jest.spyOn(chatProfile, "getChatParticipantProfile").mockResolvedValue({
+      id: "worker-2",
+      avatarUrl: "https://example.test/worker.png",
+      avatarFileId: "avatar-worker-2",
+    });
+    const view = await renderWithAppTheme(
+      <MessageBubble
+        message={{
+          id: "m1",
+          sender: "other",
+          senderId: "worker-2",
+          senderName: "Worker Two",
+          createdAt: "2026-09-15T04:05:00Z",
+          attachments: [],
+        }}
+        conversation={conversation}
+        locale="en"
+        messages={chatMessages.en}
+        onFilePress={jest.fn()}
+      />
+    );
+    await waitFor(() =>
+      expect(view.getByTestId("chat-avatar-image-worker-2")).toBeTruthy()
+    );
   });
 
   it("recognizes image media types and supported file extensions", () => {
