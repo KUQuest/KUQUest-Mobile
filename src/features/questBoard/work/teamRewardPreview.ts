@@ -31,3 +31,15 @@ export function teamRewardPreview(total: number, basisPoints: number[]) {
   }
   return amounts;
 }
+
+/** Convert entered satang targets down to API shares, leaving residual BP to the leader. */
+export function amountSharesToBasisPoints(
+  satangShares: number[],
+  totalRewardSatang: number
+) {
+  if (totalRewardSatang <= 0) return satangShares.map(() => 0);
+
+  return satangShares.map((share) =>
+    Math.floor((share * 10_000) / totalRewardSatang)
+  );
+}
