@@ -6,6 +6,7 @@ import type {
 } from "react-native";
 
 import { Text, TextInput, View } from "@/tw";
+import { fontFamily } from "@/theme/typography";
 import { cn } from "@/tw/cn";
 import { Input } from "@/components/ui/Input";
 import { createQuestMessages } from "@/locales/createQuestMessages";
@@ -162,6 +163,7 @@ export function TeamSetupStep({
             <TextInput
               ref={rewardRef}
               className={styles.currencyTextInput}
+              style={{ fontFamily: fontFamily.bold }}
               placeholder={messages.rewardPlaceholder}
               placeholderTextColor={colors.textMuted}
               value={draft.wage}

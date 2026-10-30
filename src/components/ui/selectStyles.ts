@@ -2,7 +2,7 @@ const styles = {
   container: "mb-ku-md w-full",
   label: "font-ku-bold text-ku-label text-ku-text-secondary mb-ku-6",
   selectBox:
-    "flex-row justify-between items-center border border-ku-border-muted rounded-[10px] px-ku-12 py-ku-10 bg-ku-card min-h-[48px]",
+    "flex-row justify-between items-center border border-ku-border-muted rounded-[10px] px-ku-md py-ku-10 bg-ku-card min-h-[48px]",
   selectBoxError: "border-ku-danger",
   selectBoxSuccess: "border-ku-success",
   selectBoxDisabled: "bg-ku-surface-muted opacity-[0.6]",

@@ -3,6 +3,7 @@ import { cn } from "@/tw/cn";
 import { TextInput as RNTextInput, TextInputProps } from "react-native";
 import { Text, TextInput, View } from "@/tw";
 import { colors } from "@/theme/colors";
+import { fontFamily } from "@/theme/typography";
 import styles from "./inputStyles";
 
 export interface InputProps extends TextInputProps {
@@ -43,7 +44,7 @@ export const Input = React.forwardRef<
           focused ? styles.inputFocused : null,
           !editable ? styles.inputDisabled : null
         )}
-        style={style}
+        style={[{ fontFamily: fontFamily.regular }, style]}
         placeholderTextColor={colors.textFaint}
         accessibilityLabel={accessibilityLabel ?? label}
         accessibilityHint={accessibilityHint ?? error}

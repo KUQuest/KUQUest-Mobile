@@ -191,7 +191,7 @@ components:
     textColor: "{colors.text-strong}"
     typography: "{typography.body-small}"
     rounded: "{rounded.field}"
-    padding: "10px 12px"
+    padding: "10px 16px"
     height: "48px"
   search-field:
     backgroundColor: "{colors.surface}"
