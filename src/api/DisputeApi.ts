@@ -99,6 +99,23 @@ export class DisputeApi {
   }
 
   /**
+   * Sends the respondent's one statement on a case filed against the viewer.
+   * The Server allows it while the case is pending and the hold is active,
+   * within 7 days of the hold start.
+   */
+  async respondToDispute(
+    disputeCaseId: string,
+    respondentStatement: string
+  ): Promise<DisputeCase> {
+    return this.client.send(
+      "POST",
+      `/api/v1/disputes/${disputeCaseId}/respond`,
+      disputeCaseSchema,
+      { json: { respondentStatement } }
+    );
+  }
+
+  /**
    * Confirms the Team Leader's split of an approved team amount. Reuse
    * `idempotencyKey` when retrying the same shares after a 503.
    */
